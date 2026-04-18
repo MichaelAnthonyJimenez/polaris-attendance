@@ -336,8 +336,8 @@
 
                 <div @class([
                     'app-scroll-clip',
-                    'flex-1' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*'),
-                    'flex-none' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*'),
+                    'flex-1' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete'),
+                    'flex-none' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete'),
                 ])>
                 <main @class([
                     'app-main-shell w-full min-w-0',
@@ -376,8 +376,8 @@
                 <!-- Footer (authenticated) -->
                 <footer @class([
                     'app-footer hidden shrink-0 border-t border-white/10 bg-slate-900/50 backdrop-blur-md lg:block',
-                    'mt-auto' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*'),
-                    'mt-8' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*'),
+                    'mt-auto' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete'),
+                    'mt-8' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete'),
                 ])>
                     <div class="shell py-6">
                         <div class="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -415,8 +415,8 @@
 
                 <div @class([
                     'app-scroll-clip',
-                    'flex-1' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*'),
-                    'flex-none' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*'),
+                    'flex-1' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete'),
+                    'flex-none' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete'),
                 ])>
                 <main class="shell mt-6 space-y-4 pb-[calc(env(safe-area-inset-bottom,0px)+3rem)] sm:pb-0">
                     @if (session('status'))
@@ -442,8 +442,8 @@
                 <!-- Footer -->
                 <footer @class([
                     'shrink-0 border-t border-white/10 bg-slate-900/50 backdrop-blur-md',
-                    'mt-auto' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*'),
-                    'mt-8' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*'),
+                    'mt-auto' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete'),
+                    'mt-8' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete'),
                 ])>
                     <div class="shell py-6">
                         <div class="flex flex-col md:flex-row justify-between items-center gap-4">

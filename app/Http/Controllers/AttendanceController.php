@@ -30,6 +30,7 @@ class AttendanceController extends Controller
     public function index(Request $request): View
     {
         $driverSelfId = null;
+        $driverCreatedAtStart = null;
         $adminChartData = null;
         $driverPerformance = null;
         $driverHistoryData = null;
@@ -39,6 +40,7 @@ class AttendanceController extends Controller
         if ($role === 'driver') {
             $driver = User::query()->where('id', Auth::id())->where('role', 'driver')->first();
             $driverSelfId = $driver->id;
+            $driverCreatedAtStart = $driver?->created_at?->copy()?->startOfDay();
         }
 
         if ($role === 'admin') {
@@ -59,6 +61,7 @@ class AttendanceController extends Controller
                 ->filter(fn ($a) => ($a->status ?? null) === 'Late')
                 ->count();
             $absentToday = User::where('role', 'driver')->where('active', true)
+                ->where('created_at', '<', $today->copy()->startOfDay())
                 ->whereDoesntHave('attendances', fn ($q) => $q->whereDate('captured_at', $today)->where('type', 'check_in'))
                 ->count();
 
@@ -73,6 +76,7 @@ class AttendanceController extends Controller
                 ->filter(fn ($a) => ($a->status ?? null) === 'Late')
                 ->count();
             $absentWeek = User::where('role', 'driver')->where('active', true)
+                ->where('created_at', '<', $thisWeekStart)
                 ->whereDoesntHave('attendances', fn ($q) => $q->whereBetween('captured_at', [$thisWeekStart, $thisWeekEnd])->where('type', 'check_in'))
                 ->count();
 
@@ -87,6 +91,7 @@ class AttendanceController extends Controller
                 ->filter(fn ($a) => ($a->status ?? null) === 'Late')
                 ->count();
             $absentMonth = User::where('role', 'driver')->where('active', true)
+                ->where('created_at', '<', $monthStart)
                 ->whereDoesntHave('attendances', fn ($q) => $q->whereBetween('captured_at', [$monthStart, $monthEnd])->where('type', 'check_in'))
                 ->count();
 
@@ -155,7 +160,9 @@ class AttendanceController extends Controller
                     }
                     continue;
                 }
-                if ($dayCarbon->startOfDay()->lt($todayStart)) {
+                if ($driverCreatedAtStart && $dayCarbon->startOfDay()->lt($driverCreatedAtStart)) {
+                    $calendarDays[$dateKey] = null;
+                } elseif ($dayCarbon->startOfDay()->lt($todayStart)) {
                     $calendarDays[$dateKey] = 'absent';
                 } else {
                     $calendarDays[$dateKey] = null;
@@ -231,6 +238,9 @@ class AttendanceController extends Controller
         $data = $request->validate([
             'driver_id' => ['required', 'exists:users,id'],
             'type' => ['required', 'in:check_in,check_out'],
+            'captured_at' => ['nullable', 'date'],
+            'captured_timezone' => ['nullable', 'string', 'max:64'],
+            'captured_tz_offset' => ['nullable', 'integer'],
             'face_image' => [$requirePhotoAttendance ? 'required_without:face_image_data' : 'nullable', 'image', 'max:5120'],
             'face_image_data' => [$requirePhotoAttendance ? 'required_without:face_image' : 'nullable', 'string'], // base64 from camera
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
@@ -297,6 +307,8 @@ class AttendanceController extends Controller
 
         $meta = array_filter([
             'captured_by' => $request->user()?->id,
+            'captured_timezone' => isset($data['captured_timezone']) && is_string($data['captured_timezone']) ? trim($data['captured_timezone']) : null,
+            'captured_tz_offset' => isset($data['captured_tz_offset']) ? (int) $data['captured_tz_offset'] : null,
             'latitude' => $isDriverSharingEnabled && isset($data['latitude']) ? (float) $data['latitude'] : null,
             'longitude' => $isDriverSharingEnabled && isset($data['longitude']) ? (float) $data['longitude'] : null,
             'geo_accuracy' => $isDriverSharingEnabled && isset($data['geo_accuracy']) ? (float) $data['geo_accuracy'] : null,
@@ -305,10 +317,20 @@ class AttendanceController extends Controller
             'face_score_base_required' => $isFaceScoreLow ? $minFaceConfidence : null,
         ], static fn ($v) => $v !== null && $v !== '');
 
+        $capturedAt = now();
+        if (! empty($data['captured_at'])) {
+            try {
+                // Keep storage/query behavior consistent with app-local datetime usage.
+                $capturedAt = Carbon::parse((string) $data['captured_at'])->setTimezone((string) config('app.timezone'));
+            } catch (\Throwable) {
+                $capturedAt = now();
+            }
+        }
+
         $attendance = Attendance::create([
             'driver_id' => $data['driver_id'],
             'type' => $data['type'],
-            'captured_at' => now(),
+            'captured_at' => $capturedAt,
             'face_confidence' => $confidence,
             'liveness_score' => $liveness,
             'image_path' => $imagePath,

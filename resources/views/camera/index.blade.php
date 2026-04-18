@@ -19,6 +19,9 @@
         @csrf
         <input type="hidden" name="face_image_data" id="face_image_data" value="">
         <input type="hidden" name="type" id="attendance_type" value="check_in">
+        <input type="hidden" name="captured_at" id="attendance_captured_at" value="">
+        <input type="hidden" name="captured_timezone" id="attendance_captured_timezone" value="">
+        <input type="hidden" name="captured_tz_offset" id="attendance_captured_tz_offset" value="">
         <input type="hidden" name="latitude" id="att_latitude" value="">
         <input type="hidden" name="longitude" id="att_longitude" value="">
         <input type="hidden" name="geo_accuracy" id="att_geo_accuracy" value="">
@@ -167,6 +170,9 @@
         const retakeBtn = document.getElementById('retakeBtn');
         const faceInput = document.getElementById('face_image_data');
         const typeInput = document.getElementById('attendance_type');
+        const capturedAtInput = document.getElementById('attendance_captured_at');
+        const capturedTimezoneInput = document.getElementById('attendance_captured_timezone');
+        const capturedTzOffsetInput = document.getElementById('attendance_captured_tz_offset');
         const hint = document.getElementById('cameraHint');
         const permissionGate = document.getElementById('cameraPermissionGate');
         const permissionText = document.getElementById('cameraPermissionText');
@@ -377,6 +383,16 @@
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
             faceInput.value = dataUrl;
+            const capturedAt = new Date();
+            if (capturedAtInput) capturedAtInput.value = capturedAt.toISOString();
+            if (capturedTimezoneInput) {
+                try {
+                    capturedTimezoneInput.value = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+                } catch (_e) {
+                    capturedTimezoneInput.value = '';
+                }
+            }
+            if (capturedTzOffsetInput) capturedTzOffsetInput.value = String(capturedAt.getTimezoneOffset());
             previewImg.src = dataUrl;
             setMode('preview');
             setHint(isAuto ? 'Photo captured automatically. Submit or retake.' : 'Review your photo, then submit.');
@@ -409,6 +425,19 @@
         locationEnableBtn?.addEventListener('click', () => requestLocationPermissionAndEnable());
 
         form?.addEventListener('submit', () => {
+            if (capturedAtInput && !capturedAtInput.value) {
+                capturedAtInput.value = new Date().toISOString();
+            }
+            if (capturedTimezoneInput && !capturedTimezoneInput.value) {
+                try {
+                    capturedTimezoneInput.value = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+                } catch (_e) {
+                    capturedTimezoneInput.value = '';
+                }
+            }
+            if (capturedTzOffsetInput && !capturedTzOffsetInput.value) {
+                capturedTzOffsetInput.value = String(new Date().getTimezoneOffset());
+            }
             submitting = true;
             submitBtn.disabled = true;
         });

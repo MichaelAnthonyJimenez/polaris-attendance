@@ -163,7 +163,7 @@
             <!-- Main Content -->
             <div id="appMain" class="flex flex-1 w-full min-w-0 flex-col min-h-screen ml-0 lg:ml-64">
                 <!-- Header: sticky (html/body no longer use overflow-x-hidden; clip is on .app-scroll-clip below) -->
-                <nav class="sticky top-0 z-30 shrink-0 border-b border-white/5 bg-slate-900/70 backdrop-blur pt-[env(safe-area-inset-top,0px)] @if(request()->routeIs('camera.*')) hidden @endif">
+                <nav class="z-30 shrink-0 border-b border-white/5 bg-slate-900/70 backdrop-blur pt-[env(safe-area-inset-top,0px)] @if(request()->routeIs('camera.*')) hidden @endif">
                     <div class="shell flex items-center justify-between py-4">
                         <div class="flex items-center gap-3 min-w-0">
                             <div class="text-white font-semibold text-lg truncate">Polaris Attendance</div>
@@ -334,10 +334,14 @@
                     </div>
                 </nav>
 
-                <div class="app-scroll-clip">
+                <div @class([
+                    'app-scroll-clip',
+                    'flex-1' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*'),
+                    'flex-none' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*'),
+                ])>
                 <main @class([
                     'app-main-shell w-full min-w-0',
-                    'shell mt-8 space-y-6 grow pb-10 max-lg:pb-[calc(env(safe-area-inset-bottom,0px)+4rem)]' => ! request()->routeIs('camera.*'),
+                    'shell mt-6 space-y-4 pb-0 max-lg:pb-[calc(env(safe-area-inset-bottom,0px)+6.5rem)]' => ! request()->routeIs('camera.*'),
                     'mt-0 max-w-none grow p-0 pb-0' => request()->routeIs('camera.*'),
                 ])>
                     @if (session('status'))
@@ -363,14 +367,18 @@
                     @unless(request()->routeIs('camera.*'))
                         <div
                             class="lg:hidden shrink-0 w-full"
-                            style="min-height: calc(2.25rem + env(safe-area-inset-bottom, 0px));"
+                            style="min-height: calc(4rem + env(safe-area-inset-bottom, 0px));"
                             aria-hidden="true"
                         ></div>
                     @endunless
                 </main>
 
                 <!-- Footer (authenticated) -->
-                <footer class="app-footer hidden border-t border-white/10 bg-slate-900/50 backdrop-blur-md mt-auto lg:block">
+                <footer @class([
+                    'app-footer hidden shrink-0 border-t border-white/10 bg-slate-900/50 backdrop-blur-md lg:block',
+                    'mt-auto' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*'),
+                    'mt-8' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*'),
+                ])>
                     <div class="shell py-6">
                         <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                             <div class="text-slate-400 text-sm">
@@ -392,7 +400,7 @@
         @else
             <!-- Public pages without sidebar -->
             <div class="w-full flex flex-col min-h-screen">
-                <nav class="sticky top-0 z-30 shrink-0 border-b border-white/5 bg-slate-900/70 backdrop-blur pt-[env(safe-area-inset-top,0px)]">
+                <nav class="z-30 shrink-0 border-b border-white/5 bg-slate-900/70 backdrop-blur pt-[env(safe-area-inset-top,0px)]">
                     <div class="shell flex items-center justify-between py-4">
                         <div class="text-white font-semibold text-lg">Polaris Attendance</div>
                         <div class="flex items-center gap-3 text-sm">
@@ -405,8 +413,12 @@
                     </div>
                 </nav>
 
-                <div class="app-scroll-clip">
-                <main class="shell mt-8 space-y-6 pb-10 flex-1">
+                <div @class([
+                    'app-scroll-clip',
+                    'flex-1' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*'),
+                    'flex-none' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*'),
+                ])>
+                <main class="shell mt-6 space-y-4 pb-[calc(env(safe-area-inset-bottom,0px)+3rem)] sm:pb-0">
                     @if (session('status'))
                         <div class="alert-success">
                             {{ session('status') }}
@@ -428,7 +440,11 @@
                 </main>
 
                 <!-- Footer -->
-                <footer class="border-t border-white/10 bg-slate-900/50 backdrop-blur-md mt-auto">
+                <footer @class([
+                    'shrink-0 border-t border-white/10 bg-slate-900/50 backdrop-blur-md',
+                    'mt-auto' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*'),
+                    'mt-8' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*'),
+                ])>
                     <div class="shell py-6">
                         <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                             <div class="text-slate-400 text-sm">

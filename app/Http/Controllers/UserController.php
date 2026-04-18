@@ -23,6 +23,13 @@ class UserController extends Controller
         return view('users.create');
     }
 
+    public function show(User $user): View
+    {
+        return view('users.show', [
+            'user' => $user,
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([

@@ -235,6 +235,7 @@ class DashboardController extends Controller
 
             $absentToday = User::where('role', 'driver')->when($driverFilterId, fn ($q) => $q->where('id', $driverFilterId))
                 ->where('active', true)
+                ->where('created_at', '<', $today->copy()->startOfDay())
                 ->whereDoesntHave('attendances', fn ($q) => $q->whereDate('captured_at', $today)->where('type', 'check_in'))
                 ->count();
 
@@ -254,6 +255,7 @@ class DashboardController extends Controller
 
             $absentWeek = User::where('role', 'driver')->when($driverFilterId, fn ($q) => $q->where('id', $driverFilterId))
                 ->where('active', true)
+                ->where('created_at', '<', $thisWeekStart)
                 ->whereDoesntHave('attendances', fn ($q) => $q->whereBetween('captured_at', [$thisWeekStart, $thisWeekEnd])->where('type', 'check_in'))
                 ->count();
 
@@ -276,6 +278,7 @@ class DashboardController extends Controller
 
             $absentMonth = User::where('role', 'driver')->when($driverFilterId, fn ($q) => $q->where('id', $driverFilterId))
                 ->where('active', true)
+                ->where('created_at', '<', $monthStart)
                 ->whereDoesntHave('attendances', fn ($q) => $q->whereBetween('captured_at', [$monthStart, $monthEnd])->where('type', 'check_in'))
                 ->count();
 
@@ -317,7 +320,6 @@ class DashboardController extends Controller
             ];
 
             // Status by date (this week) for Status Breakdown chart
-            $activeDriverCount = User::where('role', 'driver')->where('active', true)->count();
             $weekDates = [];
             $statusByDatePresent = [];
             $statusByDateLate = [];
@@ -325,6 +327,10 @@ class DashboardController extends Controller
             for ($i = 0; $i < 7; $i++) {
                 $date = $thisWeekStart->copy()->addDays($i);
                 $weekDates[] = $date->format('D j'); // e.g. "Mon 2"
+                $eligibleDriverCount = User::where('role', 'driver')
+                    ->where('active', true)
+                    ->where('created_at', '<', $date->copy()->startOfDay())
+                    ->count();
                 $dayCheckIns = Attendance::whereDate('captured_at', $date)
                     ->where('type', 'check_in')
                     ->get();
@@ -333,7 +339,7 @@ class DashboardController extends Controller
                 $driversCheckedIn = $dayCheckIns->pluck('driver_id')->unique()->count();
                 $statusByDatePresent[] = $present;
                 $statusByDateLate[] = $late;
-                $statusByDateAbsent[] = max(0, $activeDriverCount - $driversCheckedIn);
+                $statusByDateAbsent[] = max(0, $eligibleDriverCount - $driversCheckedIn);
             }
 
             $chartData = [

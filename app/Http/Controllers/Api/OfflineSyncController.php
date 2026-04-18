@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Device;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -32,10 +33,19 @@ class OfflineSyncController extends Controller
         $stored = [];
 
         foreach ($payload['events'] as $event) {
+            $capturedAt = now();
+            if (! empty($event['captured_at'])) {
+                try {
+                    $capturedAt = Carbon::parse((string) $event['captured_at'])->setTimezone((string) config('app.timezone'));
+                } catch (\Throwable) {
+                    $capturedAt = now();
+                }
+            }
+
             $stored[] = Attendance::create([
                 'driver_id' => $event['driver_id'],
                 'type' => $event['type'],
-                'captured_at' => $event['captured_at'] ?? now(),
+                'captured_at' => $capturedAt,
                 'face_confidence' => $event['face_confidence'] ?? null,
                 'liveness_score' => $event['liveness_score'] ?? null,
                 'device_id' => $event['device_ref'] ?? $device->id,

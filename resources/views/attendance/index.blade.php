@@ -56,7 +56,7 @@
             $driverCalPrev = data_get($driverCal, 'prevMonth');
             $driverCalNext = data_get($driverCal, 'nextMonth');
         @endphp
-        <div class="glass p-4 sm:p-6 md:p-7 overflow-hidden">
+        <div class="glass p-4 sm:p-5 md:p-5 overflow-hidden">
             <div class="flex items-center justify-between gap-2 mb-3 min-w-0">
                 <h3 class="text-base sm:text-lg font-semibold text-white shrink-0">Calendar</h3>
                 <div class="flex items-center gap-1 sm:gap-2 min-w-0 flex-1 justify-end">
@@ -91,7 +91,7 @@
                     @endif
                 </div>
             </div>
-            <div id="driverCalendar" class="grid grid-cols-7 gap-0.5 sm:gap-1 text-center w-full max-w-full min-w-0"></div>
+            <div id="driverCalendar" class="mx-auto grid max-w-xl grid-cols-7 gap-0.5 sm:gap-1 text-center w-full min-w-0"></div>
             <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-3 text-[10px] sm:text-xs text-slate-400">
                 <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-green-500 shrink-0 border border-green-400/80" title="Present"></span> Present</span>
                 <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-yellow-400 shrink-0 border border-yellow-300/90" title="Late"></span> Late</span>
@@ -298,7 +298,7 @@
                     mark = '<span class="w-1.5 h-1.5 rounded-full bg-rose-400/45 mt-0.5 shrink-0" title="Absent"></span>';
                     label = '<span class="sr-only">Absent</span>';
                 }
-                parts.push(`<span class="min-w-0 aspect-square max-w-full flex flex-col items-center justify-center rounded-md sm:rounded-lg text-[10px] sm:text-xs font-medium leading-tight py-0.5 sm:py-1 ${wrap}" data-date="${dateKey}">${label}<span class="tabular-nums">${day}</span>${mark}</span>`);
+                parts.push(`<span class="min-w-0 aspect-square max-w-full flex flex-col items-center justify-center rounded-md sm:rounded-lg text-[10px] sm:text-[11px] md:text-[10px] font-medium leading-tight py-0.5 sm:py-0.5 ${wrap}" data-date="${dateKey}">${label}<span class="tabular-nums">${day}</span>${mark}</span>`);
             }
             calendar.innerHTML = parts.join('');
         }

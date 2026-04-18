@@ -1,9 +1,9 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex w-full min-h-[calc(100svh-13rem)] flex-col justify-center sm:min-h-0">
+<div class="flex w-full min-h-[calc(100svh-12.5rem)] flex-col justify-center py-1 sm:py-2 sm:min-h-0">
     <div class="mx-auto w-full max-w-md">
-        <div class="glass p-8">
+        <div class="glass p-6 sm:p-8 shadow-2xl shadow-slate-950/40">
             <h1 class="text-2xl font-bold text-white mb-6 text-center">Login</h1>
             <form method="POST" action="{{ route('login') }}" class="space-y-5">
                 @csrf

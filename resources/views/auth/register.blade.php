@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="mx-auto w-full max-w-md sm:max-w-lg lg:max-w-xl">
-    <div class="glass p-8">
+<div class="mx-auto w-full max-w-md sm:max-w-lg lg:max-w-xl py-1 sm:py-2">
+    <div class="glass p-6 sm:p-8 shadow-2xl shadow-slate-950/40">
         <h1 class="text-2xl font-bold text-white mb-6 text-center">Register</h1>
         <form method="POST" action="{{ route('register') }}" class="space-y-5">
             @csrf

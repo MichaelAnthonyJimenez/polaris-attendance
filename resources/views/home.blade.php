@@ -1,9 +1,9 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="space-y-8">
-    <section class="glass p-10">
-        <div class="grid md:grid-cols-2 gap-8 items-center">
+<div class="space-y-6">
+    <section class="glass p-6 sm:p-8">
+        <div class="grid md:grid-cols-2 gap-6 md:gap-8 items-center">
             <div>
                 <p class="text-sm uppercase tracking-wide text-blue-200/80 mb-2">Polaris Multipurpose Cooperative</p>
                 <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">Modern attendance for taxi fleets.</h1>

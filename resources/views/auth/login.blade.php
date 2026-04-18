@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="flex w-full min-h-[calc(100svh-13rem)] flex-col justify-center sm:min-h-0">
-    <div class="mx-auto w-full max-w-md sm:max-w-lg lg:max-w-2xl">
+    <div class="mx-auto w-full max-w-md">
         <div class="glass p-8">
             <h1 class="text-2xl font-bold text-white mb-6 text-center">Login</h1>
             <form method="POST" action="{{ route('login') }}" class="space-y-5">

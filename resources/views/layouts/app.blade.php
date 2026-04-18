@@ -162,6 +162,9 @@
                             <div class="text-white font-semibold text-lg truncate">Polaris Attendance</div>
                         </div>
 
+                        @php
+                            $topbarUnreadCount = auth()->user()?->unreadNotifications()->count() ?? 0;
+                        @endphp
                         <div class="flex items-center gap-2 sm:gap-3 text-sm text-slate-300 shrink-0">
                             @if(auth()->user()?->role === 'admin')
                                 <form action="{{ route('global-search') }}" method="GET" class="relative hidden md:block w-64 lg:w-72">
@@ -192,18 +195,21 @@
                                 </form>
                             @endif
                                 <span id="topbarClock" class="hidden sm:inline-flex items-center px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-slate-200 tabular-nums"></span>
-                            @if(auth()->user()?->role === 'admin')
-                                <button
-                                    type="button"
-                                    class="inline-flex items-center justify-center p-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                                    aria-label="Notifications"
-                                    title="Notifications"
-                                >
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                                    </svg>
-                                </button>
-                            @endif
+                            <a
+                                href="{{ route('notifications.index') }}"
+                                class="relative inline-flex items-center justify-center p-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                aria-label="Notifications"
+                                title="Notifications"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                                </svg>
+                                @if($topbarUnreadCount > 0)
+                                    <span class="absolute -top-0.5 -right-0.5 inline-flex min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 py-0.5 text-[10px] font-semibold leading-none text-white">
+                                        {{ $topbarUnreadCount > 9 ? '9+' : $topbarUnreadCount }}
+                                    </span>
+                                @endif
+                            </a>
                         </div>
                     </div>
                 </nav>

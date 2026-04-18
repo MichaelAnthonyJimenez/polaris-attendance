@@ -38,12 +38,8 @@
                 </div>
                 @if (config('services.recaptcha.site_key'))
                     <div class="mt-2">
-                        <div class="flex justify-center overflow-x-hidden">
-                            <div
-                                class="g-recaptcha inline-block max-w-full"
-                                data-sitekey="{{ config('services.recaptcha.site_key') }}"
-                                data-size="compact"
-                            ></div>
+                        <div class="flex justify-center overflow-x-auto">
+                            <div class="g-recaptcha" data-sitekey="{{ config('services.recaptcha.site_key') }}"></div>
                         </div>
                         @error('g-recaptcha-response')
                             <p class="mt-2 text-sm text-red-400 text-center">{{ $message }}</p>

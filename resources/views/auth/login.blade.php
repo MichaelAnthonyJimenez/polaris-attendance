@@ -36,12 +36,12 @@
                     <input type="checkbox" name="remember" id="remember" class="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500 focus:ring-blue-500/50">
                     <label for="remember" class="ml-2 text-sm text-slate-200">Remember me</label>
                 </div>
-                @if (config('services.recaptcha.site_key'))
+                @if ((bool) config('services.turnstile.login_enabled', true) && config('services.turnstile.site_key'))
                     <div class="mt-2">
                         <div class="flex justify-center overflow-x-auto">
-                            <div class="g-recaptcha" data-sitekey="{{ config('services.recaptcha.site_key') }}"></div>
+                            <div class="cf-turnstile" data-sitekey="{{ config('services.turnstile.site_key') }}"></div>
                         </div>
-                        @error('g-recaptcha-response')
+                        @error('cf-turnstile-response')
                             <p class="mt-2 text-sm text-red-400 text-center">{{ $message }}</p>
                         @enderror
                     </div>
@@ -61,8 +61,8 @@
 @endsection
 
 @push('head-scripts')
-    @if (config('services.recaptcha.site_key'))
-        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    @if ((bool) config('services.turnstile.login_enabled', true) && config('services.turnstile.site_key'))
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     @endif
 @endpush
 

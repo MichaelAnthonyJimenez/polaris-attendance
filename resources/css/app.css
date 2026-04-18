@@ -50,7 +50,7 @@
 @layer components {
     /* Keeps wide tables/charts from causing horizontal scroll without breaking sticky top nav */
     .app-scroll-clip {
-        @apply flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-x-hidden;
+        @apply flex min-h-full min-w-0 max-w-full flex-1 flex-col overflow-x-hidden;
     }
 
     .shell {

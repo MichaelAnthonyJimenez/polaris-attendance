@@ -35,10 +35,14 @@ return [
         ],
     ],
 
-    'recaptcha' => [
-        'site_key' => env('RECAPTCHA_SITE_KEY'),
-        'secret_key' => env('RECAPTCHA_SECRET_KEY'),
-        'login_enabled' => env('RECAPTCHA_LOGIN_ENABLED', false),
+    'brevo' => [
+        'api_key' => env('BREVO_API_KEY'),
+    ],
+
+    'turnstile' => [
+        'site_key' => env('TURNSTILE_SITE_KEY'),
+        'secret_key' => env('TURNSTILE_SECRET_KEY'),
+        'login_enabled' => env('TURNSTILE_LOGIN_ENABLED', true),
     ],
 
 ];

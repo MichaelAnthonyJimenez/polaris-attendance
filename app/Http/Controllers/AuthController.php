@@ -6,12 +6,14 @@ use App\Helpers\AuditLogger;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\Email\TransactionalEmailService;
+use App\Services\Security\TurnstileService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AuthController extends Controller
@@ -23,12 +25,36 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
-        $credentials = $request->validate([
+        $rules = [
             'email' => ['required', 'email'],
             'password' => ['required'],
+        ];
+
+        $turnstileEnabled = (bool) config('services.turnstile.login_enabled', true)
+            && (string) config('services.turnstile.site_key') !== '';
+
+        if ($turnstileEnabled) {
+            $rules['cf-turnstile-response'] = ['required', 'string'];
+        }
+
+        $credentials = $request->validate($rules, [
+            'cf-turnstile-response.required' => 'Please complete the captcha challenge.',
         ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        if ($turnstileEnabled) {
+            $ok = app(TurnstileService::class)->verify(
+                $request->input('cf-turnstile-response'),
+                $request->ip()
+            );
+
+            if (! $ok) {
+                throw ValidationException::withMessages([
+                    'cf-turnstile-response' => 'Captcha verification failed. Please try again.',
+                ]);
+            }
+        }
+
+        if (Auth::attempt($request->only(['email', 'password']), $request->boolean('remember'))) {
             $request->session()->regenerate();
 
             $user = Auth::user();

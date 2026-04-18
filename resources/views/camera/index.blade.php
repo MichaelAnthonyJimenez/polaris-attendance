@@ -26,7 +26,7 @@
         <input type="hidden" name="longitude" id="att_longitude" value="">
         <input type="hidden" name="geo_accuracy" id="att_geo_accuracy" value="">
 
-        {{-- Top bar: back + check in / check out --}}
+        {{-- Top bar: back + status (check in / out moved beside capture in footer) --}}
         <header
             class="flex shrink-0 items-center gap-3 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 bg-gradient-to-b from-black/80 to-transparent"
             style="padding-left: max(0.75rem, env(safe-area-inset-left)); padding-right: max(0.75rem, env(safe-area-inset-right));"
@@ -51,25 +51,6 @@
                 <p id="cameraHint" class="text-xs text-slate-400 truncate @if($statusMessage || $errors->any()) mt-0.5 @endif">
                     Enable camera access when prompted, then capture your photo.
                 </p>
-            </div>
-
-            <div class="flex shrink-0 rounded-xl border border-white/15 bg-black/40 p-0.5" role="group" aria-label="Attendance type">
-                <button
-                    type="button"
-                    id="btnCheckIn"
-                    class="cam-type-btn rounded-lg px-3 py-2 text-xs font-semibold transition bg-blue-600 text-white shadow"
-                    data-type="check_in"
-                >
-                    Check in
-                </button>
-                <button
-                    type="button"
-                    id="btnCheckOut"
-                    class="cam-type-btn rounded-lg px-3 py-2 text-xs font-semibold transition text-slate-300 hover:text-white"
-                    data-type="check_out"
-                >
-                    Check out
-                </button>
             </div>
         </header>
 
@@ -136,14 +117,32 @@
             class="shrink-0 flex flex-col items-center gap-4 px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black via-black/95 to-transparent"
             style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right));"
         >
-            <div id="liveControls" class="flex flex-col items-center gap-3 w-full max-w-md">
-                <button
-                    type="button"
-                    id="captureBtn"
-                    class="h-16 w-16 rounded-full border-4 border-white bg-white/20 shadow-lg ring-4 ring-white/30 disabled:opacity-40 disabled:pointer-events-none"
-                    aria-label="Capture photo"
-                ></button>
-                <span class="text-xs text-slate-500">Tap to capture</span>
+            <div id="liveControls" class="flex w-full max-w-lg flex-col items-center gap-3 px-2">
+                <div class="flex w-full items-end justify-center gap-3 sm:gap-6" role="group" aria-label="Attendance type and capture">
+                    <button
+                        type="button"
+                        id="btnCheckIn"
+                        class="cam-type-btn max-w-[6.5rem] flex-1 rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-center text-xs font-semibold transition sm:max-w-[7.5rem] sm:px-4 bg-blue-600 text-white shadow"
+                        data-type="check_in"
+                    >
+                        Check in
+                    </button>
+                    <button
+                        type="button"
+                        id="captureBtn"
+                        class="h-16 w-16 shrink-0 rounded-full border-4 border-white bg-white/20 shadow-lg ring-4 ring-white/30 disabled:opacity-40 disabled:pointer-events-none"
+                        aria-label="Capture photo"
+                    ></button>
+                    <button
+                        type="button"
+                        id="btnCheckOut"
+                        class="cam-type-btn max-w-[6.5rem] flex-1 rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-center text-xs font-semibold text-slate-300 transition hover:text-white sm:max-w-[7.5rem] sm:px-4"
+                        data-type="check_out"
+                    >
+                        Check out
+                    </button>
+                </div>
+                <span class="text-center text-xs text-slate-500">Choose check in or check out, then tap the center button to capture</span>
             </div>
 
             <div id="previewControls" class="hidden flex w-full max-w-md gap-3">

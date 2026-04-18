@@ -175,3 +175,72 @@
 </div>
 @endsection
 
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const forms = Array.from(document.querySelectorAll('form[data-confirm-modal="true"]'));
+        if (!forms.length) return;
+
+        let pendingForm = null;
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 z-[130] hidden items-center justify-center bg-black/70 p-4';
+        modal.innerHTML = `
+            <div class="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
+                <h3 id="usersDeleteModalTitle" class="text-lg font-semibold text-white">Delete account</h3>
+                <p id="usersDeleteModalMessage" class="mt-2 text-sm text-slate-300">Are you sure?</p>
+                <div class="mt-6 flex justify-end gap-2">
+                    <button type="button" id="usersDeleteModalCancel" class="btn-secondary">Cancel</button>
+                    <button type="button" id="usersDeleteModalConfirm" class="btn-primary bg-rose-600 hover:bg-rose-500 shadow-rose-500/20">Delete</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        const titleEl = document.getElementById('usersDeleteModalTitle');
+        const messageEl = document.getElementById('usersDeleteModalMessage');
+        const cancelBtn = document.getElementById('usersDeleteModalCancel');
+        const confirmBtn = document.getElementById('usersDeleteModalConfirm');
+
+        function closeModal() {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            pendingForm = null;
+        }
+
+        function openModal(form) {
+            pendingForm = form;
+            titleEl.textContent = form.getAttribute('data-confirm-title') || 'Confirm action';
+            messageEl.textContent = form.getAttribute('data-confirm-message') || 'Are you sure?';
+            confirmBtn.textContent = form.getAttribute('data-confirm-confirm-text') || 'Confirm';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        forms.forEach((form) => {
+            form.addEventListener('submit', function (e) {
+                if (form.dataset.confirmed === 'true') {
+                    form.dataset.confirmed = 'false';
+                    return;
+                }
+                e.preventDefault();
+                openModal(form);
+            });
+        });
+
+        cancelBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) closeModal();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+        });
+        confirmBtn.addEventListener('click', function () {
+            if (!pendingForm) return;
+            pendingForm.dataset.confirmed = 'true';
+            pendingForm.submit();
+            closeModal();
+        });
+    });
+</script>
+@endpush
+

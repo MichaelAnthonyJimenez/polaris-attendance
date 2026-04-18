@@ -8,9 +8,13 @@
 
     @stack('head-scripts')
 </head>
-<body @class(['camera-page' => request()->routeIs('camera.*')])>
-    <div @class(['min-h-screen flex', 'min-h-[100dvh] bg-black' => request()->routeIs('camera.*')])>
+@php
+    $isFullscreenCameraPage = request()->routeIs('camera.*', 'verification.facial', 'verification.id');
+@endphp
+<body @class(['camera-page' => $isFullscreenCameraPage])>
+    <div @class(['min-h-screen flex', 'min-h-[100dvh] bg-black' => $isFullscreenCameraPage])>
         @auth
+            @unless($isFullscreenCameraPage)
             <!-- Sidebar -->
             <aside id="appSidebar" class="hidden lg:flex w-64 bg-slate-900/80 backdrop-blur-md border-r border-white/10 flex-col fixed h-screen z-20">
                 <div class="p-6 border-b border-white/10">
@@ -159,11 +163,15 @@
                     </div>
                 </div>
             </aside>
+            @endunless
 
             <!-- Main Content -->
-            <div id="appMain" class="flex flex-1 w-full min-w-0 flex-col min-h-screen ml-0 lg:ml-64">
+            <div id="appMain" @class([
+                'flex flex-1 w-full min-w-0 flex-col min-h-screen ml-0',
+                'lg:ml-64' => ! $isFullscreenCameraPage,
+            ])>
                 <!-- Header: sticky (html/body no longer use overflow-x-hidden; clip is on .app-scroll-clip below) -->
-                <nav class="z-30 shrink-0 border-b border-white/5 bg-slate-900/70 backdrop-blur pt-[env(safe-area-inset-top,0px)] @if(request()->routeIs('camera.*')) hidden @endif">
+                <nav class="z-30 shrink-0 border-b border-white/5 bg-slate-900/70 backdrop-blur pt-[env(safe-area-inset-top,0px)] @if($isFullscreenCameraPage) hidden @endif">
                     <div class="shell flex items-center justify-between py-4">
                         <div class="flex items-center gap-3 min-w-0">
                             <div class="text-white font-semibold text-lg truncate">Polaris Attendance</div>
@@ -341,8 +349,8 @@
                 ])>
                 <main @class([
                     'app-main-shell w-full min-w-0',
-                    'shell mt-6 space-y-4 pb-0 max-lg:pb-[calc(env(safe-area-inset-bottom,0px)+6.5rem)]' => ! request()->routeIs('camera.*'),
-                    'mt-0 max-w-none grow p-0 pb-0' => request()->routeIs('camera.*'),
+                    'shell mt-6 space-y-4 pb-0 max-lg:pb-[calc(env(safe-area-inset-bottom,0px)+6.5rem)]' => ! $isFullscreenCameraPage,
+                    'mt-0 max-w-none grow p-0 pb-0' => $isFullscreenCameraPage,
                 ])>
                     @if (session('status'))
                         <div class="alert-success">
@@ -364,7 +372,7 @@
                     @yield('content')
 
                     {{-- Extra scroll height on mobile so the last pixels clear the fixed bottom nav (document scroll) --}}
-                    @unless(request()->routeIs('camera.*'))
+                    @unless($isFullscreenCameraPage)
                         <div
                             class="lg:hidden shrink-0 w-full"
                             style="min-height: calc(4rem + env(safe-area-inset-bottom, 0px));"
@@ -374,6 +382,7 @@
                 </main>
 
                 <!-- Footer (authenticated) -->
+                @unless($isFullscreenCameraPage)
                 <footer @class([
                     'app-footer hidden shrink-0 border-t border-white/10 bg-slate-900/50 backdrop-blur-md lg:block',
                     'mt-auto' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete'),
@@ -392,9 +401,10 @@
                         </div>
                     </div>
                 </footer>
+                @endunless
                 </div>
             </div>
-            @unless(request()->routeIs('camera.*'))
+            @unless($isFullscreenCameraPage)
                 <x-bottom-nav />
             @endunless
         @else

@@ -228,4 +228,78 @@ function initGlobalSearch() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', initGlobalSearch);
+function initConfirmModals() {
+    const forms = Array.from(document.querySelectorAll('form[data-confirm-modal="true"]'));
+    if (forms.length === 0) return;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 z-[120] hidden items-center justify-center bg-black/70 p-4';
+    overlay.innerHTML = `
+        <div class="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
+            <h3 class="text-lg font-semibold text-white" data-confirm-title>Confirm action</h3>
+            <p class="mt-2 text-sm text-slate-300" data-confirm-message>Are you sure?</p>
+            <div class="mt-6 flex items-center justify-end gap-2">
+                <button type="button" class="btn-secondary" data-confirm-cancel>Cancel</button>
+                <button type="button" class="btn-primary bg-rose-600 hover:bg-rose-500 shadow-rose-500/20" data-confirm-submit>Delete</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const titleEl = overlay.querySelector('[data-confirm-title]');
+    const messageEl = overlay.querySelector('[data-confirm-message]');
+    const cancelBtn = overlay.querySelector('[data-confirm-cancel]');
+    const submitBtn = overlay.querySelector('[data-confirm-submit]');
+
+    let pendingForm = null;
+
+    function closeModal() {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+        pendingForm = null;
+    }
+
+    function openModal(form) {
+        pendingForm = form;
+        const title = form.getAttribute('data-confirm-title') || 'Confirm action';
+        const message = form.getAttribute('data-confirm-message') || 'Are you sure?';
+        const confirmText = form.getAttribute('data-confirm-confirm-text') || 'Confirm';
+        if (titleEl) titleEl.textContent = title;
+        if (messageEl) messageEl.textContent = message;
+        if (submitBtn) submitBtn.textContent = confirmText;
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+    }
+
+    forms.forEach((form) => {
+        form.addEventListener('submit', (e) => {
+            if (form.dataset.confirmed === 'true') {
+                form.dataset.confirmed = 'false';
+                return;
+            }
+            e.preventDefault();
+            openModal(form);
+        });
+    });
+
+    cancelBtn?.addEventListener('click', closeModal);
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !overlay.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+    submitBtn?.addEventListener('click', () => {
+        if (!pendingForm) return;
+        pendingForm.dataset.confirmed = 'true';
+        pendingForm.submit();
+        closeModal();
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initGlobalSearch();
+    initConfirmModals();
+});

@@ -1,6 +1,5 @@
 @php
     $showBottomNav = request()->routeIs('dashboard')
-        || request()->routeIs('camera.*')
         || request()->routeIs('attendance.*')
         || request()->routeIs('announcements.*')
         || request()->routeIs('notifications.*')
@@ -15,7 +14,7 @@
         || request()->routeIs('inbox.*');
 @endphp
 @if($showBottomNav)
-<div class="fixed bottom-0 left-0 right-0 z-40 w-full lg:hidden" style="padding-bottom: env(safe-area-inset-bottom, 0);">
+<div class="app-bottom-nav fixed bottom-0 left-0 right-0 z-40 w-full lg:hidden" style="padding-bottom: env(safe-area-inset-bottom, 0);">
     <nav class="flex w-full min-h-16 bg-slate-900/80 backdrop-blur-md border-t border-white/10 transition-colors duration-300" aria-label="Bottom navigation">
         <div class="flex items-center justify-around w-full min-h-16 px-1 gap-1">
         <a href="{{ route('dashboard') }}" class="flex flex-col items-center justify-center flex-1 py-2 min-w-0 text-slate-300 hover:text-white transition-colors {{ request()->routeIs('dashboard') ? 'text-blue-300' : '' }}">

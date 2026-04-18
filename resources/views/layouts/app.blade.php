@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Polaris Attendance</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     @stack('head-scripts')
 </head>
-<body>
-    <div class="min-h-screen flex">
+<body @class(['camera-page' => request()->routeIs('camera.*')])>
+    <div @class(['min-h-screen flex', 'min-h-[100dvh] bg-black' => request()->routeIs('camera.*')])>
         @auth
             <!-- Sidebar -->
             <aside id="appSidebar" class="hidden lg:flex w-64 bg-slate-900/80 backdrop-blur-md border-r border-white/10 flex-col fixed h-screen z-20">
@@ -161,9 +161,9 @@
             </aside>
 
             <!-- Main Content -->
-            <div id="appMain" class="flex-1 ml-0 lg:ml-64 flex flex-col min-h-screen w-full min-w-0">
-                <!-- Header (authenticated) -->
-                <nav class="sticky top-0 z-30 backdrop-blur bg-slate-900/70 border-b border-white/5">
+            <div id="appMain" class="flex flex-1 w-full min-w-0 flex-col min-h-screen ml-0 lg:ml-64">
+                <!-- Header (authenticated); hidden on camera route for fullscreen capture -->
+                <nav class="sticky top-0 z-30 shrink-0 backdrop-blur bg-slate-900/70 border-b border-white/5 @if(request()->routeIs('camera.*')) hidden @endif">
                     <div class="shell flex items-center justify-between py-4">
                         <div class="flex items-center gap-3 min-w-0">
                             <div class="text-white font-semibold text-lg truncate">Polaris Attendance</div>
@@ -334,7 +334,11 @@
                     </div>
                 </nav>
 
-                <main class="shell mt-8 space-y-6 pb-24 lg:pb-10 flex-1">
+                <main @class([
+                    'app-main-shell w-full min-w-0',
+                    'shell mt-8 space-y-6 grow pb-10 max-lg:pb-[calc(env(safe-area-inset-bottom,0px)+4rem)]' => ! request()->routeIs('camera.*'),
+                    'mt-0 max-w-none grow p-0 pb-0' => request()->routeIs('camera.*'),
+                ])>
                     @if (session('status'))
                         <div class="alert-success">
                             {{ session('status') }}
@@ -353,6 +357,15 @@
                     @endif
 
                     @yield('content')
+
+                    {{-- Extra scroll height on mobile so the last pixels clear the fixed bottom nav (document scroll) --}}
+                    @unless(request()->routeIs('camera.*'))
+                        <div
+                            class="lg:hidden shrink-0 w-full"
+                            style="min-height: calc(2.25rem + env(safe-area-inset-bottom, 0px));"
+                            aria-hidden="true"
+                        ></div>
+                    @endunless
                 </main>
 
                 <!-- Footer (authenticated) -->
@@ -371,7 +384,9 @@
                     </div>
                 </footer>
             </div>
-            <x-bottom-nav />
+            @unless(request()->routeIs('camera.*'))
+                <x-bottom-nav />
+            @endunless
         @else
             <!-- Public pages without sidebar -->
             <div class="w-full flex flex-col min-h-screen">

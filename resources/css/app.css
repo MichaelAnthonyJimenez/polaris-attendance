@@ -11,6 +11,11 @@
 }
 
 @layer base {
+    html {
+        height: auto;
+        -webkit-text-size-adjust: 100%;
+    }
+
     html,
     body {
         max-width: 100%;
@@ -19,6 +24,19 @@
 
     body {
         @apply bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-50 min-h-screen;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Mobile: anchor scrolling / keyboard — reserve space above fixed bottom nav */
+    @media (max-width: 1023px) {
+        html {
+            scroll-padding-bottom: calc(3.25rem + env(safe-area-inset-bottom, 0px));
+        }
+
+        body:not(.camera-page) {
+            overflow-y: scroll;
+        }
     }
 }
 
@@ -164,4 +182,37 @@
         max-width: 100%;
     }
 
+    /* Attendance camera: backup rules if Blade classes miss; never show app bottom bar */
+    body.camera-page .app-bottom-nav {
+        display: none !important;
+    }
+
+    body.camera-page #appMain > main > .alert-success,
+    body.camera-page #appMain > main > .alert-error {
+        @apply mx-4 mt-3 rounded-lg;
+    }
+
+    html:has(body.camera-page) {
+        background-color: #000;
+    }
+
+    body.camera-page {
+        overflow: hidden;
+        @apply bg-black;
+        background-image: none;
+    }
+
+    body.camera-page #appMain {
+        @apply min-h-0 flex-1 bg-black;
+        min-height: 100dvh;
+        min-height: 100svh;
+        background-image: none;
+    }
+
+    /* Fill iOS / Android dynamic viewport so no gradient strip shows under fixed camera */
+    body.camera-page #cameraShell {
+        min-height: 100dvh;
+        min-height: 100svh;
+        min-height: -webkit-fill-available;
+    }
 }

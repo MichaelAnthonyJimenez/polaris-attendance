@@ -9,7 +9,8 @@
 
 <div
     id="cameraShell"
-    class="fixed inset-0 z-[100] flex flex-col bg-black text-white"
+    class="fixed left-0 right-0 top-0 bottom-0 z-[9999] flex min-h-[100dvh] w-full flex-col bg-black text-white"
+    style="min-height: -webkit-fill-available;"
     data-auto-capture="{{ $cameraAutoCapture ? '1' : '0' }}"
     data-auto-submit="{{ $cameraAutoSubmit ? '1' : '0' }}"
     data-location-sharing-enabled="{{ !empty($driverLocationSharingEnabled) ? '1' : '0' }}"

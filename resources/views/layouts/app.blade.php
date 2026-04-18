@@ -396,7 +396,11 @@
                     <div class="shell flex items-center justify-between py-4">
                         <div class="text-white font-semibold text-lg">Polaris Attendance</div>
                         <div class="flex items-center gap-3 text-sm">
+                            @if (request()->routeIs('login', 'register'))
+                                <a href="{{ route('home') }}" class="btn-secondary">Return home</a>
+                            @else
                                 <a href="{{ route('login') }}" class="btn-primary">Login</a>
+                            @endif
                         </div>
                     </div>
                 </nav>

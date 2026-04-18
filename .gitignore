@@ -20,7 +20,7 @@
 /storage/pail
 /vendor
 **/.venv/
-python/**/.venv/
+python/deepface/.venv/
 
 Homestead.json
 Homestead.yaml

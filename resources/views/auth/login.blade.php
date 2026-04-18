@@ -25,8 +25,6 @@
                                       d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                       d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path class="hidden toggle-eye-slash" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                      d="M3 3l18 18" />
                             </svg>
                         </button>
                     </div>
@@ -35,7 +33,7 @@
                     <input type="checkbox" name="remember" id="remember" class="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500 focus:ring-blue-500/50">
                     <label for="remember" class="ml-2 text-sm text-slate-200">Remember me</label>
                 </div>
-                @if (config('services.recaptcha.login_enabled'))
+                @if (config('services.recaptcha.site_key'))
                     <div class="mt-2">
                         <div class="flex justify-center overflow-x-auto">
                             <div class="g-recaptcha" data-sitekey="{{ config('services.recaptcha.site_key') }}"></div>
@@ -60,7 +58,7 @@
 @endsection
 
 @push('head-scripts')
-    @if (config('services.recaptcha.login_enabled'))
+    @if (config('services.recaptcha.site_key'))
         <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     @endif
 @endpush
@@ -73,10 +71,6 @@
         const isPassword = input.type === 'password';
         input.type = isPassword ? 'text' : 'password';
         buttonEl.setAttribute('aria-pressed', isPassword ? 'true' : 'false');
-        const slash = buttonEl.querySelector('.toggle-eye-slash');
-        if (slash) {
-            slash.classList.toggle('hidden', !isPassword);
-        }
     }
 </script>
 @endpush

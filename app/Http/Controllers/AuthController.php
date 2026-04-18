@@ -25,71 +25,19 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
-        $rules = [
+        $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
-        ];
-
-        if (config('services.recaptcha.login_enabled')) {
-            $rules['g-recaptcha-response'] = ['required', 'string'];
-        }
-
-        $data = $request->validate($rules, [
-            'g-recaptcha-response.required' => 'Please complete the reCAPTCHA to continue.',
         ]);
 
-        if (config('services.recaptcha.login_enabled')) {
-            $ok = app(RecaptchaService::class)->verify(
-                $request->input('g-recaptcha-response'),
-                $request->ip()
-            );
-
-            if (!$ok) {
-                throw ValidationException::withMessages([
-                    'g-recaptcha-response' => 'reCAPTCHA verification failed. Please try again.',
-                ]);
-            }
-        }
-
-        $normalizedEmail = Str::lower(trim($data['email']));
-
-        $credentials = [
-            'email' => $normalizedEmail,
-            'password' => $data['password'],
-        ];
-
-        $remember = $request->boolean('remember');
-        $authenticated = Auth::attempt($credentials, $remember);
-
-        // Case-sensitive DB collations: attempt uses exact email match; normalize casing when LOWER matches.
-        if (!$authenticated) {
-            $resolved = User::query()
-                ->whereRaw('LOWER(email) = ?', [$normalizedEmail])
-                ->first();
-
-            if ($resolved && $resolved->email !== $normalizedEmail) {
-                $authenticated = Auth::attempt(
-                    [
-                        'email' => $resolved->email,
-                        'password' => $data['password'],
-                    ],
-                    $remember
-                );
-
-                if ($authenticated) {
-                    $resolved->forceFill(['email' => $normalizedEmail])->save();
-                }
-            }
-        }
-
-        if ($authenticated) {
+        if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
             $user = Auth::user();
             $twoFactorEnabled = (bool) Setting::get('two_factor_enabled', Setting::get('enable_two_factor', false));
 
-            // Newly registered non-admin users must verify with an OTP on first login (tracked separately from admin driver verification).
-            $firstTimeUser = $user && !$user->otp_verified_at && $user->role !== 'admin';
+            // Newly registered non-admin users must verify with an OTP on first login.
+            $firstTimeUser = $user && !$user->email_verified_at && $user->role !== 'admin';
 
             // Force email code on first login after registration, even if global 2FA is off.
             if (($twoFactorEnabled || $firstTimeUser) && $user) {
@@ -125,51 +73,46 @@ class AuthController extends Controller
             return redirect()->intended('/dashboard');
         }
 
-        // Fallback for legacy data inconsistencies (plain-text passwords from older setups).
-        $legacyUser = User::query()
-            ->whereRaw('LOWER(email) = ?', [$normalizedEmail])
-            ->first();
-
-        if ($legacyUser && hash_equals($legacyUser->password, $data['password'])) {
-            $legacyUser->forceFill([
-                'email' => $normalizedEmail,
-                'password' => Hash::make($data['password']),
-            ])->save();
-
-            Auth::login($legacyUser, $remember);
-            $request->session()->regenerate();
-
-            AuditLogger::log('login', null, null, null, null, 'User logged in via legacy credential fallback');
-
-            return redirect()->intended('/dashboard');
-        }
-
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
-        ])->withInput(['email' => $normalizedEmail]);
+        ])->onlyInput('email');
     }
 
     public function showRegister(): View
     {
-        abort_unless((bool) Setting::get('enable_registration', true), 404);
-
         return view('auth.register');
     }
 
     public function register(Request $request): RedirectResponse
     {
-        abort_unless((bool) Setting::get('enable_registration', true), 404);
-
-        $email = Str::lower(trim($request->input('email', '')));
-
-        $data = $request->merge(['email' => $email])->validate([
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'terms' => ['accepted'],
-        ], [
+        ];
+
+        if (config('services.recaptcha.site_key')) {
+            $rules['g-recaptcha-response'] = ['required', 'string'];
+        }
+
+        $data = $request->validate($rules, [
+            'g-recaptcha-response.required' => 'Please complete the reCAPTCHA to continue.',
             'terms.accepted' => 'You must accept the Terms of Service and Privacy Policy.',
         ]);
+
+        if (config('services.recaptcha.site_key')) {
+            $ok = app(RecaptchaService::class)->verify(
+                $request->input('g-recaptcha-response'),
+                $request->ip()
+            );
+
+            if (!$ok) {
+                throw ValidationException::withMessages([
+                    'g-recaptcha-response' => 'reCAPTCHA verification failed. Please try again.',
+                ]);
+            }
+        }
 
         $user = User::create([
             'name' => $data['name'],

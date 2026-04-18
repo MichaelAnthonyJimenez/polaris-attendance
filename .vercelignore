@@ -1,0 +1,4 @@
+/vendor
+/node_modules
+/python/deepface/.venv
+**/.venv

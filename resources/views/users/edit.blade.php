@@ -23,11 +23,6 @@
                 </select>
             </div>
             <div>
-                <label class="form-label">Badge Number</label>
-                <input type="text" name="badge_number" value="{{ old('badge_number', $user->badge_number) }}" class="form-input" placeholder="Leave blank to assign the next number automatically">
-                <p class="text-xs text-slate-400 mt-1.5">Drivers: leave blank to keep the current badge. For a new driver (or Admin → Driver with no badge), the next sequential number is assigned automatically unless you enter a value.</p>
-            </div>
-            <div>
                 <label class="form-label">New Password (leave blank to keep current)</label>
                 <input type="password" name="password" class="form-input" minlength="8">
             </div>

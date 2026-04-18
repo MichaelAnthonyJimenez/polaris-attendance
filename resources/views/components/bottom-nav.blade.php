@@ -3,6 +3,7 @@
         || request()->routeIs('camera.*')
         || request()->routeIs('attendance.*')
         || request()->routeIs('announcements.*')
+        || request()->routeIs('notifications.*')
         || request()->routeIs('driver-verification.*')
         || request()->routeIs('verification.*')
         || request()->routeIs('profile.*')
@@ -10,7 +11,8 @@
         || request()->routeIs('reports.*')
         || request()->routeIs('audit-logs.*')
         || request()->routeIs('users.*')
-        || request()->routeIs('locations.*');
+        || request()->routeIs('locations.*')
+        || request()->routeIs('inbox.*');
 @endphp
 @if($showBottomNav)
 <div class="fixed bottom-0 left-0 right-0 z-40 w-full lg:hidden" style="padding-bottom: env(safe-area-inset-bottom, 0);">
@@ -63,7 +65,7 @@
         @endif
 
         @if(auth()->user()?->role === 'admin')
-        <button type="button" id="bottomNavMoreBtn" class="flex flex-col items-center justify-center flex-1 py-2 min-w-0 text-slate-300 hover:text-white transition-colors {{ (request()->routeIs('settings.index') || request()->routeIs('reports.*') || request()->routeIs('audit-logs.*') || request()->routeIs('locations.*')) ? 'text-blue-300' : '' }}" aria-label="More options">
+        <button type="button" id="bottomNavMoreBtn" class="flex flex-col items-center justify-center flex-1 py-2 min-w-0 text-slate-300 hover:text-white transition-colors {{ (request()->routeIs('settings.index') || request()->routeIs('reports.*') || request()->routeIs('audit-logs.*') || request()->routeIs('locations.*') || request()->routeIs('announcements.*')) ? 'text-blue-300' : '' }}" aria-label="More options">
             <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>

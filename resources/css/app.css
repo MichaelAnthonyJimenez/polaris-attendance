@@ -155,7 +155,7 @@
     }
 
     body.sidebar-collapsed #appMain {
-        @apply ml-20;
+        @apply ml-0 lg:ml-20;
     }
 
     #appMain {
@@ -164,10 +164,4 @@
         max-width: 100%;
     }
 
-    /* Admin mobile: hide footer, keep content above fold */
-    @media (max-width: 1023px) {
-        body.role-admin .app-footer {
-            display: none;
-        }
-    }
 }

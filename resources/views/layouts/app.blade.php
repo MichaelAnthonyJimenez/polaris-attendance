@@ -12,7 +12,7 @@
     <div class="min-h-screen flex">
         @auth
             <!-- Sidebar -->
-            <aside id="appSidebar" class="w-64 bg-slate-900/80 backdrop-blur-md border-r border-white/10 flex flex-col fixed h-screen z-20">
+            <aside id="appSidebar" class="hidden lg:flex w-64 bg-slate-900/80 backdrop-blur-md border-r border-white/10 flex-col fixed h-screen z-20">
                 <div class="p-6 border-b border-white/10">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
@@ -75,6 +75,13 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         <span>Attendance</span>
+                    </a>
+
+                    <a href="{{ route('announcements.index') }}" class="nav-link {{ request()->routeIs('announcements.*') ? 'active' : '' }}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1a1 1 0 01-1-1V8a4 4 0 118 0v7a1 1 0 01-1 1h-1m-7 0H9m4 4H9a2 2 0 01-2-2v-1m0-1a2 2 0 012-2h1"></path>
+                        </svg>
+                        <span>Announcements</span>
                     </a>
 
                     @if(auth()->user()?->role === 'admin')
@@ -154,7 +161,7 @@
             </aside>
 
             <!-- Main Content -->
-            <div id="appMain" class="flex-1 ml-64 flex flex-col min-h-screen">
+            <div id="appMain" class="flex-1 ml-0 lg:ml-64 flex flex-col min-h-screen w-full min-w-0">
                 <!-- Header (authenticated) -->
                 <nav class="sticky top-0 z-30 backdrop-blur bg-slate-900/70 border-b border-white/5">
                     <div class="shell flex items-center justify-between py-4">
@@ -163,7 +170,11 @@
                         </div>
 
                         @php
-                            $topbarUnreadCount = auth()->user()?->unreadNotifications()->count() ?? 0;
+                            $topbarUser = auth()->user();
+                            $topbarUnreadCount = $topbarUser?->unreadNotifications()->count() ?? 0;
+                            $topbarNotifications = $topbarUser
+                                ? $topbarUser->notifications()->latest()->limit(10)->get()
+                                : collect();
                         @endphp
                         <div class="flex items-center gap-2 sm:gap-3 text-sm text-slate-300 shrink-0">
                             @if(auth()->user()?->role === 'admin')
@@ -195,26 +206,135 @@
                                 </form>
                             @endif
                                 <span id="topbarClock" class="hidden sm:inline-flex items-center px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-slate-200 tabular-nums"></span>
-                            <a
-                                href="{{ route('notifications.index') }}"
-                                class="relative inline-flex items-center justify-center p-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                                aria-label="Notifications"
-                                title="Notifications"
-                            >
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                                </svg>
-                                @if($topbarUnreadCount > 0)
-                                    <span class="absolute -top-0.5 -right-0.5 inline-flex min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 py-0.5 text-[10px] font-semibold leading-none text-white">
-                                        {{ $topbarUnreadCount > 9 ? '9+' : $topbarUnreadCount }}
+                            <div class="relative shrink-0" id="topbarNotificationsWrap">
+                                <button
+                                    type="button"
+                                    id="topbarNotificationsBtn"
+                                    class="relative inline-flex items-center justify-center p-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                    aria-label="Notifications"
+                                    title="Notifications"
+                                    aria-expanded="false"
+                                    aria-haspopup="true"
+                                    aria-controls="topbarNotificationsPanel"
+                                >
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                                    </svg>
+                                    @if($topbarUnreadCount > 0)
+                                        <span class="absolute -top-0.5 -right-0.5 inline-flex min-w-[1.125rem] items-center justify-center rounded-full bg-red-500 px-1 py-0.5 text-[10px] font-semibold leading-none text-white">
+                                            {{ $topbarUnreadCount > 9 ? '9+' : $topbarUnreadCount }}
+                                        </span>
+                                    @endif
+                                </button>
+                                <div
+                                    id="topbarNotificationsPanel"
+                                    class="hidden absolute right-0 mt-2 w-[min(100vw-2rem,22rem)] max-w-[calc(100vw-2rem)] rounded-xl border border-white/10 bg-slate-900/95 backdrop-blur-md shadow-xl z-50"
+                                    role="region"
+                                    aria-label="Notification list"
+                                >
+                                    <div class="flex items-center justify-between gap-2 px-4 py-3 border-b border-white/10">
+                                        <p class="text-sm font-medium text-slate-100">Notifications</p>
+                                        @if($topbarUnreadCount > 0)
+                                            <form method="POST" action="{{ route('notifications.markAllRead') }}" class="shrink-0">
+                                                @csrf
+                                                <button type="submit" class="text-xs text-blue-400 hover:text-blue-300 whitespace-nowrap">Mark all read</button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                    <div class="max-h-80 overflow-y-auto">
+                                        @if($topbarNotifications->isEmpty())
+                                            <div class="px-4 py-8 text-sm text-slate-400 text-center">No notifications yet.</div>
+                                        @else
+                                            <ul class="divide-y divide-white/5">
+                                                @foreach($topbarNotifications as $notification)
+                                                    @php
+                                                        $rowMessage = $notification->data['message'] ?? class_basename($notification->type);
+                                                        $announcementId = $notification->data['announcement_id'] ?? null;
+                                                        $rowHref = $announcementId
+                                                            ? route('announcements.show', $announcementId)
+                                                            : route('notifications.index');
+                                                        $rowUnread = $notification->read_at === null;
+                                                    @endphp
+                                                    <li>
+                                                        <a
+                                                            href="{{ $rowHref }}"
+                                                            class="flex items-start gap-2 px-4 py-3 text-sm text-slate-100 hover:bg-white/5 transition"
+                                                        >
+                                                            <span class="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 {{ $rowUnread ? 'bg-blue-400' : 'bg-slate-600' }}" title="{{ $rowUnread ? 'Unread' : 'Read' }}"></span>
+                                                            <span class="min-w-0 flex-1">
+                                                                <span class="block text-slate-100 leading-snug break-words">{{ $rowMessage }}</span>
+                                                                <span class="mt-1 block text-[11px] text-slate-400">{{ $notification->created_at?->diffForHumans() }}</span>
+                                                            </span>
+                                                        </a>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        @endif
+                                    </div>
+                                    <div class="border-t border-white/10 px-4 py-2.5">
+                                        <a href="{{ route('notifications.index') }}" class="text-xs font-medium text-blue-400 hover:text-blue-300">View all notifications</a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Profile menu: sidebar is hidden below lg, so expose account actions in the top bar --}}
+                            <div class="relative shrink-0 lg:hidden" id="topbarProfileWrap">
+                                @php
+                                    $topbarDisplayName = $topbarUser?->name ?? 'User';
+                                    $topbarInitials = mb_strtoupper(collect(explode(' ', $topbarDisplayName))->take(2)->map(fn ($p) => mb_substr($p, 0, 1))->join('')) ?: 'U';
+                                @endphp
+                                <button
+                                    type="button"
+                                    id="topbarProfileBtn"
+                                    class="flex items-center gap-1.5 rounded-lg p-1.5 text-slate-300 hover:bg-white/5 hover:text-white transition focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                    aria-label="Account menu"
+                                    aria-expanded="false"
+                                    aria-haspopup="true"
+                                    aria-controls="topbarProfileMenu"
+                                >
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white/10 text-xs font-semibold text-white">
+                                        @if($topbarUser?->profile_photo_url)
+                                            <img src="{{ $topbarUser->profile_photo_url }}" alt="" class="h-full w-full object-cover">
+                                        @else
+                                            {{ $topbarInitials }}
+                                        @endif
                                     </span>
-                                @endif
-                            </a>
+                                    <svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                                <div
+                                    id="topbarProfileMenu"
+                                    class="hidden absolute right-0 z-50 mt-2 w-56 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-white/10 bg-slate-900/95 shadow-xl backdrop-blur-md"
+                                    role="menu"
+                                    aria-labelledby="topbarProfileBtn"
+                                >
+                                    <div class="border-b border-white/10 px-4 py-3">
+                                        <p class="truncate text-sm font-medium text-white">{{ $topbarDisplayName }}</p>
+                                        <p class="mt-0.5 truncate text-xs text-slate-400">{{ $topbarUser?->email }}</p>
+                                    </div>
+                                    <a href="{{ route('profile.show') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-200 hover:bg-white/5 hover:text-white transition" role="menuitem">
+                                        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                        Profile
+                                    </a>
+                                    <a href="{{ route('settings.index') }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-200 hover:bg-white/5 hover:text-white transition" role="menuitem">
+                                        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                        Settings
+                                    </a>
+                                    <form action="{{ route('logout') }}" method="POST" class="confirm-logout border-t border-white/10">
+                                        @csrf
+                                        <button type="submit" class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-200 hover:bg-white/5 hover:text-red-300 transition" role="menuitem">
+                                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                                            Logout
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </nav>
 
-                <main class="shell mt-8 space-y-6 pb-10 flex-1">
+                <main class="shell mt-8 space-y-6 pb-24 lg:pb-10 flex-1">
                     @if (session('status'))
                         <div class="alert-success">
                             {{ session('status') }}
@@ -236,7 +356,7 @@
                 </main>
 
                 <!-- Footer (authenticated) -->
-                <footer class="border-t border-white/10 bg-slate-900/50 backdrop-blur-md mt-auto">
+                <footer class="app-footer hidden border-t border-white/10 bg-slate-900/50 backdrop-blur-md mt-auto lg:block">
                     <div class="shell py-6">
                         <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                             <div class="text-slate-400 text-sm">
@@ -251,6 +371,7 @@
                     </div>
                 </footer>
             </div>
+            <x-bottom-nav />
         @else
             <!-- Public pages without sidebar -->
             <div class="w-full flex flex-col min-h-screen">
@@ -331,6 +452,75 @@
                 tick();
                 setInterval(tick, 1000 * 30);
             }
+
+            // Topbar notifications + mobile profile dropdowns
+            const topbarNotifWrap = document.getElementById('topbarNotificationsWrap');
+            const topbarNotifBtn = document.getElementById('topbarNotificationsBtn');
+            const topbarNotifPanel = document.getElementById('topbarNotificationsPanel');
+            const topbarProfileWrap = document.getElementById('topbarProfileWrap');
+            const topbarProfileBtn = document.getElementById('topbarProfileBtn');
+            const topbarProfileMenu = document.getElementById('topbarProfileMenu');
+
+            function closeTopbarNotifications() {
+                if (!topbarNotifPanel || !topbarNotifBtn) return;
+                topbarNotifPanel.classList.add('hidden');
+                topbarNotifBtn.setAttribute('aria-expanded', 'false');
+            }
+            function closeTopbarProfile() {
+                if (!topbarProfileMenu || !topbarProfileBtn) return;
+                topbarProfileMenu.classList.add('hidden');
+                topbarProfileBtn.setAttribute('aria-expanded', 'false');
+            }
+            function openTopbarNotifications() {
+                if (!topbarNotifPanel || !topbarNotifBtn) return;
+                closeTopbarProfile();
+                topbarNotifPanel.classList.remove('hidden');
+                topbarNotifBtn.setAttribute('aria-expanded', 'true');
+            }
+            function openTopbarProfile() {
+                if (!topbarProfileMenu || !topbarProfileBtn) return;
+                closeTopbarNotifications();
+                topbarProfileMenu.classList.remove('hidden');
+                topbarProfileBtn.setAttribute('aria-expanded', 'true');
+            }
+            function closeTopbarDropdowns() {
+                closeTopbarNotifications();
+                closeTopbarProfile();
+            }
+            if (topbarNotifWrap && topbarNotifBtn && topbarNotifPanel) {
+                topbarNotifBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    if (topbarNotifPanel.classList.contains('hidden')) {
+                        openTopbarNotifications();
+                    } else {
+                        closeTopbarNotifications();
+                    }
+                });
+                topbarNotifWrap.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                });
+            }
+            if (topbarProfileWrap && topbarProfileBtn && topbarProfileMenu) {
+                topbarProfileBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    if (topbarProfileMenu.classList.contains('hidden')) {
+                        openTopbarProfile();
+                    } else {
+                        closeTopbarProfile();
+                    }
+                });
+                topbarProfileWrap.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                });
+            }
+            document.addEventListener('click', function () {
+                closeTopbarDropdowns();
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    closeTopbarDropdowns();
+                }
+            });
 
             // Sidebar collapse/expand toggle (desktop)
             const appSidebar = document.getElementById('appSidebar');

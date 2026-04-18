@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="mx-auto w-full max-w-md">
+<div class="mx-auto w-full max-w-md sm:max-w-lg lg:max-w-xl">
     <div class="glass p-8">
         <h1 class="text-2xl font-bold text-white mb-6 text-center">Register</h1>
         <form method="POST" action="{{ route('register') }}" class="space-y-5">

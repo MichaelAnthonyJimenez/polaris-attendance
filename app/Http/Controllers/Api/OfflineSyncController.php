@@ -21,7 +21,7 @@ class OfflineSyncController extends Controller
 
         $payload = $request->validate([
             'events' => ['required', 'array'],
-            'events.*.driver_id' => ['required', 'exists:drivers,id'],
+            'events.*.driver_id' => ['required', 'exists:users,id'],
             'events.*.type' => ['required', 'in:check_in,check_out'],
             'events.*.captured_at' => ['nullable', 'date'],
             'events.*.face_confidence' => ['nullable', 'numeric'],

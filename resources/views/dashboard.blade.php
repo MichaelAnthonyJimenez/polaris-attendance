@@ -1,90 +1,105 @@
 @extends('layouts.app')
 
+@php
+    $role = mb_strtolower(trim((string) (auth()->user()?->role ?? '')));
+@endphp
+
 @section('content')
 <div class="space-y-6">
+    @php
+        $role = $role ?? mb_strtolower(trim((string) (auth()->user()?->role ?? '')));
+    @endphp
     <div class="glass p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
             <div class="text-sm text-slate-300">Welcome back</div>
-            <div class="text-2xl font-bold text-white">
+            <div class="{{ $role === 'driver' ? 'text-2xl md:text-3xl' : 'text-2xl' }} font-bold text-white">
                 {{ auth()->user()->name ?? 'User' }} @if(auth()->user()?->role) <span class="text-sm font-medium text-slate-300">({{ ucfirst(auth()->user()->role) }})</span> @endif
             </div>
         </div>
-        @if(auth()->user()?->role === 'admin')
+        @if($role === 'admin')
             <div class="text-sm text-slate-200">System status: <span class="text-emerald-300 font-semibold">Operational</span></div>
         @else
             <div class="text-sm text-slate-200">Ready for your next check-in.</div>
         @endif
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="glass p-6">
-            <div class="text-sm text-slate-300 mb-1">Total Drivers</div>
-            <div class="text-4xl font-bold text-white">{{ $driverCount }}</div>
+    @if($role === 'driver')
+    <div class="space-y-4 md:space-y-5">
+        <div class="grid grid-cols-2 gap-3 sm:gap-4">
+            <div class="glass p-4 sm:p-5 min-w-0">
+                <h2 class="text-sm sm:text-base font-semibold text-white leading-tight">Check-in Status</h2>
+                <p class="text-sm text-slate-300 mt-1.5 break-words">{{ data_get($driverDashboard, 'status.label', 'Not checked in') }}</p>
+                <div class="mt-2 text-xs text-slate-400 leading-snug">
+                    @if(data_get($driverDashboard, 'status.lastCheckInAt'))
+                        Last check-in: {{ data_get($driverDashboard, 'status.lastCheckInAt')?->format('M d, h:i A') }}
+                    @else
+                        Last check-in: none today
+                    @endif
+                </div>
+            </div>
+
+            <div class="glass p-4 sm:p-5 min-w-0 flex flex-col justify-center">
+                <div class="inline-flex items-center gap-1.5 sm:gap-2 text-slate-200 max-w-full min-w-0" role="timer" aria-live="polite" aria-label="Current time">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span id="driverHomeClock" class="font-mono text-lg sm:text-xl md:text-2xl tracking-tight text-emerald-300 tabular-nums">--:--:--</span>
+                </div>
+            </div>
         </div>
-        <div class="glass p-6">
-            <div class="text-sm text-slate-300 mb-1">Today Check-ins</div>
-            <div class="text-4xl font-bold text-white">{{ $todayCheckIns }}</div>
-        </div>
-        <div class="glass p-6">
-            <div class="text-sm text-slate-300 mb-1">Today Check-outs</div>
-            <div class="text-4xl font-bold text-white">{{ $todayCheckOuts }}</div>
+
+        <div class="glass p-5 md:p-6">
+            <h2 class="text-lg font-semibold text-white">Camera</h2>
+            <p class="text-sm text-slate-300 mt-1.5">Use camera to check in/out.</p>
+            <p id="driverLiveLocationStatus" class="text-xs text-slate-400 mt-2">
+                
+            </p>
+            <div class="mt-4">
+                <a href="{{ route('camera.index') }}" class="btn-primary text-sm px-4 py-2.5">Camera Check-in</a>
+            </div>
         </div>
     </div>
 
-    <div class="glass p-6">
-        <h2 class="text-xl font-bold text-white mb-4">Latest Attendance</h2>
-        <div class="overflow-x-auto">
-            <table class="table-glass">
-                <thead>
-                    <tr>
-                        <th>Driver</th>
-                        <th>Type</th>
-                        <th>Captured</th>
-                        <th>Face Match</th>
-                        <th>Liveness</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($latestAttendance as $row)
-                        <tr>
-                            <td class="font-medium">{{ $row->driver->name ?? 'Unknown' }}</td>
-                            <td>
-                                <span class="px-2 py-1 rounded text-xs {{ $row->type === 'check_in' ? 'bg-emerald-500/20 text-emerald-200' : 'bg-blue-500/20 text-blue-200' }}">
-                                    {{ str_replace('_', ' ', $row->type) }}
-                                </span>
-                            </td>
-                            <td>{{ $row->captured_at?->format('M d, H:i') }}</td>
-                            <td>
-                                @if($row->face_confidence)
-                                    <span class="text-emerald-300">{{ $row->face_confidence }}%</span>
-                                @else
-                                    <span class="text-slate-500">—</span>
-                                @endif
-                            </td>
-                            <td>
-                                @if($row->liveness_score)
-                                    <span class="text-emerald-300">{{ number_format($row->liveness_score, 2) }}</span>
-                                @else
-                                    <span class="text-slate-500">—</span>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="text-center py-8 text-slate-400">No attendance records yet.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+    <div class="grid grid-cols-1 gap-4 md:gap-5">
+        <div class="glass p-5 md:p-6">
+            <h3 class="text-lg font-semibold text-white">Last Activity</h3>
+            @if(data_get($driverDashboard, 'lastActivity'))
+                <div class="mt-3 text-sm text-slate-200">
+                    <span class="px-2.5 py-1 rounded-md text-xs {{ data_get($driverDashboard, 'lastActivity.type') === 'check_in' ? 'bg-emerald-500/20 text-emerald-200' : 'bg-blue-500/20 text-blue-200' }}">
+                        {{ str_replace('_', ' ', data_get($driverDashboard, 'lastActivity.type')) }}
+                    </span>
+                    <div class="mt-2 text-slate-300 text-sm">{{ data_get($driverDashboard, 'lastActivity.captured_at')?->format('M d, Y h:i A') }}</div>
+                </div>
+            @else
+                <div class="mt-3 text-sm text-slate-400">No activity yet.</div>
+            @endif
         </div>
-    </div>
 
-    @if(auth()->user()?->role === 'admin')
+    </div>
+    @endif
+
+    @if($role === 'admin')
     @php
-        $maxToday = max($todayCheckIns, $todayCheckOuts, 1);
-        $checkInPct = round(($todayCheckIns / $maxToday) * 100);
-        $checkOutPct = round(($todayCheckOuts / $maxToday) * 100);
+        $todayCheckInsVal = (int) ($todayCheckIns ?? 0);
+        $todayCheckOutsVal = (int) ($todayCheckOuts ?? 0);
+        $maxToday = max($todayCheckInsVal, $todayCheckOutsVal, 1);
+        $checkInPct = round(($todayCheckInsVal / $maxToday) * 100);
+        $checkOutPct = round(($todayCheckOutsVal / $maxToday) * 100);
     @endphp
+    <div class="grid grid-cols-3 gap-2 sm:gap-4">
+        <div class="glass p-3 sm:p-6 min-w-0">
+            <p class="text-[10px] sm:text-xs uppercase tracking-wide text-slate-400 leading-tight">Total Drivers</p>
+            <p class="mt-1 sm:mt-2 text-xl sm:text-2xl md:text-3xl font-bold text-white tabular-nums">{{ $driverCount }}</p>
+        </div>
+        <div class="glass p-3 sm:p-6 min-w-0">
+            <p class="text-[10px] sm:text-xs uppercase tracking-wide text-slate-400 leading-tight"><span class="hidden sm:inline">Today's </span>Check-ins</p>
+            <p class="mt-1 sm:mt-2 text-xl sm:text-2xl md:text-3xl font-bold text-emerald-300 tabular-nums">{{ $todayCheckInsVal ?? (int) ($todayCheckIns ?? 0) }}</p>
+        </div>
+        <div class="glass p-3 sm:p-6 min-w-0">
+            <p class="text-[10px] sm:text-xs uppercase tracking-wide text-slate-400 leading-tight"><span class="hidden sm:inline">Today's </span>Check-outs</p>
+            <p class="mt-1 sm:mt-2 text-xl sm:text-2xl md:text-3xl font-bold text-blue-300 tabular-nums">{{ $todayCheckOutsVal ?? (int) ($todayCheckOuts ?? 0) }}</p>
+        </div>
+    </div>
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <div class="glass p-6">
             <div class="flex items-center justify-between mb-4">
@@ -96,18 +111,18 @@
             <div class="space-y-3">
                 <div>
                     <div class="flex justify-between text-xs text-slate-300 mb-1">
-                        <span>Check-ins</span><span>{{ $todayCheckIns }}</span>
+                        <span>Check-ins</span><span>{{ $todayCheckInsVal ?? (int) ($todayCheckIns ?? 0) }}</span>
                     </div>
                     <div class="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-                        <div class="h-full bg-emerald-400/70" style="width: {{ $checkInPct }}%;"></div>
+                        <div class="h-full bg-emerald-400/70" style="width: {{ $checkInPct ?? 0 }}%;"></div>
                     </div>
                 </div>
                 <div>
                     <div class="flex justify-between text-xs text-slate-300 mb-1">
-                        <span>Check-outs</span><span>{{ $todayCheckOuts }}</span>
+                        <span>Check-outs</span><span>{{ $todayCheckOutsVal ?? (int) ($todayCheckOuts ?? 0) }}</span>
                     </div>
                     <div class="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-                        <div class="h-full bg-blue-400/70" style="width: {{ $checkOutPct }}%;"></div>
+                        <div class="h-full bg-blue-400/70" style="width: {{ $checkOutPct ?? 0 }}%;"></div>
                     </div>
                 </div>
             </div>
@@ -122,13 +137,24 @@
             <div class="grid grid-cols-2 gap-3 text-sm">
                 <a href="{{ route('reports.index') }}" class="nav-link">Reports</a>
                 <a href="{{ route('audit-logs.index') }}" class="nav-link">Audit Logs</a>
-                <a href="{{ route('drivers.index') }}" class="nav-link">Drivers</a>
+                <a href="{{ route('users.index', ['sort' => 'role_driver']) }}" class="nav-link">Drivers</a>
                 <a href="{{ route('users.index') }}" class="nav-link">Users</a>
+                    <a href="{{ route('announcements.index') }}" class="nav-link">Announcements</a>
                 <a href="{{ route('attendance.index') }}" class="nav-link">Attendance</a>
                 <a href="{{ route('settings.index') }}" class="nav-link">Settings</a>
             </div>
         </div>
     </div>
+
+    @if($role === 'admin' && !empty($chartData))
+    <div class="glass p-6">
+        <h3 class="text-lg font-semibold text-white mb-2">Status Breakdown (This Week)</h3>
+        <p class="text-xs text-slate-300 mb-4">Present, Late & Absent by date for the current week</p>
+        <div class="h-64">
+            <canvas id="statusBreakdownWeekChart"></canvas>
+        </div>
+    </div>
+    @endif
 
     @if(!empty($chartData))
     <!-- Charts Section -->
@@ -198,6 +224,31 @@
         Chart.defaults.backgroundColor = 'rgba(255, 255, 255, 0.05)';
 
         const chartData = @json($chartData);
+
+        // Status Breakdown (This Week) - by date
+        const statusWeekCtx = document.getElementById('statusBreakdownWeekChart');
+        if (statusWeekCtx && chartData.statusByDateLabels && chartData.statusByDateLabels.length) {
+            new Chart(statusWeekCtx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.statusByDateLabels,
+                    datasets: [
+                        { label: 'Present', data: chartData.statusByDatePresent || [], backgroundColor: 'rgba(16, 185, 129, 0.7)', borderColor: 'rgba(16, 185, 129, 0.9)', borderWidth: 1 },
+                        { label: 'Late', data: chartData.statusByDateLate || [], backgroundColor: 'rgba(245, 158, 11, 0.7)', borderColor: 'rgba(245, 158, 11, 0.9)', borderWidth: 1 },
+                        { label: 'Absent', data: chartData.statusByDateAbsent || [], backgroundColor: 'rgba(239, 68, 68, 0.7)', borderColor: 'rgba(239, 68, 68, 0.9)', borderWidth: 1 },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#cbd5e1' } } },
+                    scales: {
+                        y: { beginAtZero: true, stacked: false, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { stacked: false, ticks: { color: '#94a3b8' }, grid: { display: false } },
+                    },
+                },
+            });
+        }
 
         // Weekly Trends Line Chart
         const weeklyCtx = document.getElementById('weeklyTrendsChart');
@@ -407,74 +458,215 @@
     </script>
     @endpush
     @endif
-    @endif
 
-    @if(auth()->user()?->role === 'driver')
+    <!-- Recent Activity (always visible to admin) -->
     <div class="glass p-6">
-        <div class="flex items-center justify-between mb-4">
-            <div>
-                <h2 class="text-xl font-bold text-white">Camera Check-in</h2>
-                <p class="muted text-sm">Use your camera to capture a quick selfie before attendance.</p>
-            </div>
-            <div class="flex gap-2">
-                <button id="startCam" type="button" class="btn-primary text-sm">Start Camera</button>
-                <button id="stopCam" type="button" class="btn-secondary text-sm">Stop</button>
-                <button id="captureBtn" type="button" class="btn-secondary text-sm">Capture</button>
-            </div>
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <h3 class="text-lg font-semibold text-white">Recent Activity</h3>
+            <a href="{{ route('attendance.index') }}" class="btn-secondary text-xs px-3 py-2">View all</a>
         </div>
-        <div class="grid md:grid-cols-2 gap-4">
-            <div class="rounded-xl overflow-hidden border border-white/10 bg-black/40">
-                <video id="driverVideo" class="w-full aspect-video" autoplay playsinline muted></video>
-            </div>
-            <div class="rounded-xl overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
-                <canvas id="driverCanvas" class="w-full"></canvas>
-            </div>
-        </div>
-        <p class="text-xs text-slate-300 mt-3">Note: Capture is local only. Integrate with attendance upload to store.</p>
+        <ul class="space-y-2">
+            @forelse ($recentActivity ?? [] as $row)
+                <li class="flex items-center gap-3 py-2.5 border-b border-white/5 last:border-0">
+                    <span class="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium {{ data_get($row, 'type') === 'check_in' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-blue-500/20 text-blue-300' }}">
+                        {{ data_get($row, 'type') === 'check_in' ? 'In' : 'Out' }}
+                    </span>
+                    <div class="min-w-0 flex-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                        <span class="font-medium text-white">{{ data_get($row, 'driver.name', 'Unknown') }}</span>
+                        <span class="text-slate-400">{{ data_get($row, 'type') === 'check_in' ? 'checked in' : 'checked out' }}</span>
+                        <span class="text-slate-500 text-sm">· {{ data_get($row, 'captured_at')?->format('M j, g:i A') }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        @if(data_get($row, 'id'))
+                            <a href="{{ route('attendance.show', data_get($row, 'id')) }}" class="btn-secondary text-xs px-3 py-2">View</a>
+                        @endif
+                    </div>
+                </li>
+            @empty
+                <li class="text-slate-400 py-6 text-center">No recent activity.</li>
+            @endforelse
+        </ul>
     </div>
-
-    <script>
-        (() => {
-            const video = document.getElementById('driverVideo');
-            const canvas = document.getElementById('driverCanvas');
-            const startBtn = document.getElementById('startCam');
-            const stopBtn = document.getElementById('stopCam');
-            const captureBtn = document.getElementById('captureBtn');
-            let stream;
-
-            async function startCamera() {
-                try {
-                    stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                    video.srcObject = stream;
-                } catch (err) {
-                    alert('Unable to access camera. Please check permissions.');
-                    console.error(err);
-                }
-            }
-
-            function stopCamera() {
-                if (stream) {
-                    stream.getTracks().forEach(t => t.stop());
-                    stream = null;
-                    video.srcObject = null;
-                }
-            }
-
-            function captureFrame() {
-                if (!video.videoWidth) return;
-                const ctx = canvas.getContext('2d');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            }
-
-            startBtn?.addEventListener('click', startCamera);
-            stopBtn?.addEventListener('click', stopCamera);
-            captureBtn?.addEventListener('click', captureFrame);
-            window.addEventListener('beforeunload', stopCamera);
-        })();
-    </script>
     @endif
+
 </div>
 @endsection
+
+@push('scripts')
+@if($role === 'driver')
+<script>
+    (function() {
+        const el = document.getElementById('driverHomeClock');
+        if (!el) return;
+        function pad(n) { return n < 10 ? '0' + n : String(n); }
+        function tick() {
+            const d = new Date();
+            const hours24 = d.getHours();
+            const meridiem = hours24 >= 12 ? 'PM' : 'AM';
+            const hours12 = hours24 % 12 || 12;
+            el.textContent = `${pad(hours12)}:${pad(d.getMinutes())}:${pad(d.getSeconds())} ${meridiem}`;
+        }
+        tick();
+        setInterval(tick, 1000);
+    })();
+</script>
+<script>
+    (function () {
+        const sharingEnabled = @json(!empty($driverLocationSharingEnabled));
+        if (!sharingEnabled || !navigator.geolocation) return;
+
+        const statusEl = document.getElementById('driverLiveLocationStatus');
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        const endpoint = @json(route('locations.live-update'));
+
+        let lastSentAt = 0;
+        const minIntervalMs = 15000;
+
+        function setStatus(text) {
+            if (statusEl) statusEl.textContent = text;
+        }
+
+        function sendLocation(position) {
+            const now = Date.now();
+            if (now - lastSentAt < minIntervalMs) return;
+            lastSentAt = now;
+
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    geo_accuracy: position.coords.accuracy,
+                    speed: position.coords.speed ?? null,
+                    heading: position.coords.heading ?? null,
+                }),
+            })
+                .then((response) => response.ok ? response.json() : Promise.reject(response))
+                .then(() => setStatus('Live location shared with admin.'))
+                .catch(() => {});
+        }
+
+        navigator.geolocation.watchPosition(
+            sendLocation,
+            () => setStatus('Location permission denied or unavailable.'),
+            { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
+        );
+    })();
+</script>
+<script>
+    (function () {
+        const cfg = @json($driverReminderClient ?? null);
+        if (!cfg || !cfg.enabled || !cfg.adminReminders) return;
+
+        function playSound() {
+            if (!cfg.sound) return;
+            if (typeof window.polarisPlayNotifySound === 'function') {
+                window.polarisPlayNotifySound();
+                return;
+            }
+            try {
+                const Ctx = window.AudioContext || window.webkitAudioContext;
+                if (!Ctx) return;
+                const ctx = new Ctx();
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.connect(g);
+                g.connect(ctx.destination);
+                o.type = 'sine';
+                o.frequency.value = 660;
+                g.gain.setValueAtTime(0.06, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+                o.start(ctx.currentTime);
+                o.stop(ctx.currentTime + 0.18);
+            } catch (e) { /* ignore */ }
+        }
+
+        function todayKey(suffix) {
+            return 'polaris_drv_rm_' + suffix + '_' + new Date().toISOString().slice(0, 10);
+        }
+
+        function parseToday(hm) {
+            const p = String(hm || '09:00').split(':');
+            const d = new Date();
+            d.setHours(parseInt(p[0], 10) || 0, parseInt(p[1], 10) || 0, 0, 0);
+            return d.getTime();
+        }
+
+        function canFireRepeat(storageKey) {
+            if (!cfg.repeat) {
+                return sessionStorage.getItem(storageKey) !== '1';
+            }
+            const last = parseInt(sessionStorage.getItem(storageKey) || '0', 10);
+            if (!last) return true;
+            return Date.now() - last >= cfg.snoozeMin * 60000;
+        }
+
+        function markFire(storageKey) {
+            if (!cfg.repeat) {
+                sessionStorage.setItem(storageKey, '1');
+            } else {
+                sessionStorage.setItem(storageKey, String(Date.now()));
+            }
+        }
+
+        function maybeNotify() {
+            if (!cfg.showNotifications || !('Notification' in window)) return;
+            if (Notification.permission !== 'granted') return;
+
+            const now = Date.now();
+            const ciTarget = parseToday(cfg.checkinTime);
+            const coTarget = parseToday(cfg.checkoutTime);
+            const beforeMs = cfg.beforeMin * 60000;
+
+            if (
+                cfg.notifyCheckin &&
+                !cfg.hasCheckedInToday &&
+                now >= ciTarget - beforeMs &&
+                now <= ciTarget + 3 * 3600000
+            ) {
+                const key = todayKey('ci');
+                if (canFireRepeat(key)) {
+                    new Notification('Check-in reminder', {
+                        body: 'Remember to check in.',
+                        silent: !!cfg.sound,
+                    });
+                    if (cfg.sound) playSound();
+                    markFire(key);
+                }
+            }
+
+            if (
+                cfg.notifyCheckout &&
+                cfg.hasCheckedInToday &&
+                !cfg.hasCheckedOutToday &&
+                now >= coTarget - beforeMs &&
+                now <= coTarget + 4 * 3600000
+            ) {
+                const key = todayKey('co');
+                if (canFireRepeat(key)) {
+                    new Notification('Check-out reminder', {
+                        body: 'Remember to check out.',
+                        silent: !!cfg.sound,
+                    });
+                    if (cfg.sound) playSound();
+                    markFire(key);
+                }
+            }
+        }
+
+        if (cfg.showNotifications && 'Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission().catch(function () {});
+        }
+
+        maybeNotify();
+        setInterval(maybeNotify, 30000);
+    })();
+</script>
+@endif
+@endpush
 

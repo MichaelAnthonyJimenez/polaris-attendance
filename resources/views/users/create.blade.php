@@ -22,6 +22,11 @@
                 </select>
             </div>
             <div>
+                <label class="form-label">Badge Number</label>
+                <input type="text" name="badge_number" value="{{ old('badge_number') }}" class="form-input" placeholder="Leave blank to assign the next number automatically">
+                <p class="text-xs text-slate-400 mt-1.5">Drivers only: leave blank for the next sequential badge, or enter a custom value.</p>
+            </div>
+            <div>
                 <label class="form-label">Password</label>
                 <input type="password" name="password" required class="form-input" minlength="8">
             </div>

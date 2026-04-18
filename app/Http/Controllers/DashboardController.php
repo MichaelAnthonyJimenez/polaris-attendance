@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attendance;
-use App\Models\Driver;
+use App\Models\DriverVerification;
+use App\Models\Setting;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -14,19 +16,26 @@ class DashboardController extends Controller
     public function __invoke(): View
     {
         $today = Carbon::today();
+        $role = is_string(Auth::user()?->role) ? mb_strtolower(trim((string) Auth::user()?->role)) : '';
 
+        $driverReminderClient = null;
         $driverFilterId = null;
 
-        if (Auth::user()?->role === 'driver') {
-            // Ensure we have a driver mapped to this user
-            $driver = Driver::firstOrCreate(
-                ['badge_number' => 'user-'.Auth::id()],
-                ['name' => Auth::user()->name ?? 'Driver '.Auth::id(), 'active' => true]
-            );
+        if ($role === 'driver') {
+            $driver = User::query()->where('id', Auth::id())->where('role', 'driver')->first();
             $driverFilterId = $driver->id;
         }
 
-        $driverCount = $driverFilterId ? 1 : Driver::count();
+        // Verification status for drivers
+        $hasPendingVerification = false;
+        $needsVerification = false;
+        if ($role === 'driver') {
+            $hasPendingVerification = DriverVerification::where('user_id', Auth::id())->where('status', 'pending')->exists();
+            $hasApproved = DriverVerification::where('user_id', Auth::id())->where('status', 'approved')->exists();
+            $needsVerification = ! $hasApproved && ! $hasPendingVerification;
+        }
+
+        $driverCount = $driverFilterId ? 1 : User::where('role', 'driver')->count();
 
         $todayCheckIns = Attendance::whereDate('captured_at', $today)
             ->where('type', 'check_in')
@@ -44,10 +53,97 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        // Chart data for admin dashboard
+        $recentActivity = Attendance::with('driver')
+            ->latest('captured_at')
+            ->limit(15)
+            ->get();
+
+        $driverDashboard = [
+            'status' => null,
+            'lastActivity' => null,
+            'recentActivity' => [],
+            'history' => [],
+            'calendar' => [],
+        ];
+
+        if ($driverFilterId) {
+            $todayCheckIn = Attendance::where('driver_id', $driverFilterId)
+                ->whereDate('captured_at', $today)
+                ->where('type', 'check_in')
+                ->latest('captured_at')
+                ->first();
+
+            $todayCheckOut = Attendance::where('driver_id', $driverFilterId)
+                ->whereDate('captured_at', $today)
+                ->where('type', 'check_out')
+                ->latest('captured_at')
+                ->first();
+
+            $statusLabel = 'Not checked in';
+            if ($todayCheckOut) {
+                $statusLabel = 'Checked out';
+            } elseif ($todayCheckIn) {
+                $statusLabel = 'Checked in';
+            }
+
+            $lastActivity = Attendance::where('driver_id', $driverFilterId)
+                ->latest('captured_at')
+                ->first();
+
+            $historyRows = Attendance::where('driver_id', $driverFilterId)
+                ->latest('captured_at')
+                ->limit(500)
+                ->get();
+
+            $driverRecentActivity = Attendance::where('driver_id', $driverFilterId)
+                ->latest('captured_at')
+                ->limit(5)
+                ->get();
+
+            $monthStart = Carbon::today()->startOfMonth();
+            $monthEnd = Carbon::today()->endOfMonth();
+            $monthRows = Attendance::where('driver_id', $driverFilterId)
+                ->whereBetween('captured_at', [$monthStart, $monthEnd])
+                ->get();
+
+            $calendarRows = $monthRows->groupBy(fn ($row) => $row->captured_at->format('Y-m-d'));
+            $calendarDays = [];
+            foreach ($calendarRows as $dateKey => $rows) {
+                $hasCheckOut = $rows->contains(fn ($r) => $r->type === 'check_out');
+                $hasCheckIn = $rows->contains(fn ($r) => $r->type === 'check_in');
+                $calendarDays[$dateKey] = $hasCheckOut ? 'check_out' : ($hasCheckIn ? 'check_in' : null);
+            }
+
+            $driverDashboard = [
+                'status' => [
+                    'label' => $statusLabel,
+                    'lastCheckInAt' => $todayCheckIn?->captured_at,
+                    'lastCheckOutAt' => $todayCheckOut?->captured_at,
+                ],
+                'lastActivity' => $lastActivity,
+                'recentActivity' => $driverRecentActivity,
+                'history' => $historyRows->map(fn ($row) => [
+                    'type' => $row->type,
+                    'captured_at' => $row->captured_at?->toIso8601String(),
+                    'captured_label' => $row->captured_at?->format('M d, Y h:i A'),
+                    'face_confidence' => $row->face_confidence,
+                    'liveness_score' => $row->liveness_score,
+                    'device_id' => $row->device_id,
+                ])->values()->all(),
+                'calendar' => [
+                    'monthName' => Carbon::today()->format('F Y'),
+                    'daysInMonth' => Carbon::today()->daysInMonth,
+                    'firstDayOfWeek' => Carbon::today()->startOfMonth()->dayOfWeek,
+                    'days' => $calendarDays,
+                ],
+            ];
+        }
+
+        // Chart data and summary for admin dashboard
         $chartData = [];
-        
-        if (Auth::user()?->role === 'admin' && !$driverFilterId) {
+        $adminSummary = null;
+
+        if ($role === 'admin' && !$driverFilterId) {
             // Last 7 days attendance trends
             $last7Days = [];
             for ($i = 6; $i >= 0; $i--) {
@@ -80,12 +176,12 @@ class DashboardController extends Controller
             // Top 5 drivers by attendance (last 30 days)
             $topDrivers = Attendance::select(
                     'driver_id',
-                    DB::raw('drivers.name as driver_name'),
+                    DB::raw('users.name as driver_name'),
                     DB::raw('COUNT(*) as attendance_count')
                 )
-                ->join('drivers', 'attendances.driver_id', '=', 'drivers.id')
+                ->join('users', 'attendances.driver_id', '=', 'users.id')
                 ->where('captured_at', '>=', Carbon::today()->subDays(30))
-                ->groupBy('driver_id', 'drivers.name')
+                ->groupBy('driver_id', 'users.name')
                 ->orderByDesc('attendance_count')
                 ->limit(5)
                 ->get();
@@ -104,11 +200,11 @@ class DashboardController extends Controller
 
             // Hourly distribution for today (process in PHP for database compatibility)
             $todayAttendances = Attendance::whereDate('captured_at', $today)->get();
-            
+
             $hourlyCheckIns = array_fill(0, 24, 0);
             $hourlyCheckOuts = array_fill(0, 24, 0);
             $hourlyLabels = [];
-            
+
             foreach ($todayAttendances as $attendance) {
                 $hour = (int)$attendance->captured_at->format('H');
                 if ($attendance->type === 'check_in') {
@@ -117,9 +213,127 @@ class DashboardController extends Controller
                     $hourlyCheckOuts[$hour]++;
                 }
             }
-            
+
             for ($h = 0; $h < 24; $h++) {
                 $hourlyLabels[] = sprintf('%02d:00', $h);
+            }
+
+            // Status counts: Present / Late / Absent for Today, This Week and This Month
+            $presentToday = Attendance::whereDate('captured_at', $today)
+                ->where('type', 'check_in')
+                ->when($driverFilterId, fn ($q) => $q->where('driver_id', $driverFilterId))
+                ->get()
+                ->filter(fn ($a) => $a->status === 'Present')
+                ->count();
+
+            $lateToday = Attendance::whereDate('captured_at', $today)
+                ->where('type', 'check_in')
+                ->when($driverFilterId, fn ($q) => $q->where('driver_id', $driverFilterId))
+                ->get()
+                ->filter(fn ($a) => $a->status === 'Late')
+                ->count();
+
+            $absentToday = User::where('role', 'driver')->when($driverFilterId, fn ($q) => $q->where('id', $driverFilterId))
+                ->where('active', true)
+                ->whereDoesntHave('attendances', fn ($q) => $q->whereDate('captured_at', $today)->where('type', 'check_in'))
+                ->count();
+
+            $presentWeek = Attendance::whereBetween('captured_at', [$thisWeekStart, $thisWeekEnd])
+                ->where('type', 'check_in')
+                ->when($driverFilterId, fn ($q) => $q->where('driver_id', $driverFilterId))
+                ->get()
+                ->filter(fn ($a) => $a->status === 'Present')
+                ->count();
+
+            $lateWeek = Attendance::whereBetween('captured_at', [$thisWeekStart, $thisWeekEnd])
+                ->where('type', 'check_in')
+                ->when($driverFilterId, fn ($q) => $q->where('driver_id', $driverFilterId))
+                ->get()
+                ->filter(fn ($a) => $a->status === 'Late')
+                ->count();
+
+            $absentWeek = User::where('role', 'driver')->when($driverFilterId, fn ($q) => $q->where('id', $driverFilterId))
+                ->where('active', true)
+                ->whereDoesntHave('attendances', fn ($q) => $q->whereBetween('captured_at', [$thisWeekStart, $thisWeekEnd])->where('type', 'check_in'))
+                ->count();
+
+            $monthStart = Carbon::today()->startOfMonth();
+            $monthEnd = Carbon::today()->endOfMonth();
+
+            $presentMonth = Attendance::whereBetween('captured_at', [$monthStart, $monthEnd])
+                ->where('type', 'check_in')
+                ->when($driverFilterId, fn ($q) => $q->where('driver_id', $driverFilterId))
+                ->get()
+                ->filter(fn ($a) => $a->status === 'Present')
+                ->count();
+
+            $lateMonth = Attendance::whereBetween('captured_at', [$monthStart, $monthEnd])
+                ->where('type', 'check_in')
+                ->when($driverFilterId, fn ($q) => $q->where('driver_id', $driverFilterId))
+                ->get()
+                ->filter(fn ($a) => $a->status === 'Late')
+                ->count();
+
+            $absentMonth = User::where('role', 'driver')->when($driverFilterId, fn ($q) => $q->where('id', $driverFilterId))
+                ->where('active', true)
+                ->whereDoesntHave('attendances', fn ($q) => $q->whereBetween('captured_at', [$monthStart, $monthEnd])->where('type', 'check_in'))
+                ->count();
+
+            $weekCheckIns = Attendance::whereBetween('captured_at', [$thisWeekStart, $thisWeekEnd])
+                ->where('type', 'check_in')
+                ->count();
+            $weekCheckOuts = Attendance::whereBetween('captured_at', [$thisWeekStart, $thisWeekEnd])
+                ->where('type', 'check_out')
+                ->count();
+            $monthCheckIns = Attendance::whereBetween('captured_at', [$monthStart, $monthEnd])
+                ->where('type', 'check_in')
+                ->count();
+            $monthCheckOuts = Attendance::whereBetween('captured_at', [$monthStart, $monthEnd])
+                ->where('type', 'check_out')
+                ->count();
+
+            $adminSummary = [
+                'today' => [
+                    'check_ins' => $todayCheckIns,
+                    'check_outs' => $todayCheckOuts,
+                    'present' => $presentToday,
+                    'late' => $lateToday,
+                    'absent' => $absentToday,
+                ],
+                'week' => [
+                    'check_ins' => $weekCheckIns,
+                    'check_outs' => $weekCheckOuts,
+                    'present' => $presentWeek,
+                    'late' => $lateWeek,
+                    'absent' => $absentWeek,
+                ],
+                'month' => [
+                    'check_ins' => $monthCheckIns,
+                    'check_outs' => $monthCheckOuts,
+                    'present' => $presentMonth,
+                    'late' => $lateMonth,
+                    'absent' => $absentMonth,
+                ],
+            ];
+
+            // Status by date (this week) for Status Breakdown chart
+            $activeDriverCount = User::where('role', 'driver')->where('active', true)->count();
+            $weekDates = [];
+            $statusByDatePresent = [];
+            $statusByDateLate = [];
+            $statusByDateAbsent = [];
+            for ($i = 0; $i < 7; $i++) {
+                $date = $thisWeekStart->copy()->addDays($i);
+                $weekDates[] = $date->format('D j'); // e.g. "Mon 2"
+                $dayCheckIns = Attendance::whereDate('captured_at', $date)
+                    ->where('type', 'check_in')
+                    ->get();
+                $present = $dayCheckIns->filter(fn ($a) => $a->status === 'Present')->count();
+                $late = $dayCheckIns->filter(fn ($a) => $a->status === 'Late')->count();
+                $driversCheckedIn = $dayCheckIns->pluck('driver_id')->unique()->count();
+                $statusByDatePresent[] = $present;
+                $statusByDateLate[] = $late;
+                $statusByDateAbsent[] = max(0, $activeDriverCount - $driversCheckedIn);
             }
 
             $chartData = [
@@ -133,6 +347,14 @@ class DashboardController extends Controller
                 'hourlyLabels' => $hourlyLabels,
                 'hourlyCheckIns' => $hourlyCheckIns,
                 'hourlyCheckOuts' => $hourlyCheckOuts,
+                'statusLabels' => ['Today', 'This Week', 'This Month'],
+                'presentCounts' => [$presentToday, $presentWeek, $presentMonth],
+                'lateCounts' => [$lateToday, $lateWeek, $lateMonth],
+                'absentCounts' => [$absentToday, $absentWeek, $absentMonth],
+                'statusByDateLabels' => $weekDates,
+                'statusByDatePresent' => $statusByDatePresent,
+                'statusByDateLate' => $statusByDateLate,
+                'statusByDateAbsent' => $statusByDateAbsent,
             ];
         }
 
@@ -141,7 +363,15 @@ class DashboardController extends Controller
             'todayCheckIns' => $todayCheckIns,
             'todayCheckOuts' => $todayCheckOuts,
             'latestAttendance' => $latestAttendance,
+            'recentActivity' => $recentActivity,
             'chartData' => $chartData,
+            'adminSummary' => $adminSummary,
+            'hasPendingVerification' => $hasPendingVerification ?? false,
+            'needsVerification' => $needsVerification ?? false,
+            'driverSelfId' => $driverFilterId,
+            'driverDashboard' => $driverDashboard,
+            'driverReminderClient' => $driverReminderClient,
+            'driverLocationSharingEnabled' => (bool) (Auth::user()?->location_sharing_enabled ?? false),
         ]);
     }
 }

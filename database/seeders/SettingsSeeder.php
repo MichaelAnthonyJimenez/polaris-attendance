@@ -87,14 +87,14 @@ class SettingsSeeder extends Seeder
             ['key' => 'enable_performance_monitoring', 'value' => '0', 'type' => 'boolean', 'group' => 'general', 'description' => 'Enable performance monitoring'],
             ['key' => 'enable_debug_mode', 'value' => '0', 'type' => 'boolean', 'group' => 'general', 'description' => 'Enable debug mode'],
             ['key' => 'enable_developer_tools', 'value' => '0', 'type' => 'boolean', 'group' => 'general', 'description' => 'Enable developer tools'],
-            
+
             // Admin Settings - System Configuration
             ['key' => 'maintenance_mode', 'value' => '0', 'type' => 'boolean', 'group' => 'admin_system', 'description' => 'Enable maintenance mode'],
             ['key' => 'session_timeout', 'value' => '120', 'type' => 'integer', 'group' => 'admin_system', 'description' => 'Session timeout in minutes'],
             ['key' => 'max_login_attempts', 'value' => '5', 'type' => 'integer', 'group' => 'admin_system', 'description' => 'Maximum login attempts before lockout'],
             ['key' => 'password_min_length', 'value' => '8', 'type' => 'integer', 'group' => 'admin_system', 'description' => 'Minimum password length'],
             ['key' => 'require_password_change', 'value' => '0', 'type' => 'boolean', 'group' => 'admin_system', 'description' => 'Require password change on first login'],
-            
+
             // Admin Settings - Attendance
             ['key' => 'face_recognition_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_attendance', 'description' => 'Enable facial recognition'],
             ['key' => 'liveness_detection_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_attendance', 'description' => 'Enable liveness detection'],
@@ -102,104 +102,112 @@ class SettingsSeeder extends Seeder
             ['key' => 'min_liveness_score', 'value' => '0.7', 'type' => 'string', 'group' => 'admin_attendance', 'description' => 'Minimum liveness score'],
             ['key' => 'auto_checkout_hours', 'value' => '8', 'type' => 'integer', 'group' => 'admin_attendance', 'description' => 'Auto checkout after hours (0 to disable)'],
             ['key' => 'attendance_reminder_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_attendance', 'description' => 'Enable attendance reminders'],
-            
+
             // Admin Settings - Face Recognition
             ['key' => 'face_recognition_provider', 'value' => 'default', 'type' => 'string', 'group' => 'admin_face_recognition', 'description' => 'Face recognition provider'],
             ['key' => 'max_face_images_per_driver', 'value' => '5', 'type' => 'integer', 'group' => 'admin_face_recognition', 'description' => 'Maximum face images per driver'],
             ['key' => 'face_matching_threshold', 'value' => '0.85', 'type' => 'string', 'group' => 'admin_face_recognition', 'description' => 'Face matching threshold (0-1)'],
-            
+
             // Admin Settings - Notifications
             ['key' => 'email_notifications_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_notifications', 'description' => 'Enable email notifications'],
             ['key' => 'sms_notifications_enabled', 'value' => '0', 'type' => 'boolean', 'group' => 'admin_notifications', 'description' => 'Enable SMS notifications'],
             ['key' => 'notification_email', 'value' => 'admin@polaris.test', 'type' => 'string', 'group' => 'admin_notifications', 'description' => 'Admin notification email'],
             ['key' => 'notify_on_checkin', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_notifications', 'description' => 'Notify on driver check-in'],
             ['key' => 'notify_on_checkout', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_notifications', 'description' => 'Notify on driver check-out'],
-            
+
             // Admin Settings - Security
             ['key' => 'two_factor_enabled', 'value' => '0', 'type' => 'boolean', 'group' => 'admin_security', 'description' => 'Enable two-factor authentication'],
             ['key' => 'ip_whitelist_enabled', 'value' => '0', 'type' => 'boolean', 'group' => 'admin_security', 'description' => 'Enable IP whitelist'],
             ['key' => 'audit_log_retention_days', 'value' => '90', 'type' => 'integer', 'group' => 'admin_security', 'description' => 'Audit log retention (days)'],
             ['key' => 'encrypt_sensitive_data', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_security', 'description' => 'Encrypt sensitive data'],
-            
+
             // Admin Settings - Display
             ['key' => 'items_per_page', 'value' => '20', 'type' => 'integer', 'group' => 'admin_display', 'description' => 'Items per page in lists'],
             ['key' => 'date_format', 'value' => 'Y-m-d', 'type' => 'string', 'group' => 'admin_display', 'description' => 'Date format'],
             ['key' => 'time_format', 'value' => 'H:i', 'type' => 'string', 'group' => 'admin_display', 'description' => 'Time format'],
             ['key' => 'theme', 'value' => 'dark', 'type' => 'string', 'group' => 'admin_display', 'description' => 'Theme (dark/light)'],
-            
+
             // Driver Settings - Preferences
             ['key' => 'driver_theme', 'value' => 'dark', 'type' => 'string', 'group' => 'driver_preferences', 'description' => 'Preferred theme'],
             ['key' => 'driver_language', 'value' => 'en', 'type' => 'string', 'group' => 'driver_preferences', 'description' => 'Preferred language'],
             ['key' => 'driver_timezone', 'value' => 'UTC', 'type' => 'string', 'group' => 'driver_preferences', 'description' => 'Preferred timezone'],
-            ['key' => 'show_notifications', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_preferences', 'description' => 'Show browser notifications'],
-            
+
+            // Driver Settings - Camera (automation)
+            ['key' => 'auto_capture_photo', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_camera', 'description' => 'Automatically capture once the preview is ready'],
+            ['key' => 'auto_submit_camera', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_camera', 'description' => 'Automatically submit right after capture'],
+
             // Driver Settings - Notifications
-            ['key' => 'driver_email_notifications', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_notifications', 'description' => 'Receive email notifications'],
+            ['key' => 'show_notifications', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_notifications', 'description' => 'Allow browser notifications'],
+            ['key' => 'driver_email_notifications', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_notifications', 'description' => 'Receive attendance emails'],
+            ['key' => 'driver_email_on_checkin', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_notifications', 'description' => 'Email when you check in'],
+            ['key' => 'driver_email_on_checkout', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_notifications', 'description' => 'Email when you check out'],
+            ['key' => 'driver_browser_notify_checkin', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_notifications', 'description' => 'Browser alert when you check in'],
+            ['key' => 'driver_browser_notify_checkout', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_notifications', 'description' => 'Browser alert when you check out'],
+            ['key' => 'notify_checkin_reminder', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_notifications', 'description' => 'Remind me to check in (see Reminders schedule)'],
+            ['key' => 'notify_checkout_reminder', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_notifications', 'description' => 'Remind me to check out (see Reminders schedule)'],
+            ['key' => 'driver_notification_sound', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_notifications', 'description' => 'Play sound with reminders and attendance alerts'],
             ['key' => 'driver_sms_notifications', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_notifications', 'description' => 'Receive SMS notifications'],
-            ['key' => 'notify_checkin_reminder', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_notifications', 'description' => 'Notify me to check in'],
-            ['key' => 'notify_checkout_reminder', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_notifications', 'description' => 'Notify me to check out'],
-            ['key' => 'notification_sound', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_notifications', 'description' => 'Play notification sound'],
-            
-            // Driver Settings - Attendance
-            ['key' => 'auto_capture_photo', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_attendance', 'description' => 'Auto capture photo on attendance'],
+            ['key' => 'driver_announcement_in_app', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_notifications', 'description' => 'Receive announcements in the app notification bell'],
+            ['key' => 'driver_announcement_email', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_notifications', 'description' => 'Receive announcement emails'],
+
             ['key' => 'require_photo_attendance', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_attendance', 'description' => 'Require photo for attendance'],
             ['key' => 'show_attendance_history', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_attendance', 'description' => 'Show attendance history'],
-            
+
             // Admin Settings - Backup & Data
             ['key' => 'auto_backup_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_backup', 'description' => 'Enable automatic backups'],
             ['key' => 'backup_frequency', 'value' => 'daily', 'type' => 'string', 'group' => 'admin_backup', 'description' => 'Backup frequency (daily/weekly/monthly)'],
             ['key' => 'backup_retention_days', 'value' => '30', 'type' => 'integer', 'group' => 'admin_backup', 'description' => 'Backup retention period (days)'],
             ['key' => 'backup_location', 'value' => 'local', 'type' => 'string', 'group' => 'admin_backup', 'description' => 'Backup storage location'],
             ['key' => 'backup_include_files', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_backup', 'description' => 'Include uploaded files in backup'],
-            
+
             // Admin Settings - Reports
             ['key' => 'report_auto_generate', 'value' => '0', 'type' => 'boolean', 'group' => 'admin_reports', 'description' => 'Auto-generate daily reports'],
             ['key' => 'report_format', 'value' => 'pdf', 'type' => 'string', 'group' => 'admin_reports', 'description' => 'Default report format (pdf/excel/csv)'],
             ['key' => 'report_include_charts', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_reports', 'description' => 'Include charts in reports'],
             ['key' => 'report_email_recipients', 'value' => '', 'type' => 'string', 'group' => 'admin_reports', 'description' => 'Email addresses for report delivery (comma-separated)'],
             ['key' => 'report_retention_days', 'value' => '365', 'type' => 'integer', 'group' => 'admin_reports', 'description' => 'Report retention period (days)'],
-            
+
             // Admin Settings - API & Integration
             ['key' => 'api_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_api', 'description' => 'Enable API access'],
             ['key' => 'api_rate_limit', 'value' => '100', 'type' => 'integer', 'group' => 'admin_api', 'description' => 'API rate limit per minute'],
             ['key' => 'api_key_expiry_days', 'value' => '90', 'type' => 'integer', 'group' => 'admin_api', 'description' => 'API key expiry (days, 0 for no expiry)'],
             ['key' => 'webhook_enabled', 'value' => '0', 'type' => 'boolean', 'group' => 'admin_api', 'description' => 'Enable webhook notifications'],
             ['key' => 'webhook_url', 'value' => '', 'type' => 'string', 'group' => 'admin_api', 'description' => 'Webhook URL for events'],
-            
+
             // Admin Settings - Location & GPS
             ['key' => 'gps_tracking_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_location', 'description' => 'Enable GPS tracking'],
             ['key' => 'location_accuracy_required', 'value' => '50', 'type' => 'integer', 'group' => 'admin_location', 'description' => 'Required location accuracy (meters)'],
             ['key' => 'geofence_enabled', 'value' => '0', 'type' => 'boolean', 'group' => 'admin_location', 'description' => 'Enable geofencing'],
             ['key' => 'location_update_interval', 'value' => '5', 'type' => 'integer', 'group' => 'admin_location', 'description' => 'Location update interval (minutes)'],
             ['key' => 'require_location_checkin', 'value' => '0', 'type' => 'boolean', 'group' => 'admin_location', 'description' => 'Require location for check-in'],
-            
+
             // Admin Settings - Driver Management
             ['key' => 'driver_registration_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_driver_management', 'description' => 'Allow driver self-registration'],
             ['key' => 'driver_approval_required', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_driver_management', 'description' => 'Require admin approval for new drivers'],
             ['key' => 'max_drivers_per_account', 'value' => '0', 'type' => 'integer', 'group' => 'admin_driver_management', 'description' => 'Maximum drivers (0 for unlimited)'],
             ['key' => 'driver_profile_completion_required', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_driver_management', 'description' => 'Require complete driver profile'],
             ['key' => 'driver_badge_required', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_driver_management', 'description' => 'Require badge number for drivers'],
-            
+
             // Admin Settings - Data Export
             ['key' => 'export_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_export', 'description' => 'Enable data export'],
             ['key' => 'export_formats', 'value' => 'csv,excel,pdf', 'type' => 'string', 'group' => 'admin_export', 'description' => 'Available export formats'],
             ['key' => 'export_include_sensitive', 'value' => '0', 'type' => 'boolean', 'group' => 'admin_export', 'description' => 'Include sensitive data in exports'],
             ['key' => 'export_max_records', 'value' => '10000', 'type' => 'integer', 'group' => 'admin_export', 'description' => 'Maximum records per export'],
-            
+
             // Admin Settings - Performance
             ['key' => 'cache_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_performance', 'description' => 'Enable caching'],
             ['key' => 'cache_ttl_minutes', 'value' => '60', 'type' => 'integer', 'group' => 'admin_performance', 'description' => 'Cache TTL (minutes)'],
             ['key' => 'query_optimization', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_performance', 'description' => 'Enable query optimization'],
             ['key' => 'image_compression', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_performance', 'description' => 'Enable image compression'],
             ['key' => 'max_upload_size_mb', 'value' => '10', 'type' => 'integer', 'group' => 'admin_performance', 'description' => 'Maximum upload size (MB)'],
-            
+
             // Admin Settings - Compliance
             ['key' => 'gdpr_compliance', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_compliance', 'description' => 'Enable GDPR compliance features'],
             ['key' => 'data_retention_days', 'value' => '730', 'type' => 'integer', 'group' => 'admin_compliance', 'description' => 'Data retention period (days)'],
             ['key' => 'privacy_policy_url', 'value' => '', 'type' => 'string', 'group' => 'admin_compliance', 'description' => 'Privacy policy URL'],
             ['key' => 'terms_of_service_url', 'value' => '', 'type' => 'string', 'group' => 'admin_compliance', 'description' => 'Terms of service URL'],
             ['key' => 'require_privacy_consent', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_compliance', 'description' => 'Require privacy consent'],
-            
+
             // Admin Settings - Email
             ['key' => 'smtp_enabled', 'value' => '0', 'type' => 'boolean', 'group' => 'admin_email', 'description' => 'Use custom SMTP server'],
             ['key' => 'smtp_host', 'value' => '', 'type' => 'string', 'group' => 'admin_email', 'description' => 'SMTP host'],
@@ -207,48 +215,49 @@ class SettingsSeeder extends Seeder
             ['key' => 'smtp_encryption', 'value' => 'tls', 'type' => 'string', 'group' => 'admin_email', 'description' => 'SMTP encryption (tls/ssl)'],
             ['key' => 'email_from_address', 'value' => 'noreply@polaris.test', 'type' => 'string', 'group' => 'admin_email', 'description' => 'Default from email address'],
             ['key' => 'email_from_name', 'value' => 'Polaris Attendance', 'type' => 'string', 'group' => 'admin_email', 'description' => 'Default from name'],
-            
+
             // Driver Settings - Privacy
             ['key' => 'driver_share_location', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_privacy', 'description' => 'Share location with system'],
             ['key' => 'driver_share_photo', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_privacy', 'description' => 'Allow photo sharing'],
             ['key' => 'driver_profile_visible', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_privacy', 'description' => 'Make profile visible to admins'],
             ['key' => 'driver_data_export', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_privacy', 'description' => 'Allow data export'],
             ['key' => 'driver_analytics_opt_in', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_privacy', 'description' => 'Opt-in to analytics'],
-            
+
             // Driver Settings - Accessibility
             ['key' => 'driver_font_size', 'value' => 'medium', 'type' => 'string', 'group' => 'driver_accessibility', 'description' => 'Font size preference'],
             ['key' => 'driver_high_contrast', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_accessibility', 'description' => 'Enable high contrast mode'],
             ['key' => 'driver_screen_reader', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_accessibility', 'description' => 'Enable screen reader support'],
             ['key' => 'driver_animations', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_accessibility', 'description' => 'Enable animations'],
             ['key' => 'driver_keyboard_shortcuts', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_accessibility', 'description' => 'Enable keyboard shortcuts'],
-            
+
             // Driver Settings - Dashboard
             ['key' => 'driver_dashboard_layout', 'value' => 'default', 'type' => 'string', 'group' => 'driver_dashboard', 'description' => 'Dashboard layout preference'],
             ['key' => 'driver_show_statistics', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_dashboard', 'description' => 'Show statistics on dashboard'],
             ['key' => 'driver_show_recent_activity', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_dashboard', 'description' => 'Show recent activity'],
             ['key' => 'driver_show_upcoming_events', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_dashboard', 'description' => 'Show upcoming events'],
             ['key' => 'driver_refresh_interval', 'value' => '30', 'type' => 'integer', 'group' => 'driver_dashboard', 'description' => 'Auto-refresh interval (seconds)'],
-            
+
             // Driver Settings - Data Usage
             ['key' => 'driver_data_saver_mode', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_data_usage', 'description' => 'Enable data saver mode'],
             ['key' => 'driver_auto_load_images', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_data_usage', 'description' => 'Auto-load images'],
             ['key' => 'driver_offline_mode', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_data_usage', 'description' => 'Enable offline mode'],
             ['key' => 'driver_sync_frequency', 'value' => '5', 'type' => 'integer', 'group' => 'driver_data_usage', 'description' => 'Data sync frequency (minutes)'],
-            
+
             // Driver Settings - Profile
             ['key' => 'driver_show_badge_number', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_profile', 'description' => 'Show badge number on profile'],
             ['key' => 'driver_show_email', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_profile', 'description' => 'Show email on profile'],
             ['key' => 'driver_show_phone', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_profile', 'description' => 'Show phone number on profile'],
             ['key' => 'driver_allow_profile_updates', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_profile', 'description' => 'Allow profile updates'],
             ['key' => 'driver_profile_photo_required', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_profile', 'description' => 'Require profile photo'],
-            
+
             // Driver Settings - Reminders
+            ['key' => 'driver_reminders_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_reminders', 'description' => 'Enable scheduled check-in / check-out reminders'],
             ['key' => 'driver_checkin_reminder_time', 'value' => '09:00', 'type' => 'string', 'group' => 'driver_reminders', 'description' => 'Check-in reminder time'],
             ['key' => 'driver_checkout_reminder_time', 'value' => '17:00', 'type' => 'string', 'group' => 'driver_reminders', 'description' => 'Check-out reminder time'],
             ['key' => 'driver_reminder_before_minutes', 'value' => '15', 'type' => 'integer', 'group' => 'driver_reminders', 'description' => 'Reminder before event (minutes)'],
             ['key' => 'driver_reminder_repeat', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_reminders', 'description' => 'Repeat reminders'],
             ['key' => 'driver_reminder_snooze', 'value' => '5', 'type' => 'integer', 'group' => 'driver_reminders', 'description' => 'Snooze duration (minutes)'],
-            
+
             // Driver Settings - Security
             ['key' => 'driver_require_pin', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_security', 'description' => 'Require PIN for attendance'],
             ['key' => 'driver_auto_lockout', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_security', 'description' => 'Auto-lock after inactivity'],

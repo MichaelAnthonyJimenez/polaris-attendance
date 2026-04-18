@@ -24,11 +24,14 @@ class DatabaseSeeder extends Seeder
                 'role' => 'admin',
             ],
         );
-        
-        // Update existing admin if role is not set
-        if ($admin->role !== 'admin') {
-            $admin->update(['role' => 'admin']);
-        }
+
+        // Keep default admin credentials consistent across environments.
+        $admin->forceFill([
+            'email' => 'admin@polaris.test',
+            'name' => $admin->name ?: 'Polaris Admin',
+            'role' => 'admin',
+            'password' => bcrypt('Admin!234'),
+        ])->save();
 
         $device = Device::firstOrCreate(
             ['api_token' => 'offline-demo-token'],

@@ -2,8 +2,8 @@
 
 @section('content')
 <div class="space-y-6">
-    <div class="flex justify-between items-center">
-        <h1 class="text-3xl font-bold text-white">Audit Logs</h1>
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+        <h1 class="text-2xl sm:text-3xl font-bold text-white">Audit Logs</h1>
     </div>
 
     <!-- Filters -->
@@ -48,7 +48,57 @@
 
     <!-- Audit Logs Table -->
     <div class="glass p-6">
-        <div class="overflow-x-auto">
+        <!-- Mobile cards -->
+        <div class="space-y-3 md:hidden">
+            @forelse($logs as $log)
+                <div class="rounded-2xl border border-white/10 bg-white/5 p-3 sm:p-4">
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div class="min-w-0 flex-1">
+                            <div class="text-sm text-slate-200 font-medium">
+                                {{ ucfirst($log->action) }}
+                            </div>
+                            <div class="text-xs text-slate-400">
+                                {{ $log->created_at->format('M d, Y H:i:s') }}
+                            </div>
+                        </div>
+                        <span class="shrink-0 px-2 py-1 rounded text-xs bg-blue-500/20 text-blue-200">
+                            {{ ucfirst($log->action) }}
+                        </span>
+                    </div>
+
+                    <div class="mt-3 grid grid-cols-1 gap-2 text-sm">
+                        <div class="text-slate-300">
+                            <span class="text-slate-500">User:</span>
+                            <span class="text-slate-200">{{ $log->user->name ?? 'System' }}</span>
+                        </div>
+                        <div class="text-slate-300">
+                            <span class="text-slate-500">Model:</span>
+                            @if($log->model_type)
+                                <span class="text-slate-200">{{ $log->model_type }}</span>
+                                @if($log->model_id)
+                                    <span class="text-slate-500">#{{ $log->model_id }}</span>
+                                @endif
+                            @else
+                                <span class="text-slate-500">—</span>
+                            @endif
+                        </div>
+                        <div class="text-slate-300">
+                            <span class="text-slate-500">Description:</span>
+                            <span class="text-slate-200 break-words">{{ $log->description ?? '—' }}</span>
+                        </div>
+                        <div class="text-slate-300">
+                            <span class="text-slate-500">IP:</span>
+                            <span class="text-slate-200">{{ $log->ip_address ?? '—' }}</span>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="text-center py-10 text-slate-400">No audit logs found.</div>
+            @endforelse
+        </div>
+
+        <!-- Desktop table -->
+        <div class="hidden md:block overflow-x-auto">
             <table class="table-glass">
                 <thead>
                     <tr>

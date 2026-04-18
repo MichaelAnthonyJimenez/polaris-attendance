@@ -2,9 +2,9 @@
 
 @section('content')
 <div class="space-y-6">
-    <div class="flex justify-between items-center">
-        <div>
-            <h1 class="text-3xl font-bold text-white">Settings</h1>
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div class="min-w-0">
+            <h1 class="text-2xl sm:text-3xl font-bold text-white">Settings</h1>
             <p class="text-slate-400 mt-1">
                 @if($userRole === 'admin')
                     Manage system settings and preferences
@@ -14,7 +14,7 @@
             </p>
         </div>
         @if(count($settings) > 0)
-        <button id="sidebarToggle" class="lg:hidden btn-secondary flex items-center gap-2">
+        <button id="sidebarToggle" class="lg:hidden btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
@@ -46,10 +46,31 @@
                 <nav class="space-y-1">
                     @foreach($settings as $group => $groupSettings)
                         @php
-                            $groupTitle = str_replace('_', ' ', $group);
-                            $groupTitle = str_replace('admin ', '', $groupTitle);
-                            $groupTitle = str_replace('driver ', '', $groupTitle);
-                            $groupTitle = ucwords($groupTitle);
+                            $groupLabels = [
+                                'admin_attendance' => 'Attendance',
+                                'admin_backup' => 'Backup',
+                                'admin_compliance' => 'Compliance',
+                                'admin_driver_management' => 'Management',
+                                'admin_email' => 'Email',
+                                'admin_export' => 'Export',
+                                'admin_face_recognition' => 'Face Recognition',
+                                'admin_location' => 'Location',
+                                'admin_notifications' => 'Notifications',
+                                'admin_performance' => 'Performance',
+                                'admin_reports' => 'Reports',
+                                'admin_security' => 'Security',
+                                'admin_system' => 'System',
+                                'driver_camera' => 'Camera',
+                                'driver_notifications' => 'Notifications',
+                                'driver_reminders' => 'Reminders',
+                            ];
+                            $groupTitle = $groupLabels[$group] ?? null;
+                            if ($groupTitle === null) {
+                                $groupTitle = str_replace('_', ' ', $group);
+                                $groupTitle = str_replace('admin ', '', $groupTitle);
+                                $groupTitle = str_replace('driver ', '', $groupTitle);
+                                $groupTitle = ucwords($groupTitle);
+                            }
                             $groupSlug = 'group-' . str_replace([' ', '_'], '-', strtolower($group));
                         @endphp
                         <a href="#{{ $groupSlug }}" 
@@ -76,16 +97,72 @@
                     <a href="{{ route('settings.index') }}" class="btn-primary inline-block">Refresh Page</a>
                 </div>
             @else
+            @if($userRole === 'driver')
+                <div id="group-driver-live-location" class="glass p-6 scroll-mt-24">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="p-2 rounded-lg bg-blue-500/20">
+                            <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-semibold text-white">Location</h2>
+                            <p class="text-sm text-slate-400">Allow access for check-in/check-out and live location tracking.</p>
+                        </div>
+                    </div>
+                    <form method="POST" action="{{ route('settings.location-sharing') }}" class="space-y-4">
+                        @csrf
+                        @method('PUT')
+                        <div class="flex items-center gap-3">
+                            <input type="hidden" name="location_sharing_enabled" value="0">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox"
+                                       name="location_sharing_enabled"
+                                       value="1"
+                                       {{ !empty($driverLocationSharingEnabled) ? 'checked' : '' }}
+                                       onchange="this.form.submit()"
+                                       class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                                <span class="ml-3 text-sm text-slate-300">
+                                    {{ !empty($driverLocationSharingEnabled) ? 'On (tracking active)' : 'Off (tracking disabled)' }}
+                                </span>
+                            </label>
+                        </div>
+                        <p class="text-xs text-slate-400">This updates automatically when toggled.</p>
+                    </form>
+                </div>
+            @endif
             <form method="POST" action="{{ route('settings.update') }}" class="space-y-6">
                 @csrf
                 @method('PUT')
 
                 @foreach($settings as $group => $groupSettings)
                     @php
-                        $groupTitle = str_replace('_', ' ', $group);
-                        $groupTitle = str_replace('admin ', '', $groupTitle);
-                        $groupTitle = str_replace('driver ', '', $groupTitle);
-                        $groupTitle = ucwords($groupTitle);
+                        $groupLabels = [
+                            'admin_attendance' => 'Attendance',
+                            'admin_backup' => 'Backup',
+                            'admin_compliance' => 'Compliance',
+                            'admin_driver_management' => 'Management',
+                            'admin_email' => 'Email',
+                            'admin_export' => 'Export',
+                            'admin_face_recognition' => 'Face Recognition',
+                            'admin_location' => 'Location',
+                            'admin_notifications' => 'Notifications',
+                            'admin_performance' => 'Performance',
+                            'admin_reports' => 'Reports',
+                            'admin_security' => 'Security',
+                            'admin_system' => 'System',
+                            'driver_camera' => 'Camera',
+                            'driver_notifications' => 'Notifications',
+                            'driver_reminders' => 'Reminders',
+                        ];
+                        $groupTitle = $groupLabels[$group] ?? null;
+                        if ($groupTitle === null) {
+                            $groupTitle = str_replace('_', ' ', $group);
+                            $groupTitle = str_replace('admin ', '', $groupTitle);
+                            $groupTitle = str_replace('driver ', '', $groupTitle);
+                            $groupTitle = ucwords($groupTitle);
+                        }
                         $groupSlug = 'group-' . str_replace([' ', '_'], '-', strtolower($group));
                         
                         // Icons for different groups
@@ -130,10 +207,20 @@
                     @foreach($groupSettings as $setting)
                         <div class="space-y-2">
                             @php
-                                $label = str_replace('_', ' ', $setting->key);
-                                $label = str_replace('driver ', '', $label);
-                                $label = str_replace('admin ', '', $label);
-                                $label = ucwords($label);
+                                $customLabels = [
+                                    'driver_approval_required' => 'Approval Required',
+                                    'driver_browser_notify_checkin' => 'Notify Checkin',
+                                    'driver_browser_notify_checkout' => 'Notify Checkout',
+                                    'driver_announcement_in_app' => 'Announcements in Notification Bell',
+                                    'driver_announcement_email' => 'Announcements via Email',
+                                ];
+                                $label = $customLabels[$setting->key] ?? null;
+                                if ($label === null) {
+                                    $label = str_replace('_', ' ', $setting->key);
+                                    $label = str_replace('driver ', '', $label);
+                                    $label = str_replace('admin ', '', $label);
+                                    $label = ucwords($label);
+                                }
                             @endphp
                             <label class="form-label">{{ $label }}</label>
                             @if($setting->type === 'boolean')
@@ -178,7 +265,10 @@
                                     <option value="America/Denver" {{ $setting->value == 'America/Denver' ? 'selected' : '' }}>Mountain Time</option>
                                     <option value="America/Los_Angeles" {{ $setting->value == 'America/Los_Angeles' ? 'selected' : '' }}>Pacific Time</option>
                                     <option value="Europe/London" {{ $setting->value == 'Europe/London' ? 'selected' : '' }}>London</option>
+                                    <option value="Asia/Manila" {{ $setting->value == 'Asia/Manila' ? 'selected' : '' }}>Manila</option>
+                                    <option value="Asia/Singapore" {{ $setting->value == 'Asia/Singapore' ? 'selected' : '' }}>Singapore</option>
                                     <option value="Asia/Tokyo" {{ $setting->value == 'Asia/Tokyo' ? 'selected' : '' }}>Tokyo</option>
+                                    <option value="Australia/Sydney" {{ $setting->value == 'Australia/Sydney' ? 'selected' : '' }}>Sydney</option>
                                 </select>
                             @elseif($setting->key === 'backup_frequency')
                                 <select name="settings[{{ $setting->key }}]" class="form-select">
@@ -283,6 +373,12 @@
                                     <option value="h:i A" {{ $setting->value == 'h:i A' ? 'selected' : '' }}>12-hour (HH:MM AM/PM)</option>
                                     <option value="h:i a" {{ $setting->value == 'h:i a' ? 'selected' : '' }}>12-hour (HH:MM am/pm)</option>
                                 </select>
+                            @elseif(in_array($setting->key, ['driver_checkin_reminder_time', 'driver_checkout_reminder_time'], true))
+                                <input type="time" 
+                                       name="settings[{{ $setting->key }}]" 
+                                       value="{{ strlen((string) $setting->value) >= 5 ? substr($setting->value, 0, 5) : $setting->value }}" 
+                                       class="form-input"
+                                       step="60">
                             @else
                                 <input type="{{ $setting->type === 'integer' ? 'number' : 'text' }}" 
                                        name="settings[{{ $setting->key }}]" 

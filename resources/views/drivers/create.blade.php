@@ -13,11 +13,12 @@
                 </div>
                 <div>
                     <label class="form-label">Badge Number</label>
-                    <input type="text" name="badge_number" value="{{ old('badge_number') }}" required class="form-input">
+                    <input type="text" name="badge_number" value="{{ old('badge_number') }}" class="form-input" placeholder="Next number if left blank">
+                    <p class="text-xs text-slate-400 mt-1.5">Leave blank to assign the next sequential badge.</p>
                 </div>
                 <div>
-                    <label class="form-label">Email (link to user)</label>
-                    <input type="email" name="email" value="{{ old('email') }}" class="form-input" placeholder="driver@example.com">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" value="{{ old('email') }}" required class="form-input" placeholder="driver@example.com">
                 </div>
                 <div>
                     <label class="form-label">Phone</label>
@@ -27,6 +28,11 @@
                     <label class="form-label">Vehicle Number</label>
                     <input type="text" name="vehicle_number" value="{{ old('vehicle_number') }}" class="form-input">
                 </div>
+            </div>
+            <div>
+                <label class="form-label">Profile Photo (Optional)</label>
+                <input type="file" name="profile_photo" accept="image/*" class="form-input">
+                <p class="text-xs text-slate-400 mt-1.5">Shown in driver details. Max 5MB.</p>
             </div>
             <div>
                 <label class="form-label">Face Photo (Optional)</label>

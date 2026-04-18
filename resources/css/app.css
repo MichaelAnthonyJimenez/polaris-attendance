@@ -11,6 +11,12 @@
 }
 
 @layer base {
+    html,
+    body {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
     body {
         @apply bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-50 min-h-screen;
     }
@@ -50,7 +56,21 @@
     }
 
     .form-select {
-        @apply w-full px-4 py-2.5 bg-white/5 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition;
+        @apply w-full px-4 py-2.5 bg-slate-800/50 border border-white/20 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition;
+    }
+
+    /* Match system look: gray dropdown text + dark option panel (avoids white native menu on Windows) */
+    select.form-select option,
+    select.form-input option,
+    select.input-glass option,
+    select option {
+        background-color: rgb(15 23 42); /* slate-900 */
+        color: rgb(226 232 240); /* slate-200 */
+    }
+
+    /* Some pages use form-input for selects/multi-selects */
+    select.form-input {
+        @apply bg-slate-800/50 text-slate-200;
     }
 
     .table-glass {
@@ -115,5 +135,39 @@
 
     .pagination .disabled {
         @apply opacity-50 cursor-not-allowed;
+    }
+
+    /* Sidebar collapse behavior (icons-only rail) */
+    body.sidebar-collapsed #appSidebar {
+        @apply w-20;
+    }
+
+    body.sidebar-collapsed #appSidebar .nav-link {
+        @apply justify-center;
+    }
+
+    body.sidebar-collapsed #appSidebar .nav-link span {
+        @apply hidden;
+    }
+
+    body.sidebar-collapsed #appSidebar .p-6 > .flex > div.min-w-0 p {
+        @apply hidden;
+    }
+
+    body.sidebar-collapsed #appMain {
+        @apply ml-20;
+    }
+
+    #appMain {
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    /* Admin mobile: hide footer, keep content above fold */
+    @media (max-width: 1023px) {
+        body.role-admin .app-footer {
+            display: none;
+        }
     }
 }

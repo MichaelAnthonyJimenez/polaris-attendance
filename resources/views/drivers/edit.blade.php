@@ -17,8 +17,8 @@
                     <input type="text" name="badge_number" value="{{ old('badge_number', $driver->badge_number) }}" required class="form-input">
                 </div>
                 <div>
-                    <label class="form-label">Email (link to user)</label>
-                    <input type="email" name="email" value="{{ old('email', $driver->email) }}" class="form-input" placeholder="driver@example.com">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" value="{{ old('email', $driver->email) }}" required class="form-input" placeholder="driver@example.com">
                 </div>
                 <div>
                     <label class="form-label">Phone</label>
@@ -27,6 +27,18 @@
                 <div>
                     <label class="form-label">Vehicle Number</label>
                     <input type="text" name="vehicle_number" value="{{ old('vehicle_number', $driver->vehicle_number) }}" class="form-input">
+                </div>
+            </div>
+            <div>
+                <label class="form-label">Profile Photo</label>
+                <div class="flex items-center gap-4">
+                    @if($driver->profile_photo_url ?? null)
+                        <img src="{{ $driver->profile_photo_url }}" alt="Driver profile" class="w-14 h-14 rounded-full object-cover border border-white/20 shrink-0">
+                    @endif
+                    <div class="min-w-0 flex-1">
+                        <input type="file" name="profile_photo" accept="image/*" class="form-input">
+                        <p class="text-xs text-slate-400 mt-1.5">Shown in driver details. Max 5MB.</p>
+                    </div>
                 </div>
             </div>
             <div>

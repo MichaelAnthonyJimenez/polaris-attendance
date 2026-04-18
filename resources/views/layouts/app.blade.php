@@ -162,8 +162,8 @@
 
             <!-- Main Content -->
             <div id="appMain" class="flex flex-1 w-full min-w-0 flex-col min-h-screen ml-0 lg:ml-64">
-                <!-- Header (authenticated); hidden on camera route for fullscreen capture -->
-                <nav class="sticky top-0 z-30 shrink-0 backdrop-blur bg-slate-900/70 border-b border-white/5 @if(request()->routeIs('camera.*')) hidden @endif">
+                <!-- Header (authenticated): fixed so it stays visible (sticky breaks when html/body use overflow-x-hidden) -->
+                <nav id="appTopbar" class="app-topbar fixed top-0 left-0 right-0 z-30 shrink-0 border-b border-white/5 bg-slate-900/70 backdrop-blur pt-[env(safe-area-inset-top,0px)] lg:left-64 @if(request()->routeIs('camera.*')) hidden @endif">
                     <div class="shell flex items-center justify-between py-4">
                         <div class="flex items-center gap-3 min-w-0">
                             <div class="text-white font-semibold text-lg truncate">Polaris Attendance</div>
@@ -336,7 +336,7 @@
 
                 <main @class([
                     'app-main-shell w-full min-w-0',
-                    'shell mt-8 space-y-6 grow pb-10 max-lg:pb-[calc(env(safe-area-inset-bottom,0px)+4rem)]' => ! request()->routeIs('camera.*'),
+                    'shell mt-0 space-y-6 grow pb-10 pt-[calc(2rem+4.5rem+env(safe-area-inset-top,0px))] max-lg:pb-[calc(env(safe-area-inset-bottom,0px)+4rem)]' => ! request()->routeIs('camera.*'),
                     'mt-0 max-w-none grow p-0 pb-0' => request()->routeIs('camera.*'),
                 ])>
                     @if (session('status'))
@@ -390,7 +390,7 @@
         @else
             <!-- Public pages without sidebar -->
             <div class="w-full flex flex-col min-h-screen">
-                <nav class="sticky top-0 z-30 backdrop-blur bg-slate-900/70 border-b border-white/5">
+                <nav class="fixed top-0 left-0 right-0 z-30 border-b border-white/5 bg-slate-900/70 backdrop-blur pt-[env(safe-area-inset-top,0px)]">
                     <div class="shell flex items-center justify-between py-4">
                         <div class="text-white font-semibold text-lg">Polaris Attendance</div>
                         <div class="flex items-center gap-3 text-sm">
@@ -399,7 +399,7 @@
                     </div>
                 </nav>
 
-                <main class="shell mt-8 space-y-6 pb-10 flex-1">
+                <main class="shell mt-0 space-y-6 pb-10 flex-1 pt-[calc(2rem+4.5rem+env(safe-area-inset-top,0px))]">
                     @if (session('status'))
                         <div class="alert-success">
                             {{ session('status') }}

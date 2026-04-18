@@ -14,6 +14,12 @@
     html {
         height: auto;
         -webkit-text-size-adjust: 100%;
+        /* Fixed top bar: in-page anchors land below the bar */
+        scroll-padding-top: calc(4.5rem + env(safe-area-inset-top, 0px));
+    }
+
+    html:has(body.camera-page) {
+        scroll-padding-top: 0;
     }
 
     html,
@@ -174,6 +180,11 @@
 
     body.sidebar-collapsed #appMain {
         @apply ml-0 lg:ml-20;
+    }
+
+    /* Authenticated top bar: align with sidebar width */
+    body.sidebar-collapsed .app-topbar {
+        @apply lg:left-20;
     }
 
     #appMain {

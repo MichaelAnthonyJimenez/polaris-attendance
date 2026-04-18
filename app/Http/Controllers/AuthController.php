@@ -6,14 +6,12 @@ use App\Helpers\AuditLogger;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\Email\TransactionalEmailService;
-use App\Services\Security\RecaptchaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AuthController extends Controller
@@ -92,27 +90,9 @@ class AuthController extends Controller
             'terms' => ['accepted'],
         ];
 
-        if (config('services.recaptcha.site_key')) {
-            $rules['g-recaptcha-response'] = ['required', 'string'];
-        }
-
         $data = $request->validate($rules, [
-            'g-recaptcha-response.required' => 'Please complete the reCAPTCHA to continue.',
             'terms.accepted' => 'You must accept the Terms of Service and Privacy Policy.',
         ]);
-
-        if (config('services.recaptcha.site_key')) {
-            $ok = app(RecaptchaService::class)->verify(
-                $request->input('g-recaptcha-response'),
-                $request->ip()
-            );
-
-            if (!$ok) {
-                throw ValidationException::withMessages([
-                    'g-recaptcha-response' => 'reCAPTCHA verification failed. Please try again.',
-                ]);
-            }
-        }
 
         $user = User::create([
             'name' => $data['name'],

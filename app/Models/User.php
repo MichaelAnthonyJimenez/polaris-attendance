@@ -44,6 +44,8 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'location_updated_at' => 'datetime',
+            'location_sharing_enabled' => 'boolean',
             'password' => 'hashed',
         ];
     }

@@ -60,9 +60,17 @@
                                 'admin_reports' => 'Reports',
                                 'admin_security' => 'Security',
                                 'admin_system' => 'System',
+                                'driver_preferences' => 'Preferences',
+                                'driver_accessibility' => 'Accessibility',
+                                'driver_attendance' => 'Attendance',
                                 'driver_camera' => 'Camera',
+                                'driver_dashboard' => 'Dashboard',
+                                'driver_data_usage' => 'Data usage',
                                 'driver_notifications' => 'Notifications',
+                                'driver_privacy' => 'Privacy',
+                                'driver_profile' => 'Profile',
                                 'driver_reminders' => 'Reminders',
+                                'driver_security' => 'Security',
                             ];
                             $groupTitle = $groupLabels[$group] ?? null;
                             if ($groupTitle === null) {
@@ -152,9 +160,17 @@
                             'admin_reports' => 'Reports',
                             'admin_security' => 'Security',
                             'admin_system' => 'System',
+                            'driver_preferences' => 'Preferences',
+                            'driver_accessibility' => 'Accessibility',
+                            'driver_attendance' => 'Attendance',
                             'driver_camera' => 'Camera',
+                            'driver_dashboard' => 'Dashboard',
+                            'driver_data_usage' => 'Data usage',
                             'driver_notifications' => 'Notifications',
+                            'driver_privacy' => 'Privacy',
+                            'driver_profile' => 'Profile',
                             'driver_reminders' => 'Reminders',
+                            'driver_security' => 'Security',
                         ];
                         $groupTitle = $groupLabels[$group] ?? null;
                         if ($groupTitle === null) {

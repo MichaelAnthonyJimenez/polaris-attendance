@@ -227,4 +227,31 @@
         min-height: 100svh;
         min-height: -webkit-fill-available;
     }
+
+    /* Driver Settings: accessibility (applied on body for drivers) */
+    body.driver-ui-font-sm {
+        font-size: 0.875rem;
+    }
+    body.driver-ui-font-md {
+        font-size: 1rem;
+    }
+    body.driver-ui-font-lg {
+        font-size: 1.125rem;
+    }
+    body.driver-ui-font-xl {
+        font-size: 1.25rem;
+    }
+    body.driver-ui-high-contrast .glass {
+        @apply border-white/35 bg-white/15;
+    }
+    body.driver-ui-high-contrast .text-slate-400 {
+        @apply text-slate-200;
+    }
+    body.driver-ui-reduced-motion *,
+    body.driver-ui-reduced-motion *::before,
+    body.driver-ui-reduced-motion *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }

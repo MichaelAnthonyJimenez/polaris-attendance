@@ -11,8 +11,23 @@
 </head>
 @php
     $isFullscreenCameraPage = request()->routeIs('camera.*', 'verification.facial', 'verification.id');
+    $driverBodyClasses = [];
+    if (auth()->check() && auth()->user()->role === 'driver') {
+        $driverBodyClasses[match (\App\Models\Setting::get('driver_font_size', 'medium')) {
+            'small' => 'driver-ui-font-sm',
+            'large' => 'driver-ui-font-lg',
+            'xlarge' => 'driver-ui-font-xl',
+            default => 'driver-ui-font-md',
+        }] = true;
+        if (\App\Models\Setting::get('driver_high_contrast', false)) {
+            $driverBodyClasses['driver-ui-high-contrast'] = true;
+        }
+        if (! \App\Models\Setting::get('driver_animations', true)) {
+            $driverBodyClasses['driver-ui-reduced-motion'] = true;
+        }
+    }
 @endphp
-<body @class(['camera-page' => $isFullscreenCameraPage])>
+<body @class(array_merge(['camera-page' => $isFullscreenCameraPage], $driverBodyClasses))>
     <div @class(['min-h-screen flex', 'min-h-[100dvh] bg-black' => $isFullscreenCameraPage])>
         @auth
             @unless($isFullscreenCameraPage)

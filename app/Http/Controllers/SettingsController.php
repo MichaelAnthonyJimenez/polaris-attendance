@@ -253,36 +253,93 @@ class SettingsController extends Controller
 
     /** @var list<string> */
     private const DRIVER_GROUP_ORDER = [
+        'driver_preferences',
         'driver_accessibility',
         'driver_camera',
+        'driver_attendance',
         'driver_notifications',
         'driver_reminders',
+        'driver_dashboard',
+        'driver_data_usage',
+        'driver_privacy',
+        'driver_profile',
+        'driver_security',
     ];
 
     /** @var array<string, list<string>> */
     private const DRIVER_SETTINGS_KEYS = [
+        'driver_preferences' => [
+            'driver_theme',
+            'driver_language',
+            'driver_timezone',
+        ],
         'driver_accessibility' => [
             'driver_font_size',
             'driver_high_contrast',
             'driver_keyboard_shortcuts',
             'driver_screen_reader',
+            'driver_animations',
         ],
         'driver_camera' => ['auto_capture_photo', 'auto_submit_camera'],
+        'driver_attendance' => [
+            'require_photo_attendance',
+            'show_attendance_history',
+        ],
         'driver_notifications' => [
+            'show_notifications',
+            'driver_notification_sound',
             'driver_browser_notify_checkin',
             'driver_browser_notify_checkout',
-            'driver_notification_sound',
+            'driver_email_notifications',
+            'driver_email_on_checkin',
+            'driver_email_on_checkout',
+            'driver_sms_notifications',
             'notify_checkin_reminder',
             'notify_checkout_reminder',
-            'show_notifications',
+            'driver_announcement_in_app',
+            'driver_announcement_email',
         ],
         'driver_reminders' => [
+            'driver_reminders_enabled',
             'driver_checkin_reminder_time',
             'driver_checkout_reminder_time',
             'driver_reminder_before_minutes',
             'driver_reminder_repeat',
             'driver_reminder_snooze',
-            'driver_reminders_enabled',
+        ],
+        'driver_dashboard' => [
+            'driver_dashboard_layout',
+            'driver_refresh_interval',
+            'driver_show_recent_activity',
+            'driver_show_statistics',
+            'driver_show_upcoming_events',
+        ],
+        'driver_data_usage' => [
+            'driver_auto_load_images',
+            'driver_data_saver_mode',
+            'driver_offline_mode',
+            'driver_sync_frequency',
+        ],
+        'driver_privacy' => [
+            'driver_analytics_opt_in',
+            'driver_data_export',
+            'driver_profile_visible',
+            'driver_share_location',
+            'driver_share_photo',
+        ],
+        'driver_profile' => [
+            'driver_allow_profile_updates',
+            'driver_profile_photo_required',
+            'driver_show_badge_number',
+            'driver_show_email',
+            'driver_show_phone',
+        ],
+        'driver_security' => [
+            'driver_require_pin',
+            'driver_auto_lockout',
+            'driver_lockout_minutes',
+            'driver_biometric_auth',
+            'driver_session_timeout',
         ],
     ];
 

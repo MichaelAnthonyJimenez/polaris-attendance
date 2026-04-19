@@ -137,6 +137,22 @@ class DashboardController extends Controller
                     'days' => $calendarDays,
                 ],
             ];
+
+            $driverReminderClient = [
+                'enabled' => (bool) Setting::get('driver_reminders_enabled', true),
+                'adminReminders' => (bool) Setting::get('attendance_reminder_enabled', true),
+                'showNotifications' => (bool) Setting::get('show_notifications', true),
+                'sound' => (bool) Setting::get('driver_notification_sound', true),
+                'repeat' => (bool) Setting::get('driver_reminder_repeat', true),
+                'snoozeMin' => (int) Setting::get('driver_reminder_snooze', 5),
+                'notifyCheckin' => (bool) Setting::get('notify_checkin_reminder', true),
+                'notifyCheckout' => (bool) Setting::get('notify_checkout_reminder', true),
+                'checkinTime' => (string) Setting::get('driver_checkin_reminder_time', '09:00'),
+                'checkoutTime' => (string) Setting::get('driver_checkout_reminder_time', '17:00'),
+                'beforeMin' => (int) Setting::get('driver_reminder_before_minutes', 15),
+                'hasCheckedInToday' => $todayCheckIn !== null,
+                'hasCheckedOutToday' => $todayCheckOut !== null,
+            ];
         }
 
         // Chart data and summary for admin dashboard

@@ -115,6 +115,7 @@
                         <tr>
                             <th class="px-2 py-2 sm:px-4 sm:py-3 whitespace-nowrap">Type</th>
                             <th class="px-2 py-2 sm:px-4 sm:py-3 whitespace-nowrap">Captured At</th>
+                            <th class="px-2 py-2 sm:px-4 sm:py-3 whitespace-nowrap">Hours</th>
                             <th class="px-2 py-2 sm:px-4 sm:py-3 whitespace-nowrap hidden sm:table-cell">Face</th>
                             <th class="px-2 py-2 sm:px-4 sm:py-3 whitespace-nowrap hidden sm:table-cell">Liveness</th>
                             <th class="px-2 py-2 sm:px-4 sm:py-3 min-w-0">Device</th>
@@ -151,6 +152,16 @@
                         </div>
                         <dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs sm:text-sm">
                             <div>
+                                <dt class="text-slate-500">Total hours</dt>
+                                <dd class="text-slate-200">
+                                    @if($row->type === 'check_out' && $row->total_hours !== null)
+                                        {{ number_format((float) $row->total_hours, 2) }} h
+                                    @else
+                                        —
+                                    @endif
+                                </dd>
+                            </div>
+                            <div>
                                 <dt class="text-slate-500">Face</dt>
                                 <dd class="text-slate-200">{{ $row->face_confidence ? $row->face_confidence . '%' : '—' }}</dd>
                             </div>
@@ -176,6 +187,7 @@
                             <th>Driver</th>
                             <th>Type</th>
                             <th>Captured At</th>
+                            <th>Total hours</th>
                             <th>Face Match</th>
                             <th>Liveness</th>
                             <th>Device</th>
@@ -192,6 +204,13 @@
                                     </span>
                                 </td>
                                 <td>{{ $row->captured_at?->format('M d, H:i') }}</td>
+                                <td class="tabular-nums text-slate-200">
+                                    @if($row->type === 'check_out' && $row->total_hours !== null)
+                                        {{ number_format((float) $row->total_hours, 2) }} h
+                                    @else
+                                        —
+                                    @endif
+                                </td>
                                 <td>{{ $row->face_confidence ? $row->face_confidence . '%' : '—' }}</td>
                                 <td>{{ $row->liveness_score ? number_format($row->liveness_score, 2) : '—' }}</td>
                                 <td class="text-slate-300 max-w-[12rem] break-all">{{ $row->device_id ?? '—' }}</td>
@@ -206,7 +225,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center py-8 text-slate-400">No attendance records yet.</td>
+                                <td colspan="8" class="text-center py-8 text-slate-400">No attendance records yet.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -249,6 +268,9 @@
                 const statusLine = (row.type === 'check_in' && row.status)
                     ? `<span class="block text-[10px] text-slate-400 mt-0.5">${row.status}</span>`
                     : '';
+                const hoursCell = (row.type === 'check_out' && row.total_hours != null)
+                    ? Number(row.total_hours).toFixed(2) + ' h'
+                    : '—';
                 return `
                 <tr>
                     <td class="px-2 py-2 sm:px-4 sm:py-3 align-top">
@@ -258,12 +280,13 @@
                         </div>
                     </td>
                     <td class="px-2 py-2 sm:px-4 sm:py-3 whitespace-nowrap align-top">${row.captured_label || '—'}</td>
+                    <td class="px-2 py-2 sm:px-4 sm:py-3 whitespace-nowrap tabular-nums align-top">${hoursCell}</td>
                     <td class="px-2 py-2 sm:px-4 sm:py-3 whitespace-nowrap hidden sm:table-cell align-top">${row.face_confidence ? row.face_confidence + '%' : '—'}</td>
                     <td class="px-2 py-2 sm:px-4 sm:py-3 whitespace-nowrap hidden sm:table-cell align-top">${row.liveness_score ? Number(row.liveness_score).toFixed(2) : '—'}</td>
                     <td class="px-2 py-2 sm:px-4 sm:py-3 max-w-[100px] sm:max-w-[12rem] truncate sm:whitespace-normal sm:break-normal text-slate-300 align-top">${row.device_id || '—'}</td>
                 </tr>
             `;
-            }).join('') : '<tr><td colspan="5" class="text-center py-8 text-slate-400">No history for this period.</td></tr>';
+            }).join('') : '<tr><td colspan="6" class="text-center py-8 text-slate-400">No history for this period.</td></tr>';
         }
 
         document.querySelectorAll('.history-filter-btn').forEach((btn) => {

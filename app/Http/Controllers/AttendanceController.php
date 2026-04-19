@@ -183,6 +183,7 @@ class AttendanceController extends Controller
                         'face_confidence' => $row->face_confidence,
                         'liveness_score' => $row->liveness_score,
                         'device_id' => $row->device_id,
+                        'total_hours' => $row->total_hours !== null ? (float) $row->total_hours : null,
                     ];
                 })->values()->all(),
                 'calendar' => [
@@ -327,6 +328,14 @@ class AttendanceController extends Controller
             }
         }
 
+        $totalHours = null;
+        if ($data['type'] === 'check_out') {
+            $pairedCheckIn = Attendance::findPairedCheckInForCheckout((int) $data['driver_id'], $capturedAt);
+            if ($pairedCheckIn) {
+                $totalHours = Attendance::hoursBetween($pairedCheckIn->captured_at, $capturedAt);
+            }
+        }
+
         $attendance = Attendance::create([
             'driver_id' => $data['driver_id'],
             'type' => $data['type'],
@@ -337,10 +346,15 @@ class AttendanceController extends Controller
             'device_id' => $deviceId,
             'synced' => true,
             'meta' => $meta,
+            'total_hours' => $totalHours,
         ]);
 
         $driver = User::find($data['driver_id']);
-        AuditLogger::log('created', 'Attendance', $attendance->id, null, ['type' => $data['type'], 'driver' => $driver->name], "Attendance {$data['type']} recorded for {$driver->name}");
+        $auditNew = ['type' => $data['type'], 'driver' => $driver->name];
+        if ($totalHours !== null) {
+            $auditNew['total_hours'] = $totalHours;
+        }
+        AuditLogger::log('created', 'Attendance', $attendance->id, null, $auditNew, "Attendance {$data['type']} recorded for {$driver->name}");
 
         if ($role === 'driver') {
             $user = Auth::user();

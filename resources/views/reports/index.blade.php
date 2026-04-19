@@ -94,6 +94,14 @@
                             @endif
                         </div>
                         <div class="text-slate-300">
+                            <span class="text-slate-500">Total hours:</span>
+                            @if($attendance->type === 'check_out' && $attendance->total_hours !== null)
+                                <span class="text-slate-200 tabular-nums">{{ number_format((float) $attendance->total_hours, 2) }} h</span>
+                            @else
+                                <span class="text-slate-500">—</span>
+                            @endif
+                        </div>
+                        <div class="text-slate-300">
                             <span class="text-slate-500">Device:</span>
                             <span class="text-slate-200 break-words">{{ $attendance->device_id ?? '—' }}</span>
                         </div>
@@ -117,6 +125,7 @@
                         <th>Driver</th>
                         <th>Type</th>
                         <th>Date & Time</th>
+                        <th>Total hours</th>
                         <th>Face Match</th>
                         <th>Liveness</th>
                         <th>Device</th>
@@ -156,7 +165,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center py-8 text-slate-400">No attendance records found.</td>
+                            <td colspan="8" class="text-center py-8 text-slate-400">No attendance records found.</td>
                         </tr>
                     @endforelse
                 </tbody>

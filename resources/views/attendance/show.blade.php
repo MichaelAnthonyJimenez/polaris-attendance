@@ -36,6 +36,19 @@
                 <p class="mt-1 text-white font-medium">{{ $attendance->captured_at?->format('M d, Y h:i A') ?? '—' }}</p>
             </div>
             <div>
+                <p class="text-xs uppercase tracking-wide text-slate-400">Total hours</p>
+                <p class="mt-1 text-white font-medium">
+                    @if($attendance->type === 'check_out' && $attendance->total_hours !== null)
+                        {{ number_format((float) $attendance->total_hours, 2) }} h
+                    @else
+                        —
+                    @endif
+                </p>
+                @if($attendance->type === 'check_in')
+                    <p class="mt-1 text-xs text-slate-500">Shown on the check-out that ends this shift.</p>
+                @endif
+            </div>
+            <div>
                 <p class="text-xs uppercase tracking-wide text-slate-400">Status</p>
                 <p class="mt-1 text-white font-medium">{{ $attendance->status ?? '—' }}</p>
             </div>

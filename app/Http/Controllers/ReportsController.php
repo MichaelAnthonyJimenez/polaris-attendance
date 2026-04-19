@@ -75,17 +75,23 @@ class ReportsController extends Controller
             ->orderBy('captured_at', 'desc')
             ->get()
             ->map(function (Attendance $attendance): array {
+                $hours = '';
+                if ($attendance->type === 'check_out' && $attendance->total_hours !== null) {
+                    $hours = number_format((float) $attendance->total_hours, 2);
+                }
+
                 return [
                     'Driver' => $attendance->driver->name ?? 'Unknown',
                     'Type' => str_replace('_', ' ', (string) $attendance->type),
                     'Date & Time' => $attendance->captured_at?->format('Y-m-d H:i:s') ?? '',
+                    'Total Hours' => $hours,
                     'Face Match' => $attendance->face_confidence !== null ? $attendance->face_confidence . '%' : '',
                     'Liveness' => $attendance->liveness_score !== null ? number_format((float) $attendance->liveness_score, 2) : '',
                     'Device' => $attendance->device_id ?? '',
                 ];
             });
 
-        $headers = ['Driver', 'Type', 'Date & Time', 'Face Match', 'Liveness', 'Device'];
+        $headers = ['Driver', 'Type', 'Date & Time', 'Total Hours', 'Face Match', 'Liveness', 'Device'];
         $filenameBase = "attendance-report-{$dateFrom}-to-{$dateTo}";
         $summary = [
             'Total Records' => $rows->count(),

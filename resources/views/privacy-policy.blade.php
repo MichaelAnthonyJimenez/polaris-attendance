@@ -15,7 +15,7 @@
 
             <div class="bg-slate-800/50 backdrop-blur-md rounded-xl border border-white/10 p-8 md:p-10 space-y-8 text-slate-300 leading-relaxed">
                 <p class="text-slate-200">
-                    This Privacy Policy describes how {{ config('app.name', 'Polaris') }} (“we”, “us”, or “our”) collects, uses, and shares information
+                    This Privacy Policy describes how {{ config('app.name', 'Polaris Attendance') }} (“we”, “us”, or “our”) collects, uses, and shares information
                     when you use our attendance and fleet-management services (the “Service”), including our web application and related features such as
                     driver verification and optional biometric attendance capture.
                 </p>

@@ -55,7 +55,7 @@
                             <div>
                                 <h3 class="text-white font-semibold mb-1">Address</h3>
                                 <p class="text-slate-400">
-                                    Polaris Multipurpose Cooperative<br/>
+                                    {{ config('app.name', 'Polaris Attendance') }}<br/>
                                     123 Transportation Ave<br/>
                                     City, State 12345
                                 </p>

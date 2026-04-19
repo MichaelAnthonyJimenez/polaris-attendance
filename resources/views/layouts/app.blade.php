@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Polaris Attendance</title>
+    <title>{{ config('app.name', 'Polaris Attendance') }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     @stack('head-scripts')
@@ -39,10 +39,10 @@
                             <div class="flex items-center gap-2">
                                 <img
                                     src="{{ asset('images/571126195_1487564565872864_6483675374142568502_n-removebg-preview (1).png') }}"
-                                    alt="Polaris Attendance"
+                                    alt="{{ config('app.name', 'Polaris Attendance') }}"
                                     class="w-7 h-7 rounded-lg object-contain bg-white/5 border border-white/10"
                                 >
-                                <h1 class="text-sm font-semibold text-white truncate">Polaris Attendance</h1>
+                                <h1 class="text-sm font-semibold text-white truncate">{{ config('app.name', 'Polaris Attendance') }}</h1>
                             </div>
                             <p class="text-xs text-slate-400 mt-1 truncate">Taxi Driver Management</p>
                         </div>
@@ -187,10 +187,10 @@
                 'lg:ml-64' => ! $isFullscreenCameraPage,
             ])>
                 <!-- Header: sticky (html/body no longer use overflow-x-hidden; clip is on .app-scroll-clip below) -->
-                <nav class="z-30 shrink-0 overflow-visible border-b border-white/5 bg-slate-900/70 backdrop-blur pt-[env(safe-area-inset-top,0px)] @if($isFullscreenCameraPage) hidden @endif">
-                    <div class="shell flex items-center justify-between overflow-visible py-4">
+                <nav class="z-30 shrink-0 border-b border-white/5 bg-slate-900/70 backdrop-blur pt-[env(safe-area-inset-top,0px)] @if($isFullscreenCameraPage) hidden @endif">
+                    <div class="shell flex items-center justify-between py-4">
                         <div class="flex items-center gap-3 min-w-0">
-                            <div class="text-white font-semibold text-lg truncate">Polaris Attendance</div>
+                            <div class="text-white font-semibold text-lg truncate">{{ config('app.name', 'Polaris Attendance') }}</div>
                         </div>
 
                         @php
@@ -252,13 +252,11 @@
                                 </button>
                                 <div
                                     id="topbarNotificationsPanel"
-                                    class="hidden flex max-h-none w-full flex-col overflow-hidden rounded-xl border border-white/10 bg-slate-900/95 backdrop-blur-md shadow-xl z-[100]
-                                        max-lg:fixed max-lg:left-3 max-lg:right-3 max-lg:top-[calc(env(safe-area-inset-top,0px)+3.75rem)] max-lg:max-h-[calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-5.5rem)]
-                                        lg:absolute lg:right-0 lg:top-full lg:mt-2 lg:w-[min(22rem,calc(100vw-2rem))] lg:max-h-[min(24rem,calc(100dvh-6rem))]"
+                                    class="hidden absolute right-0 mt-2 w-[min(100vw-2rem,22rem)] max-w-[calc(100vw-2rem)] rounded-xl border border-white/10 bg-slate-900/95 backdrop-blur-md shadow-xl z-50"
                                     role="region"
                                     aria-label="Notification list"
                                 >
-                                    <div class="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 px-4 py-3">
+                                    <div class="flex items-center justify-between gap-2 px-4 py-3 border-b border-white/10">
                                         <p class="text-sm font-medium text-slate-100">Notifications</p>
                                         @if($topbarUnreadCount > 0)
                                             <form method="POST" action="{{ route('notifications.markAllRead') }}" class="shrink-0">
@@ -267,7 +265,7 @@
                                             </form>
                                         @endif
                                     </div>
-                                    <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                                    <div class="max-h-80 overflow-y-auto">
                                         @if($topbarNotifications->isEmpty())
                                             <div class="px-4 py-8 text-sm text-slate-400 text-center">No notifications yet.</div>
                                         @else
@@ -297,7 +295,7 @@
                                             </ul>
                                         @endif
                                     </div>
-                                    <div class="shrink-0 border-t border-white/10 px-4 py-2.5">
+                                    <div class="border-t border-white/10 px-4 py-2.5">
                                         <a href="{{ route('notifications.index') }}" class="text-xs font-medium text-blue-400 hover:text-blue-300">View all notifications</a>
                                     </div>
                                 </div>
@@ -331,7 +329,7 @@
                                 </button>
                                 <div
                                     id="topbarProfileMenu"
-                                    class="hidden fixed left-3 right-3 top-[calc(env(safe-area-inset-top,0px)+3.75rem)] z-[100] mt-0 max-h-[calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)-5.5rem)] w-auto overflow-y-auto overflow-x-hidden rounded-xl border border-white/10 bg-slate-900/95 shadow-xl backdrop-blur-md sm:left-auto sm:right-3 sm:w-56 sm:max-w-[calc(100vw-2rem)]"
+                                    class="hidden absolute right-0 z-50 mt-2 w-56 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-white/10 bg-slate-900/95 shadow-xl backdrop-blur-md"
                                     role="menu"
                                     aria-labelledby="topbarProfileBtn"
                                 >
@@ -430,7 +428,7 @@
             <div class="w-full flex flex-col min-h-screen">
                 <nav class="z-30 shrink-0 border-b border-white/5 bg-slate-900/70 backdrop-blur pt-[env(safe-area-inset-top,0px)]">
                     <div class="shell flex items-center justify-between py-4">
-                        <div class="text-white font-semibold text-lg">Polaris Attendance</div>
+                        <div class="text-white font-semibold text-lg">{{ config('app.name', 'Polaris Attendance') }}</div>
                         <div class="flex items-center gap-3 text-sm">
                             @if (request()->routeIs('login', 'register'))
                                 <a href="{{ route('home') }}" class="btn-secondary">Return home</a>

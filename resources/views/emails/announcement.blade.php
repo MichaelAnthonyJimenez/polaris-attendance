@@ -23,7 +23,7 @@
     @endif
 
     <p style="font-size: 0.875rem; color: #64748b; margin-top: 14px;">
-        This message was sent by Polaris Attendance.
+        This message was sent by {{ config('app.name', 'Polaris Attendance') }}.
     </p>
 </body>
 </html>

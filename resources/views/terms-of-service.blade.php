@@ -15,7 +15,7 @@
 
             <div class="bg-slate-800/50 backdrop-blur-md rounded-xl border border-white/10 p-8 md:p-10 space-y-8 text-slate-300 leading-relaxed">
                 <p class="text-slate-200">
-                    These Terms of Service (“Terms”) govern your access to and use of {{ config('app.name', 'Polaris') }} and related services (collectively, the “Service”).
+                    These Terms of Service (“Terms”) govern your access to and use of {{ config('app.name', 'Polaris Attendance') }} and related services (collectively, the “Service”).
                     By creating an account, accessing the Service, or clicking to accept these Terms where prompted, you agree to be bound by these Terms.
                 </p>
 
@@ -67,7 +67,7 @@
                 <section class="space-y-3">
                     <h2 class="text-xl font-semibold text-white">Limitation of liability</h2>
                     <p>
-                        To the fullest extent permitted by law, {{ config('app.name', 'Polaris') }} and its suppliers will not be liable for any indirect, incidental, special, consequential, or punitive damages,
+                        To the fullest extent permitted by law, {{ config('app.name', 'Polaris Attendance') }} and its suppliers will not be liable for any indirect, incidental, special, consequential, or punitive damages,
                         or any loss of profits, data, or goodwill, arising from or related to your use of the Service. Our aggregate liability is limited to the greater of amounts you paid us for the Service
                         in the twelve months before the claim or fifty dollars (USD), where permitted.
                     </p>

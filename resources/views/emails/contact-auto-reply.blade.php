@@ -17,7 +17,7 @@
                     <tr>
                         <td style="padding:0 0 14px 0;">
                             <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:#0f172a; font-size:18px; font-weight:800; letter-spacing:0.2px;">
-                                Polaris Attendance
+                                {{ config('app.name', 'Polaris Attendance') }}
                             </div>
                         </td>
                     </tr>
@@ -49,7 +49,7 @@
                     <tr>
                         <td style="padding:14px 4px 0 4px;">
                             <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:#64748b; font-size:12px; line-height:1.6;">
-                                Polaris Multipurpose Cooperative<br>
+                                {{ config('app.name', 'Polaris Attendance') }}<br>
                                 © {{ date('Y') }} {{ config('app.name', 'Polaris Attendance') }}. All rights reserved.<br>
                                 <span style="color:#94a3b8;">This is an automated email. Please do not reply.</span>
                             </div>

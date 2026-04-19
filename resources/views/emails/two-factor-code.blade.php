@@ -17,7 +17,7 @@
                     <tr>
                         <td style="padding:0 0 14px 0;">
                             <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:#0f172a; font-size:18px; font-weight:800; letter-spacing:0.2px;">
-                                Polaris Attendance
+                                {{ config('app.name', 'Polaris Attendance') }}
                             </div>
                         </td>
                     </tr>

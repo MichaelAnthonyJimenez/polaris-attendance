@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Polaris Attendance</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
@@ -425,8 +426,8 @@
 
                 <div @class([
                     'app-scroll-clip',
-                    'flex-1' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete'),
-                    'flex-none' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete'),
+                    'flex-1' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'two-factor.*'),
+                    'flex-none' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'two-factor.*'),
                 ])>
                 <main class="shell mt-6 space-y-4 pb-[calc(env(safe-area-inset-bottom,0px)+3rem)] sm:pb-0">
                     @if (session('status'))
@@ -452,8 +453,8 @@
                 <!-- Footer -->
                 <footer @class([
                     'shrink-0 border-t border-white/10 bg-slate-900/50 backdrop-blur-md',
-                    'mt-auto' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete'),
-                    'mt-8' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete'),
+                    'mt-auto' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'two-factor.*'),
+                    'mt-8' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'two-factor.*'),
                 ])>
                     <div class="shell py-6">
                         <div class="flex flex-col md:flex-row justify-between items-center gap-4">

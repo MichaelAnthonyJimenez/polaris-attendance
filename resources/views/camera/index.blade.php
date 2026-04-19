@@ -269,21 +269,40 @@
                     if (position.coords.accuracy != null) {
                         document.getElementById('att_geo_accuracy').value = String(position.coords.accuracy);
                     }
-                    fetch(liveLocationEndpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': csrf,
-                            'Accept': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            latitude: position.coords.latitude,
-                            longitude: position.coords.longitude,
-                            geo_accuracy: position.coords.accuracy,
-                            speed: position.coords.speed ?? null,
-                            heading: position.coords.heading ?? null,
-                        }),
-                    }).catch(() => {});
+                    const payload = JSON.stringify({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        geo_accuracy: position.coords.accuracy,
+                        speed: position.coords.speed ?? null,
+                        heading: position.coords.heading ?? null,
+                    });
+                    const postLive = () =>
+                        fetch(liveLocationEndpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrf,
+                                'Accept': 'application/json',
+                            },
+                            credentials: 'same-origin',
+                            body: payload,
+                        });
+                    postLive()
+                        .then(async (res) => {
+                            if (res.status === 409) {
+                                await fetch(enableLocationSharingEndpoint, {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRF-TOKEN': csrf,
+                                        'Accept': 'application/json',
+                                    },
+                                    credentials: 'same-origin',
+                                });
+                                return postLive();
+                            }
+                            return res;
+                        })
+                        .catch(() => {});
                 },
                 () => {},
                 { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
@@ -312,6 +331,7 @@
                                 'X-CSRF-TOKEN': csrf,
                                 'Accept': 'application/json',
                             },
+                            credentials: 'same-origin',
                         });
                     } catch (_e) {
                         // keep flow non-blocking

@@ -512,15 +512,21 @@
 </script>
 <script>
     (function () {
-        const sharingEnabled = @json(!empty($driverLocationSharingEnabled));
-        if (!sharingEnabled || !navigator.geolocation) return;
+        if (!navigator.geolocation) {
+            const statusEl = document.getElementById('driverLiveLocationStatus');
+            if (statusEl) statusEl.textContent = 'Location is not supported on this browser.';
+            return;
+        }
 
+        const sharingEnabled = @json(!empty($driverLocationSharingEnabled));
         const statusEl = document.getElementById('driverLiveLocationStatus');
         const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         const endpoint = @json(route('locations.live-update'));
+        const enableEndpoint = @json(route('locations.enable-sharing'));
 
         let lastSentAt = 0;
         const minIntervalMs = 15000;
+        let watchId = null;
 
         function setStatus(text) {
             if (statusEl) statusEl.textContent = text;
@@ -531,31 +537,96 @@
             if (now - lastSentAt < minIntervalMs) return;
             lastSentAt = now;
 
-            fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrf,
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude,
-                    geo_accuracy: position.coords.accuracy,
-                    speed: position.coords.speed ?? null,
-                    heading: position.coords.heading ?? null,
-                }),
-            })
-                .then((response) => response.ok ? response.json() : Promise.reject(response))
+            const body = JSON.stringify({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                geo_accuracy: position.coords.accuracy,
+                speed: position.coords.speed ?? null,
+                heading: position.coords.heading ?? null,
+            });
+
+            const postLive = () =>
+                fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                    body,
+                });
+
+            postLive()
+                .then(async (response) => {
+                    if (response.status === 409) {
+                        const en = await fetch(enableEndpoint, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': csrf,
+                                'Accept': 'application/json',
+                            },
+                            credentials: 'same-origin',
+                        });
+                        if (en.ok) return postLive();
+                    }
+                    return response;
+                })
+                .then((response) => (response && response.ok ? response.json() : Promise.reject(response)))
                 .then(() => setStatus('Live location shared with admin.'))
-                .catch(() => {});
+                .catch(() => setStatus('Could not update live location. Enable “Share live location” in Settings or try again.'));
         }
 
-        navigator.geolocation.watchPosition(
-            sendLocation,
-            () => setStatus('Location permission denied or unavailable.'),
-            { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
-        );
+        function startWatch() {
+            if (watchId !== null) return;
+            watchId = navigator.geolocation.watchPosition(
+                sendLocation,
+                () => setStatus('Location permission denied or unavailable.'),
+                { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
+            );
+        }
+
+        if (sharingEnabled) {
+            startWatch();
+            return;
+        }
+
+        setStatus('Live location sharing is off. Tap below to enable it for admin visibility.');
+        const wrap = statusEl && statusEl.parentElement;
+        if (!wrap) return;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'mt-2 btn-secondary text-xs px-3 py-2';
+        btn.textContent = 'Enable live location';
+        btn.addEventListener('click', () => {
+            btn.disabled = true;
+            setStatus('Requesting location permission…');
+            navigator.geolocation.getCurrentPosition(
+                async () => {
+                    try {
+                        await fetch(enableEndpoint, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': csrf,
+                                'Accept': 'application/json',
+                            },
+                            credentials: 'same-origin',
+                        });
+                    } catch (_e) {
+                        /* non-blocking */
+                    }
+                    setStatus('Live location enabled.');
+                    startWatch();
+                },
+                () => {
+                    setStatus('Location permission denied. Allow location in your browser to share your position.');
+                    btn.disabled = false;
+                },
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            );
+        });
+        wrap.appendChild(btn);
     })();
 </script>
 <script>

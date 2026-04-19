@@ -441,8 +441,8 @@
 
                 <div @class([
                     'app-scroll-clip',
-                    'flex-1' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'two-factor.*'),
-                    'flex-none' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'two-factor.*'),
+                    'flex-1' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'two-factor.*', 'password.request', 'password.reset'),
+                    'flex-none' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'two-factor.*', 'password.request', 'password.reset'),
                 ])>
                 <main class="shell mt-6 space-y-4 pb-[calc(env(safe-area-inset-bottom,0px)+3rem)] sm:pb-0">
                     @if (session('status'))
@@ -468,8 +468,8 @@
                 <!-- Footer -->
                 <footer @class([
                     'shrink-0 border-t border-white/10 bg-slate-900/50 backdrop-blur-md',
-                    'mt-auto' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'two-factor.*'),
-                    'mt-8' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'two-factor.*'),
+                    'mt-auto' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'two-factor.*', 'password.request', 'password.reset'),
+                    'mt-8' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'two-factor.*', 'password.request', 'password.reset'),
                 ])>
                     <div class="shell py-6">
                         <div class="flex flex-col md:flex-row justify-between items-center gap-4">

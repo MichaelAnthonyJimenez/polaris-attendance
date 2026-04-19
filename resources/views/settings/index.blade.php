@@ -44,6 +44,13 @@
                     </div>
                 </div>
                 <nav class="space-y-1">
+                    @if($userRole === 'driver')
+                        <a href="#group-driver-live-location"
+                           class="settings-nav-link block px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-white/5 hover:text-white transition-colors"
+                           data-group="group-driver-live-location">
+                            Location
+                        </a>
+                    @endif
                     @foreach($settings as $group => $groupSettings)
                         @php
                             $groupLabels = [

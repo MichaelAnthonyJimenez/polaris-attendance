@@ -317,9 +317,7 @@ class SettingsController extends Controller
         ],
         'driver_profile' => [
             'driver_allow_profile_updates',
-            'driver_show_badge_number',
             'driver_show_email',
-            'driver_show_phone',
         ],
         'driver_security' => [
             'driver_session_timeout',

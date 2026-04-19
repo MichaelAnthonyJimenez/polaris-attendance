@@ -112,7 +112,7 @@
                 </div>
             @else
             @if($userRole === 'driver')
-                <div id="group-driver-live-location" class="glass p-6 scroll-mt-24">
+                <div id="group-driver-live-location" class="glass p-6 scroll-mt-24 mb-6 sm:mb-8">
                     <div class="flex items-center gap-3 mb-4">
                         <div class="p-2 rounded-lg bg-blue-500/20">
                             <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

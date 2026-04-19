@@ -68,9 +68,7 @@
                     <h2 class="text-xl font-semibold text-white">Limitation of liability</h2>
                     <p>
                         To the fullest extent permitted by law, {{ config('app.name', 'Polaris Attendance') }} and its suppliers will not be liable for any indirect, incidental, special, consequential, or punitive damages,
-                        or any loss of profits, data, or goodwill, arising from or related to your use of the Service. Our aggregate liability is limited to the greater of amounts you paid us for the Service
-                        in the twelve months before the claim or fifty dollars (USD), where permitted.
-                    </p>
+                        or any loss of profits, data, or goodwill, arising from or related to your use of the Service.
                 </section>
 
                 <section class="space-y-3">

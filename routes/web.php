@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriverVerificationController;
 use App\Http\Controllers\DriverVerificationSubmissionController;
 use App\Http\Controllers\GlobalSearchController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InboxController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\NotificationController;
@@ -21,7 +22,7 @@ use App\Http\Controllers\ContactMessageController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'home')->name('home');
+Route::get('/', HomeController::class)->name('home');
 
 Route::view('/terms-of-service', 'terms-of-service')->name('terms-of-service');
 Route::view('/privacy-policy', 'privacy-policy')->name('privacy-policy');

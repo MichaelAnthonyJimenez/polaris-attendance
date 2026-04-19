@@ -360,8 +360,8 @@
 
                 <div @class([
                     'app-scroll-clip',
-                    'flex-1' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete'),
-                    'flex-none' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete'),
+                    'flex-1' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'audit-logs.*'),
+                    'flex-none' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'audit-logs.*'),
                 ])>
                 <main @class([
                     'app-main-shell w-full min-w-0',
@@ -401,8 +401,8 @@
                 @unless($isFullscreenCameraPage)
                 <footer @class([
                     'app-footer hidden shrink-0 border-t border-white/10 bg-slate-900/50 backdrop-blur-md lg:block',
-                    'mt-auto' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete'),
-                    'mt-8' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete'),
+                    'mt-auto' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'audit-logs.*'),
+                    'mt-8' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'audit-logs.*'),
                 ])>
                     <div class="shell py-6">
                         <div class="flex flex-col md:flex-row justify-between items-center gap-4">

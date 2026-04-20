@@ -37,7 +37,10 @@
                     Allow camera, then capture ID front and selfie with ID.
                 </p>
                 </div>
-            <button type="button" id="idvAutoCaptureToggle" class="btn-secondary text-xs px-3 py-2" aria-pressed="false">Auto: off</button>
+            <div class="flex items-center gap-2">
+                <button type="button" id="idvCameraToggle" class="btn-secondary text-xs px-3 py-2" aria-pressed="true">Camera: rear</button>
+                <button type="button" id="idvAutoCaptureToggle" class="btn-secondary text-xs px-3 py-2" aria-pressed="false">Auto: off</button>
+            </div>
         </header>
 
         <div class="flex-1 relative min-h-0 bg-black">
@@ -142,6 +145,7 @@
     const captureBtn = document.getElementById('idvCapture');
     const retakeBtn = document.getElementById('idvRetakeBtn');
     const autoBtn = document.getElementById('idvAutoCaptureToggle');
+    const cameraToggleBtn = document.getElementById('idvCameraToggle');
     const submitBtn = document.getElementById('idvSubmit');
     const hint = document.getElementById('idvHint');
     const slotHint = document.getElementById('idvSlotHint');
@@ -171,6 +175,7 @@
     let mode = 'live';
     let stepIndex = 0;
     let autoCapture = localStorage.getItem(LS_AUTO) === '1';
+    let cameraFacingMode = 'environment';
     let countdownTimer = null;
     let autoCaptureQueued = false;
     let alignmentGood = false;
@@ -360,6 +365,13 @@
         autoBtn.setAttribute('aria-pressed', autoCapture ? 'true' : 'false');
     }
 
+    function syncCameraUi() {
+        if (!cameraToggleBtn) return;
+        const isRear = cameraFacingMode === 'environment';
+        cameraToggleBtn.textContent = isRear ? 'Camera: rear' : 'Camera: front';
+        cameraToggleBtn.setAttribute('aria-pressed', isRear ? 'true' : 'false');
+    }
+
     function syncStepUi() {
         const step = steps[stepIndex];
         if (!step) return;
@@ -449,6 +461,7 @@
             setHint('Requesting camera…');
             stream = await window.polarisRequestCameraOnly(video, {
                 setHint: (t) => { if (hint) hint.textContent = t; },
+                facingMode: cameraFacingMode,
             });
             syncStepUi();
             captureBtn.disabled = false;
@@ -517,9 +530,17 @@
         localStorage.setItem(LS_AUTO, autoCapture ? '1' : '0');
         syncAutoUi();
     });
+    cameraToggleBtn?.addEventListener('click', async () => {
+        cameraFacingMode = cameraFacingMode === 'environment' ? 'user' : 'environment';
+        syncCameraUi();
+        if (mode === 'live') {
+            await startCamera();
+        }
+    });
     enableBtn?.addEventListener('click', startCamera);
 
     syncAutoUi();
+    syncCameraUi();
     syncStepUi();
     setMode('live');
     showPermission('We need camera access for ID verification. Please allow camera to continue.');

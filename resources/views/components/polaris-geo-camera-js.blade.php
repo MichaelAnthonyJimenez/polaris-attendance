@@ -3,8 +3,8 @@
     if (typeof window.polarisRequestCameraOnly === 'function') return;
 
     /**
-     * Request front-facing camera only, attach to <video>, return MediaStream.
-     * Used by the attendance camera page.
+     * Request camera stream with optional facing mode, attach to <video>, return MediaStream.
+     * Used by attendance and verification camera pages.
      */
     window.polarisRequestCameraOnly = async function (videoEl, options) {
         if (!videoEl) {
@@ -34,25 +34,41 @@
             throw new Error('getUserMedia not available');
         }
 
+        var requestedFacingMode =
+            options && typeof options.facingMode === 'string'
+                ? options.facingMode
+                : 'user';
+
         var constraintsIdeal = {
             video: {
-                facingMode: { ideal: 'user' },
+                facingMode: { ideal: requestedFacingMode },
                 width: { ideal: 1280 },
                 height: { ideal: 720 },
             },
             audio: false,
         };
-
+        var constraintsExact = {
+            video: {
+                facingMode: { exact: requestedFacingMode },
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+            },
+            audio: false,
+        };
         var constraintsFallback = { video: true, audio: false };
 
         var mediaStream;
         try {
-            mediaStream = await gum(constraintsIdeal);
-        } catch (e1) {
+            mediaStream = await gum(constraintsExact);
+        } catch (e0) {
             try {
-                mediaStream = await gum(constraintsFallback);
-            } catch (e2) {
-                throw e1 || e2;
+                mediaStream = await gum(constraintsIdeal);
+            } catch (e1) {
+                try {
+                    mediaStream = await gum(constraintsFallback);
+                } catch (e2) {
+                    throw e0 || e1 || e2;
+                }
             }
         }
         videoEl.srcObject = mediaStream;

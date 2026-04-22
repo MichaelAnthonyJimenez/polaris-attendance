@@ -94,7 +94,16 @@ class AuthController extends Controller
 
         $socialite = app('Laravel\\Socialite\\Contracts\\Factory');
 
-        return $socialite->driver('google')->redirect();
+        $driver = $socialite->driver('google');
+
+        // On platforms like Railway (HTTPS behind proxy), explicitly bind the callback
+        // URL to the current request host/scheme to avoid redirect_uri mismatches.
+        $callbackUrl = url('/auth/google/callback');
+        if (method_exists($driver, 'redirectUrl')) {
+            $driver->redirectUrl($callbackUrl);
+        }
+
+        return $driver->redirect();
     }
 
     public function handleGoogleCallback(Request $request): RedirectResponse

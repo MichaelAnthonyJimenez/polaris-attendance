@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -115,7 +116,20 @@ class AuthController extends Controller
                 ]);
             }
             $socialite = app('Laravel\\Socialite\\Contracts\\Factory');
-            $googleUser = $socialite->driver('google')->user();
+            $driver = $socialite->driver('google');
+            if (method_exists($driver, 'redirectUrl')) {
+                $driver->redirectUrl(url('/auth/google/callback'));
+            }
+            try {
+                $googleUser = $driver->user();
+            } catch (\InvalidArgumentException $stateException) {
+                // Railway / proxy deployments can occasionally lose OAuth state.
+                if (method_exists($driver, 'stateless')) {
+                    $googleUser = $driver->stateless()->user();
+                } else {
+                    throw $stateException;
+                }
+            }
         } catch (\Throwable $e) {
             report($e);
 
@@ -148,7 +162,15 @@ class AuthController extends Controller
                 $user->email_verified_at = now();
             }
         }
-        $user->save();
+        try {
+            $user->save();
+        } catch (QueryException $e) {
+            report($e);
+
+            return redirect()->route('login')->withErrors([
+                'email' => 'Google account verified, but saving your user failed. Please contact support and run latest migrations on production.',
+            ]);
+        }
 
         $remember = (bool) $request->session()->pull('google_login_remember', false);
         Auth::login($user, $remember);
@@ -185,6 +207,7 @@ class AuthController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
+            'role' => 'driver',
             'remember_token' => Str::random(10),
         ]);
 

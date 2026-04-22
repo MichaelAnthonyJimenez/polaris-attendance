@@ -36,7 +36,8 @@ return [
     ],
 
     'brevo' => [
-        'api_key' => env('BREVO_API_KEY'),
+        // Support both common variable names used in hosts.
+        'api_key' => env('BREVO_API_KEY', env('BREVO_KEY')),
     ],
 
     'turnstile' => [

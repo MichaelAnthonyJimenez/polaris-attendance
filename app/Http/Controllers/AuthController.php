@@ -80,9 +80,13 @@ class AuthController extends Controller
             ]);
         }
 
-        if (! config('services.google.client_id') || ! config('services.google.client_secret')) {
+        $googleClientId = (string) config('services.google.client_id');
+        $googleClientSecret = (string) config('services.google.client_secret');
+        $googleRedirect = (string) config('services.google.redirect');
+
+        if ($googleClientId === '' || $googleClientSecret === '' || $googleRedirect === '') {
             return redirect()->route('login')->withErrors([
-                'email' => 'Google sign-in is not configured yet.',
+                'email' => 'Google sign-in is not configured yet. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REDIRECT_URI (or APP_URL) in the environment.',
             ]);
         }
 

@@ -56,7 +56,7 @@
                     </div>
                 </div>
                 <a
-                    href="{{ route('auth.google.callback') }}"
+                    href="{{ route('auth.google.redirect') }}"
                     class="w-full inline-flex items-center justify-center gap-3 rounded-xl bg-white text-slate-900 hover:bg-white/95 transition px-4 py-3 text-sm font-semibold border border-white/10"
                 >
                     <svg class="w-5 h-5" viewBox="0 0 48 48" aria-hidden="true">

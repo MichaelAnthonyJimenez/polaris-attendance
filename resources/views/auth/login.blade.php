@@ -47,8 +47,25 @@
                     </div>
                 @endif
                 <button type="submit" class="btn-primary w-full">Login</button>
-                <a href="{{ route('auth.google.redirect') }}" class="btn-secondary w-full justify-center inline-flex">
-                    Continue with Google
+                <div class="relative py-1">
+                    <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div class="w-full border-t border-white/10"></div>
+                    </div>
+                    <div class="relative flex justify-center">
+                        <span class="px-3 text-xs text-slate-400 bg-slate-950/40 rounded-full">or continue with</span>
+                    </div>
+                </div>
+                <a
+                    href="{{ route('auth.google.redirect') }}"
+                    class="w-full inline-flex items-center justify-center gap-3 rounded-xl bg-white text-slate-900 hover:bg-white/95 transition px-4 py-3 text-sm font-semibold border border-white/10"
+                >
+                    <svg class="w-5 h-5" viewBox="0 0 48 48" aria-hidden="true">
+                        <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.773 32.659 29.18 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.963 3.037l5.657-5.657C34.047 6.053 29.284 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+                        <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 16.108 18.961 12 24 12c3.059 0 5.842 1.154 7.963 3.037l5.657-5.657C34.047 6.053 29.284 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
+                        <path fill="#4CAF50" d="M24 44c5.079 0 9.767-1.95 13.303-5.121l-6.143-5.2C29.163 35.091 26.691 36 24 36c-5.159 0-9.743-3.318-11.284-7.946l-6.52 5.025C9.506 39.556 16.227 44 24 44z"/>
+                        <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.734 2.001-2.119 3.68-4.043 4.879l.003-.002 6.143 5.2C36.95 39.1 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
+                    </svg>
+                    <span>Google</span>
                 </a>
                 <div class="text-sm text-center">
                     <a href="{{ route('password.request') }}" class="text-blue-400 hover:text-blue-300 font-medium">Forgot password?</a>

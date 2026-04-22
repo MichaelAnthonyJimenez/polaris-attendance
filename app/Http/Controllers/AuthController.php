@@ -90,9 +90,7 @@ class AuthController extends Controller
 
         $socialite = app('Laravel\\Socialite\\Contracts\\Factory');
 
-        return $socialite->driver('google')
-            ->scopes(['openid', 'profile', 'email'])
-            ->redirect();
+        return $socialite->driver('google')->redirect();
     }
 
     public function handleGoogleCallback(Request $request): RedirectResponse

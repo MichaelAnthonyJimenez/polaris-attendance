@@ -39,7 +39,11 @@
                 </p>
                 </div>
             <div class="flex items-center gap-2">
-                <button type="button" id="idvCameraToggle" class="btn-secondary text-xs px-3 py-2" aria-pressed="true">Camera: rear</button>
+                <button type="button" id="idvCameraToggle" class="btn-secondary px-3 py-2" aria-pressed="true" aria-label="Reverse camera">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7h3a2 2 0 012 2v3m-2-5l-3 3m0 0a7 7 0 10.88 9.88M8 17H5a2 2 0 01-2-2v-3m2 5l3-3m0 0a7 7 0 10-.88-9.88"></path>
+                    </svg>
+                </button>
                 <button type="button" id="idvAutoCaptureToggle" class="btn-secondary text-xs px-3 py-2" aria-pressed="false">Auto: off</button>
             </div>
         </header>
@@ -402,7 +406,6 @@
     function syncCameraUi() {
         if (!cameraToggleBtn) return;
         const isRear = cameraFacingMode === 'environment';
-        cameraToggleBtn.textContent = isRear ? 'Camera: rear' : 'Camera: front';
         cameraToggleBtn.setAttribute('aria-pressed', isRear ? 'true' : 'false');
     }
 

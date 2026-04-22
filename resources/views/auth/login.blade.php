@@ -47,11 +47,9 @@
                     </div>
                 @endif
                 <button type="submit" class="btn-primary w-full">Login</button>
-                @if (config('services.google.client_id') && config('services.google.client_secret') && config('services.google.redirect'))
-                    <a href="{{ route('auth.google.redirect') }}" class="btn-secondary w-full justify-center inline-flex">
-                        Continue with Google
-                    </a>
-                @endif
+                <a href="{{ route('auth.google.redirect') }}" class="btn-secondary w-full justify-center inline-flex">
+                    Continue with Google
+                </a>
                 <div class="text-sm text-center">
                     <a href="{{ route('password.request') }}" class="text-blue-400 hover:text-blue-300 font-medium">Forgot password?</a>
                 </div>

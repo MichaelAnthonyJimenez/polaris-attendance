@@ -402,7 +402,7 @@
                 <footer @class([
                     'app-footer hidden shrink-0 border-t border-white/10 bg-slate-900/50 backdrop-blur-md lg:block',
                     'mt-auto' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'audit-logs.*'),
-                    'mt-8' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'audit-logs.*'),
+                    'mt-4' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'audit-logs.*'),
                 ])>
                     <div class="shell py-6">
                         <div class="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -469,7 +469,7 @@
                 <footer @class([
                     'shrink-0 border-t border-white/10 bg-slate-900/50 backdrop-blur-md',
                     'mt-auto' => request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'two-factor.*', 'password.request', 'password.reset'),
-                    'mt-8' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'two-factor.*', 'password.request', 'password.reset'),
+                    'mt-4' => ! request()->routeIs('home', 'users.*', 'driver-verification.*', 'announcements.*', 'notifications.*', 'register.complete', 'two-factor.*', 'password.request', 'password.reset'),
                 ])>
                     <div class="shell py-6">
                         <div class="flex flex-col md:flex-row justify-between items-center gap-4">

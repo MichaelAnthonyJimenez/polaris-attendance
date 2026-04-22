@@ -288,6 +288,12 @@ class AttendanceController extends Controller
             }
         }
 
+        if ($faceRecognitionEnabled && $fullPath && $confidence === null) {
+            return back()->withErrors([
+                'face_image' => 'Unknown user, unable to ' . str_replace('_', ' ', (string) $data['type']) . '.',
+            ])->withInput();
+        }
+
         if ($fullPath && $livenessDetectionEnabled) {
             $liveness = $this->livenessService->score($fullPath);
         }
@@ -304,7 +310,7 @@ class AttendanceController extends Controller
 
         if ($isFaceScoreLow) {
             return back()->withErrors([
-                'face_image' => 'Unauthorized user. Face recognition confidence is below the minimum threshold.',
+                'face_image' => 'Unknown user, unable to ' . str_replace('_', ' ', (string) $data['type']) . '.',
             ])->withInput();
         }
 

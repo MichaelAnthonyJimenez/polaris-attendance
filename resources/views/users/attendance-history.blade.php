@@ -4,47 +4,30 @@
 <div class="space-y-6">
     <div class="glass p-5 sm:p-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-            <h1 class="text-xl sm:text-2xl font-bold text-white">Attendance History</h1>
-            <p class="text-sm text-slate-300 mt-1">Review your daily, weekly, or monthly records.</p>
+            <h1 class="text-xl sm:text-2xl font-bold text-white">{{ $driver->name }} Attendance</h1>
+            <p class="text-sm text-slate-300 mt-1">Driver attendance history, calendar, and location map.</p>
         </div>
         <div class="flex gap-2">
-            <a href="{{ route('attendance.history', ['period' => 'daily']) }}" class="btn-secondary text-xs {{ $period === 'daily' ? 'bg-blue-500/30' : '' }}">Daily</a>
-            <a href="{{ route('attendance.history', ['period' => 'weekly']) }}" class="btn-secondary text-xs {{ $period === 'weekly' ? 'bg-blue-500/30' : '' }}">Weekly</a>
-            <a href="{{ route('attendance.history', ['period' => 'monthly']) }}" class="btn-secondary text-xs {{ $period === 'monthly' ? 'bg-blue-500/30' : '' }}">Monthly</a>
+            <a href="{{ route('users.attendance-history', [$driver, 'period' => 'daily']) }}" class="btn-secondary text-xs {{ $period === 'daily' ? 'bg-blue-500/30' : '' }}">Daily</a>
+            <a href="{{ route('users.attendance-history', [$driver, 'period' => 'weekly']) }}" class="btn-secondary text-xs {{ $period === 'weekly' ? 'bg-blue-500/30' : '' }}">Weekly</a>
+            <a href="{{ route('users.attendance-history', [$driver, 'period' => 'monthly']) }}" class="btn-secondary text-xs {{ $period === 'monthly' ? 'bg-blue-500/30' : '' }}">Monthly</a>
+            <a href="{{ route('users.show', $driver) }}" class="btn-secondary text-xs">Back</a>
         </div>
     </div>
 
-    @php
-        $calendarYear = now()->year;
-        $calendarMonth = now()->month;
-        $calendarFirst = \Carbon\Carbon::create($calendarYear, $calendarMonth, 1);
-        $calendarMap = [];
-        foreach ($groupedHistory as $rowsByBucket) {
-            foreach ($rowsByBucket as $row) {
-                $d = $row->captured_at?->format('Y-m-d');
-                if (! $d || isset($calendarMap[$d])) {
-                    continue;
-                }
-                if ($row->type === 'check_in') {
-                    $st = mb_strtolower(trim((string) ($row->status ?? 'present')));
-                    $calendarMap[$d] = in_array($st, ['present', 'late', 'absent'], true) ? $st : 'present';
-                }
-            }
-        }
-    @endphp
     <div class="glass p-4 sm:p-5 overflow-hidden">
-        <h3 class="text-base sm:text-lg font-semibold text-white mb-3">Calendar ({{ $calendarFirst->format('F Y') }})</h3>
+        <h3 class="text-base sm:text-lg font-semibold text-white mb-3">Calendar ({{ $calendar['monthName'] }})</h3>
         <div class="mx-auto grid max-w-xl grid-cols-7 gap-1 text-center w-full min-w-0">
             @foreach(['Su','Mo','Tu','We','Th','Fr','Sa'] as $d)
                 <span class="text-slate-400 font-medium text-[10px] sm:text-xs py-1">{{ $d }}</span>
             @endforeach
-            @for($i = 0; $i < $calendarFirst->dayOfWeek; $i++)
+            @for($i=0; $i < ($calendar['firstDayOfWeek'] ?? 0); $i++)
                 <span class="min-w-0 aspect-square" aria-hidden="true"></span>
             @endfor
-            @for($day=1; $day <= $calendarFirst->daysInMonth; $day++)
+            @for($day=1; $day <= ($calendar['daysInMonth'] ?? 0); $day++)
                 @php
-                    $dateKey = sprintf('%04d-%02d-%02d', $calendarYear, $calendarMonth, $day);
-                    $status = $calendarMap[$dateKey] ?? null;
+                    $dateKey = sprintf('%04d-%02d-%02d', $calendar['year'], $calendar['month'], $day);
+                    $status = $calendar['days'][$dateKey] ?? null;
                     $wrap = 'border border-white/15 bg-transparent text-slate-400';
                     if ($status === 'present') $wrap = 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-200/90';
                     if ($status === 'late') $wrap = 'border border-amber-500/35 bg-amber-500/10 text-amber-200/90';
@@ -59,9 +42,9 @@
         $latestMapPoint = null;
         foreach ($groupedHistory as $bucketRows) {
             foreach ($bucketRows as $row) {
-                $meta = is_array($row->meta ?? null) ? $row->meta : [];
-                if (is_numeric(data_get($meta, 'latitude')) && is_numeric(data_get($meta, 'longitude'))) {
-                    $latestMapPoint = ['lat' => (float) data_get($meta, 'latitude'), 'lng' => (float) data_get($meta, 'longitude')];
+                $m = is_array($row->meta ?? null) ? $row->meta : [];
+                if (is_numeric(data_get($m, 'latitude')) && is_numeric(data_get($m, 'longitude'))) {
+                    $latestMapPoint = ['lat' => (float) data_get($m, 'latitude'), 'lng' => (float) data_get($m, 'longitude')];
                     break 2;
                 }
             }
@@ -78,7 +61,7 @@
                 referrerpolicy="no-referrer-when-downgrade"
             ></iframe>
         @else
-            <p class="text-slate-400 text-sm">No location data found yet.</p>
+            <p class="text-slate-400 text-sm">No location data found for this driver.</p>
         @endif
     </div>
 

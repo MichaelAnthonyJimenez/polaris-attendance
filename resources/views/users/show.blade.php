@@ -71,7 +71,7 @@
 <div class="max-w-3xl mx-auto mt-6 glass p-5 sm:p-6">
     <div class="flex items-center justify-between gap-3 mb-4">
         <h2 class="text-lg sm:text-xl font-semibold text-white">Attendance History</h2>
-        <a href="{{ route('reports.index', ['driver_ids[]' => [$user->id]]) }}" class="btn-secondary text-xs">Open Reports</a>
+        <a href="{{ route('users.attendance-history', $user) }}" class="btn-secondary text-xs">See Attendance</a>
     </div>
     <div class="overflow-x-auto">
         <table class="table-glass min-w-[560px] w-full">

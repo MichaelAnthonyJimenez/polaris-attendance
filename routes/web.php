@@ -108,6 +108,7 @@ Route::middleware(['auth', 'driver.verified'])->group(function () {
         Route::get('/search/suggest', [GlobalSearchController::class, 'suggest'])->name('global-search.suggest');
 
         Route::resource('users', UserController::class);
+        Route::get('/users/{user}/attendance-history', [UserController::class, 'attendanceHistory'])->name('users.attendance-history');
         Route::prefix('inbox')->name('inbox.')->group(function () {
             Route::get('/', [InboxController::class, 'index'])->name('index');
             Route::get('/{message}', [InboxController::class, 'show'])->name('show');

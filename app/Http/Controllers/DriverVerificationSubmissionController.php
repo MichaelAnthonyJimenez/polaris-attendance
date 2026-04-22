@@ -147,7 +147,9 @@ class DriverVerificationSubmissionController extends Controller
             $verification->id_image_back_path = $idBackPath;
 
             $meta['proof_mode'] = $proofMode;
-            $meta['id_type'] = (string) ($data['id_type'] ?? 'other');
+            $meta['id_type'] = $proofMode === 'selfie_with_id'
+                ? 'ocr_auto_detect'
+                : (string) ($data['id_type'] ?? 'other');
             $meta['ocr'] = $this->idOcrService->extractFromPublicPath($idFrontPath);
         }
 

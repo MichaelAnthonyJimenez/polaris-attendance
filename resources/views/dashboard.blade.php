@@ -62,6 +62,21 @@
 
     <div class="grid grid-cols-1 gap-4 md:gap-5">
         <div class="glass p-5 md:p-6">
+            <h3 class="text-lg font-semibold text-white">Latest Check-in/Out Location</h3>
+            @if(data_get($driverDashboard, 'latestMapPoint'))
+                <iframe
+                    title="Driver latest attendance location"
+                    src="https://maps.google.com/maps?q={{ data_get($driverDashboard, 'latestMapPoint.lat') }},{{ data_get($driverDashboard, 'latestMapPoint.lng') }}&z=16&output=embed"
+                    class="mt-3 w-full h-64 rounded-xl border border-white/10"
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade"
+                ></iframe>
+            @else
+                <p class="mt-3 text-sm text-slate-400">No location data available yet.</p>
+            @endif
+        </div>
+
+        <div class="glass p-5 md:p-6">
             <h3 class="text-lg font-semibold text-white">Last Activity</h3>
             @if(data_get($driverDashboard, 'lastActivity'))
                 <div class="mt-3 text-sm text-slate-200">

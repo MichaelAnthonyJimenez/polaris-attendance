@@ -61,6 +61,7 @@ class DashboardController extends Controller
         $driverDashboard = [
             'status' => null,
             'lastActivity' => null,
+            'latestMapPoint' => null,
             'recentActivity' => [],
             'history' => [],
             'calendar' => [],
@@ -121,6 +122,16 @@ class DashboardController extends Controller
                     'lastCheckOutAt' => $todayCheckOut?->captured_at,
                 ],
                 'lastActivity' => $lastActivity,
+                'latestMapPoint' => (function () use ($lastActivity) {
+                    $meta = is_array($lastActivity?->meta) ? $lastActivity->meta : [];
+                    $lat = isset($meta['latitude']) ? (float) $meta['latitude'] : null;
+                    $lng = isset($meta['longitude']) ? (float) $meta['longitude'] : null;
+                    if ($lat === null || $lng === null) {
+                        return null;
+                    }
+
+                    return ['lat' => $lat, 'lng' => $lng];
+                })(),
                 'recentActivity' => $driverRecentActivity,
                 'history' => $historyRows->map(fn ($row) => [
                     'type' => $row->type,

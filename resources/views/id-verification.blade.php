@@ -11,7 +11,7 @@
     <form method="POST" action="{{ route('driver-verification.store') }}" id="idVerificationForm" class="flex flex-1 flex-col min-h-0">
             @csrf
         <input type="hidden" name="verification_method" value="id_only">
-        <input type="hidden" name="proof_mode" id="idv_proof_mode" value="selfie_with_id">
+        <input type="hidden" name="proof_mode" id="idv_proof_mode" value="">
         <input type="hidden" name="id_front_base64" id="id_front_base64">
         <input type="hidden" name="id_back_base64" id="id_back_base64">
         <input type="hidden" name="face_selfie_base64" id="face_selfie_base64">
@@ -50,6 +50,7 @@
 
         <div class="flex-1 relative min-h-0 bg-black">
             <div class="absolute top-3 left-3 z-[20] rounded-xl bg-black/50 p-3 backdrop-blur-md border border-white/15 w-[min(92vw,22rem)]">
+                <div id="idvTypeWrap" class="hidden">
                 <label class="block text-xs text-slate-300 mb-1">ID type (Philippines)</label>
                 <select id="idv_id_type" name="id_type" class="form-select text-xs py-2 mb-2">
                     <option value="philsys_national_id">PhilSys National ID</option>
@@ -67,8 +68,9 @@
                     <option value="barangay_id">Barangay ID</option>
                     <option value="other">Other</option>
                 </select>
+                </div>
                 <div class="flex gap-2 text-xs">
-                    <button type="button" id="idvModeSelfie" class="btn-secondary px-2 py-1 bg-blue-500/40">Selfie + ID</button>
+                    <button type="button" id="idvModeSelfie" class="btn-secondary px-2 py-1">Selfie + ID</button>
                     <button type="button" id="idvModeUpload" class="btn-secondary px-2 py-1">Upload ID files</button>
                 </div>
                 <div id="idvUploadBox" class="hidden mt-2 space-y-2">
@@ -165,6 +167,17 @@
                 <button type="submit" id="idvSubmit" class="btn-primary flex-1 text-sm py-3" disabled>Submit verification</button>
             </div>
         </footer>
+
+        <div id="idvModeGate" class="absolute inset-0 z-[260] flex items-center justify-center bg-black/88 px-6 text-center">
+            <div class="w-full max-w-sm rounded-2xl border border-white/10 bg-white/5 p-6">
+                <h2 class="text-lg font-semibold text-white">Select verification mode</h2>
+                <p class="mt-2 text-sm text-slate-300">Choose how you want to submit your ID before opening the camera.</p>
+                <div class="mt-5 grid grid-cols-1 gap-3">
+                    <button type="button" id="idvGateSelfie" class="btn-primary w-full justify-center py-2.5 text-sm">Selfie with ID</button>
+                    <button type="button" id="idvGateUpload" class="btn-secondary w-full justify-center py-2.5 text-sm">Upload ID files</button>
+                </div>
+            </div>
+        </div>
         </form>
 </div>
 
@@ -181,7 +194,12 @@
     const submitBtn = document.getElementById('idvSubmit');
     const modeSelfieBtn = document.getElementById('idvModeSelfie');
     const modeUploadBtn = document.getElementById('idvModeUpload');
+    const modeGate = document.getElementById('idvModeGate');
+    const gateSelfieBtn = document.getElementById('idvGateSelfie');
+    const gateUploadBtn = document.getElementById('idvGateUpload');
     const proofModeInput = document.getElementById('idv_proof_mode');
+    const idTypeWrap = document.getElementById('idvTypeWrap');
+    const idTypeSelect = document.getElementById('idv_id_type');
     const uploadBox = document.getElementById('idvUploadBox');
     const uploadFrontInput = document.getElementById('idv_upload_front');
     const hint = document.getElementById('idvHint');
@@ -212,7 +230,7 @@
     let mode = 'live';
     let stepIndex = 0;
     let autoCapture = localStorage.getItem(LS_AUTO) === '1';
-    let proofMode = 'selfie_with_id';
+    let proofMode = '';
     let cameraFacingMode = 'environment';
     let countdownTimer = null;
     let autoCaptureQueued = false;
@@ -410,6 +428,17 @@
     }
 
     function syncStepUi() {
+        if (!proofMode) {
+            if (stepTitle) stepTitle.textContent = 'Select verification mode';
+            if (slotHint) slotHint.textContent = 'Choose Selfie + ID or Upload ID files first.';
+            if (guideLabel) guideLabel.textContent = 'Select verification mode to continue';
+            idFrame?.classList.remove('hidden');
+            faceFrame?.classList.add('hidden');
+            faceFrame?.classList.remove('flex');
+            setGuideState(false, false, idZone);
+            setHint('Select a verification mode first.');
+            return;
+        }
         if (proofMode === 'upload_file') {
             if (stepTitle) stepTitle.textContent = 'Upload ID files';
             if (slotHint) slotHint.textContent = 'Upload ID front (required), back (optional)';
@@ -443,6 +472,10 @@
     }
 
     function refreshSubmit() {
+        if (!proofMode) {
+            submitBtn.disabled = true;
+            return;
+        }
         if (proofMode === 'upload_file') {
             submitBtn.disabled = !(uploadFrontInput && uploadFrontInput.files && uploadFrontInput.files.length > 0);
             return;
@@ -596,6 +629,11 @@
     function setProofMode(nextMode) {
         proofMode = nextMode;
         if (proofModeInput) proofModeInput.value = proofMode;
+        if (modeGate) modeGate.classList.add('hidden');
+        if (idTypeWrap) idTypeWrap.classList.toggle('hidden', proofMode !== 'upload_file');
+        if (idTypeSelect) {
+            idTypeSelect.value = proofMode === 'upload_file' ? (idTypeSelect.value || 'philsys_national_id') : 'other';
+        }
         uploadBox?.classList.toggle('hidden', proofMode !== 'upload_file');
         modeSelfieBtn?.classList.toggle('bg-blue-500/40', proofMode === 'selfie_with_id');
         modeUploadBtn?.classList.toggle('bg-blue-500/40', proofMode === 'upload_file');
@@ -626,6 +664,8 @@
 
     modeSelfieBtn?.addEventListener('click', () => setProofMode('selfie_with_id'));
     modeUploadBtn?.addEventListener('click', () => setProofMode('upload_file'));
+    gateSelfieBtn?.addEventListener('click', () => setProofMode('selfie_with_id'));
+    gateUploadBtn?.addEventListener('click', () => setProofMode('upload_file'));
     uploadFrontInput?.addEventListener('change', refreshSubmit);
     enableBtn?.addEventListener('click', () => {
         if (proofMode === 'upload_file') return;
@@ -634,13 +674,14 @@
 
     syncAutoUi();
     syncCameraUi();
+    if (idTypeWrap) idTypeWrap.classList.add('hidden');
     syncStepUi();
-    setMode('live');
-    if (proofMode === 'selfie_with_id') {
-        showPermission('We need camera access for ID verification. Please allow camera to continue.');
-    } else {
-        hidePermission();
-    }
+    setMode('preview');
+    previewImg.classList.add('hidden');
+    video.classList.add('hidden');
+    liveControls?.classList.add('hidden');
+    previewControls?.classList.add('hidden');
+    showPermission('Select a mode first to continue.');
     window.addEventListener('beforeunload', stopCamera);
 })();
 </script>

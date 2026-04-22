@@ -114,9 +114,11 @@ class SettingsSeeder extends Seeder
             ['key' => 'notification_email', 'value' => 'admin@polaris.test', 'type' => 'string', 'group' => 'admin_notifications', 'description' => 'Admin notification email'],
             ['key' => 'notify_on_checkin', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_notifications', 'description' => 'Notify on driver check-in'],
             ['key' => 'notify_on_checkout', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_notifications', 'description' => 'Notify on driver check-out'],
+            ['key' => 'attendance_notification_channel', 'value' => 'both', 'type' => 'string', 'group' => 'admin_notifications', 'description' => 'Attendance notification channel: email, app, or both'],
 
             // Admin Settings - Security
             ['key' => 'two_factor_enabled', 'value' => '0', 'type' => 'boolean', 'group' => 'admin_security', 'description' => 'Enable two-factor authentication'],
+            ['key' => 'driver_two_factor_enabled', 'value' => '0', 'type' => 'boolean', 'group' => 'admin_security', 'description' => 'Require OTP for driver logins'],
             ['key' => 'ip_whitelist_enabled', 'value' => '0', 'type' => 'boolean', 'group' => 'admin_security', 'description' => 'Enable IP whitelist'],
             ['key' => 'audit_log_retention_days', 'value' => '90', 'type' => 'integer', 'group' => 'admin_security', 'description' => 'Audit log retention (days)'],
             ['key' => 'encrypt_sensitive_data', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_security', 'description' => 'Encrypt sensitive data'],

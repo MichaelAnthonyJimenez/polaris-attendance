@@ -58,38 +58,8 @@ class AuthController extends Controller
             $request->session()->regenerate();
 
             $user = Auth::user();
-            $twoFactorEnabled = (bool) Setting::get('two_factor_enabled', Setting::get('enable_two_factor', false));
-
-            // Newly registered non-admin users must verify with an OTP on first login.
-            $firstTimeUser = $user && !$user->email_verified_at && $user->role !== 'admin';
-
-            // Force email code on first login after registration, even if global 2FA is off.
-            if (($twoFactorEnabled || $firstTimeUser) && $user) {
-                $code = (string) random_int(100000, 999999);
-
-                Cache::put(
-                    'two_factor_code:' . $user->id,
-                    Hash::make($code),
-                    now()->addMinutes((int) Setting::get('two_factor_expire_minutes', 10))
-                );
-
-                $request->session()->put('two_factor_user_id', $user->id);
-
-                Auth::logout();
-
-                try {
-                    app(TransactionalEmailService::class)->sendTo(
-                        $user->email,
-                        'Your Polaris Attendance verification code',
-                        view('emails.two-factor-code', ['user' => $user, 'code' => $code])->render(),
-                        null,
-                        $user->name
-                    );
-                } catch (\Throwable $e) {
-                    report($e);
-                }
-
-                return redirect()->route('two-factor.show');
+            if ($user && $this->shouldRequireOtp($user)) {
+                return $this->beginOtpChallenge($request, $user);
             }
 
             AuditLogger::log('login', null, null, null, null, 'User logged in');
@@ -100,6 +70,86 @@ class AuthController extends Controller
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
         ])->onlyInput('email');
+    }
+
+    public function redirectToGoogle(Request $request): RedirectResponse
+    {
+        if (! app()->bound('Laravel\\Socialite\\Contracts\\Factory')) {
+            return redirect()->route('login')->withErrors([
+                'email' => 'Google sign-in is unavailable because Socialite is not installed.',
+            ]);
+        }
+
+        if (! config('services.google.client_id') || ! config('services.google.client_secret')) {
+            return redirect()->route('login')->withErrors([
+                'email' => 'Google sign-in is not configured yet.',
+            ]);
+        }
+
+        $request->session()->put('google_login_remember', $request->boolean('remember'));
+
+        $socialite = app('Laravel\\Socialite\\Contracts\\Factory');
+
+        return $socialite->driver('google')
+            ->scopes(['openid', 'profile', 'email'])
+            ->redirect();
+    }
+
+    public function handleGoogleCallback(Request $request): RedirectResponse
+    {
+        try {
+            if (! app()->bound('Laravel\\Socialite\\Contracts\\Factory')) {
+                return redirect()->route('login')->withErrors([
+                    'email' => 'Google sign-in is unavailable because Socialite is not installed.',
+                ]);
+            }
+            $socialite = app('Laravel\\Socialite\\Contracts\\Factory');
+            $googleUser = $socialite->driver('google')->user();
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()->route('login')->withErrors([
+                'email' => 'Google authentication failed. Please try again.',
+            ]);
+        }
+
+        $email = trim((string) $googleUser->getEmail());
+        if ($email === '') {
+            return redirect()->route('login')->withErrors([
+                'email' => 'Google account email is required.',
+            ]);
+        }
+
+        $user = User::query()->firstOrNew(['email' => $email]);
+        $isNew = ! $user->exists;
+        $name = trim((string) ($googleUser->getName() ?: $googleUser->getNickname() ?: 'Google User'));
+
+        if ($isNew) {
+            $user->name = $name;
+            $user->password = Hash::make(Str::random(40));
+            $user->role = 'driver';
+            $user->email_verified_at = now();
+        } else {
+            if ($user->name === '' && $name !== '') {
+                $user->name = $name;
+            }
+            if (! $user->email_verified_at) {
+                $user->email_verified_at = now();
+            }
+        }
+        $user->save();
+
+        $remember = (bool) $request->session()->pull('google_login_remember', false);
+        Auth::login($user, $remember);
+        $request->session()->regenerate();
+
+        if ($this->shouldRequireOtp($user)) {
+            return $this->beginOtpChallenge($request, $user);
+        }
+
+        AuditLogger::log('login', null, null, null, null, 'User logged in via Google');
+
+        return redirect()->intended('/dashboard');
     }
 
     public function showRegister(): View
@@ -149,6 +199,44 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/login');
+    }
+
+    private function shouldRequireOtp(User $user): bool
+    {
+        $role = mb_strtolower(trim((string) ($user->role ?? '')));
+        if ($role === 'driver') {
+            return (bool) Setting::get('driver_two_factor_enabled', false);
+        }
+
+        return (bool) Setting::get('two_factor_enabled', Setting::get('enable_two_factor', false));
+    }
+
+    private function beginOtpChallenge(Request $request, User $user): RedirectResponse
+    {
+        $code = (string) random_int(100000, 999999);
+
+        Cache::put(
+            'two_factor_code:' . $user->id,
+            Hash::make($code),
+            now()->addMinutes((int) Setting::get('two_factor_expire_minutes', 10))
+        );
+
+        $request->session()->put('two_factor_user_id', $user->id);
+        Auth::logout();
+
+        try {
+            app(TransactionalEmailService::class)->sendTo(
+                $user->email,
+                'Your Polaris Attendance verification code',
+                view('emails.two-factor-code', ['user' => $user, 'code' => $code])->render(),
+                null,
+                $user->name
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return redirect()->route('two-factor.show');
     }
 }
 

@@ -33,7 +33,7 @@
         </a>
         @endif
 
-        <a href="{{ route('attendance.index') }}" class="flex flex-col items-center justify-center flex-1 py-2 min-w-0 text-slate-300 hover:text-white transition-colors {{ request()->routeIs('attendance.*') ? 'text-blue-300' : '' }}">
+        <a href="{{ auth()->user()?->role === 'driver' ? route('attendance.history') : route('attendance.index') }}" class="flex flex-col items-center justify-center flex-1 py-2 min-w-0 text-slate-300 hover:text-white transition-colors {{ request()->routeIs('attendance.*') ? 'text-blue-300' : '' }}">
             <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>

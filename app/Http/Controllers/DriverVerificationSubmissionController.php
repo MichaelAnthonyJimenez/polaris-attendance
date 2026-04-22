@@ -7,6 +7,7 @@ use App\Models\DriverVerification;
 use App\Models\User;
 use App\Services\FaceRecognitionService;
 use App\Services\LivenessService;
+use App\Services\Ocr\IdOcrService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -17,6 +18,7 @@ class DriverVerificationSubmissionController extends Controller
     public function __construct(
         private FaceRecognitionService $faceService,
         private LivenessService $livenessService,
+        private IdOcrService $idOcrService,
     ) {
     }
 
@@ -32,14 +34,18 @@ class DriverVerificationSubmissionController extends Controller
 
         $data = $request->validate([
             'verification_method' => ['required', 'in:facial,id_only'],
+            'proof_mode' => ['nullable', 'in:selfie_with_id,upload_file'],
+            'id_type' => ['nullable', 'string', 'max:50'],
 
             'face_front_base64' => ['required_if:verification_method,facial', 'nullable', 'string'],
             'face_left_base64' => ['required_if:verification_method,facial', 'nullable', 'string'],
             'face_right_base64' => ['required_if:verification_method,facial', 'nullable', 'string'],
 
-            'id_front_base64' => ['required_if:verification_method,id_only', 'nullable', 'string'],
+            'id_front_base64' => ['nullable', 'string'],
             'id_back_base64' => ['nullable', 'string'],
-            'face_selfie_base64' => ['required_if:verification_method,id_only', 'nullable', 'string'],
+            'face_selfie_base64' => ['nullable', 'string'],
+            'id_front_file' => ['nullable', 'image', 'max:5120'],
+            'id_back_file' => ['nullable', 'image', 'max:5120'],
         ]);
 
         if ($role !== 'driver') {
@@ -101,19 +107,48 @@ class DriverVerificationSubmissionController extends Controller
         }
 
         if ($data['verification_method'] === 'id_only') {
-            $idFrontPath = ! empty($data['id_front_base64'])
-                ? $this->storeBase64Image($data['id_front_base64'], 'verification/id/'.$driver->id)
-                : null;
-            $selfieWithIdPath = ! empty($data['face_selfie_base64'])
-                ? $this->storeBase64Image($data['face_selfie_base64'], 'verification/id/'.$driver->id)
-                : null;
-            $idBackPath = ! empty($data['id_back_base64'])
-                ? $this->storeBase64Image($data['id_back_base64'], 'verification/id/'.$driver->id)
-                : null;
+            $proofMode = (string) ($data['proof_mode'] ?? 'selfie_with_id');
+            $idFrontPath = null;
+            $idBackPath = null;
+            $selfieWithIdPath = null;
+
+            if ($proofMode === 'upload_file') {
+                if ($request->hasFile('id_front_file')) {
+                    $idFrontPath = $request->file('id_front_file')->store('verification/id/'.$driver->id, 'public');
+                }
+                if ($request->hasFile('id_back_file')) {
+                    $idBackPath = $request->file('id_back_file')->store('verification/id/'.$driver->id, 'public');
+                }
+            } else {
+                $idFrontPath = ! empty($data['id_front_base64'])
+                    ? $this->storeBase64Image($data['id_front_base64'], 'verification/id/'.$driver->id)
+                    : null;
+                $selfieWithIdPath = ! empty($data['face_selfie_base64'])
+                    ? $this->storeBase64Image($data['face_selfie_base64'], 'verification/id/'.$driver->id)
+                    : null;
+                $idBackPath = ! empty($data['id_back_base64'])
+                    ? $this->storeBase64Image($data['id_back_base64'], 'verification/id/'.$driver->id)
+                    : null;
+            }
+
+            if (! $idFrontPath) {
+                return back()->withErrors([
+                    'id_front_file' => 'ID front image is required.',
+                ]);
+            }
+            if ($proofMode === 'selfie_with_id' && ! $selfieWithIdPath) {
+                return back()->withErrors([
+                    'face_selfie_base64' => 'Selfie with ID is required for selfie mode.',
+                ]);
+            }
 
             $verification->id_image_path = $idFrontPath;
             $verification->selfie_with_id_path = $selfieWithIdPath;
             $verification->id_image_back_path = $idBackPath;
+
+            $meta['proof_mode'] = $proofMode;
+            $meta['id_type'] = (string) ($data['id_type'] ?? 'other');
+            $meta['ocr'] = $this->idOcrService->extractFromPublicPath($idFrontPath);
         }
 
         if ($meta !== []) {

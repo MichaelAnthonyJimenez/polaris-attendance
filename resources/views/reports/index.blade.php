@@ -9,7 +9,15 @@
     <!-- Filters -->
     <div class="glass p-6">
         <h2 class="text-xl font-semibold text-white mb-4">Filters</h2>
-        <form method="GET" action="{{ route('reports.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <form method="GET" action="{{ route('reports.index') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div>
+                <label class="form-label">Period</label>
+                <select name="period" class="form-select">
+                    <option value="daily" {{ ($filters['period'] ?? '') === 'daily' ? 'selected' : '' }}>Daily</option>
+                    <option value="weekly" {{ ($filters['period'] ?? '') === 'weekly' ? 'selected' : '' }}>Weekly</option>
+                    <option value="monthly" {{ ($filters['period'] ?? '') === 'monthly' ? 'selected' : '' }}>Monthly</option>
+                </select>
+            </div>
             <div>
                 <label class="form-label">Date From</label>
                 <input type="date" name="date_from" value="{{ $filters['date_from'] }}" class="form-input">
@@ -18,16 +26,16 @@
                 <label class="form-label">Date To</label>
                 <input type="date" name="date_to" value="{{ $filters['date_to'] }}" class="form-input">
             </div>
-            <div>
-                <label class="form-label">Driver</label>
-                <select name="driver_id" class="form-select">
-                    <option value="">All Drivers</option>
+            <div class="md:col-span-2">
+                <label class="form-label">Drivers (multi-select)</label>
+                <div class="max-h-32 overflow-y-auto rounded-lg border border-white/10 bg-white/5 p-2 space-y-1">
                     @foreach($drivers as $driver)
-                        <option value="{{ $driver->id }}" {{ $filters['driver_id'] == $driver->id ? 'selected' : '' }}>
-                            {{ $driver->name }}
-                        </option>
+                        <label class="flex items-center gap-2 text-xs text-slate-200">
+                            <input type="checkbox" name="driver_ids[]" value="{{ $driver->id }}" {{ in_array($driver->id, $filters['driver_ids'] ?? [], true) ? 'checked' : '' }}>
+                            <span>{{ $driver->name }}</span>
+                        </label>
                     @endforeach
-                </select>
+                </div>
             </div>
             <div class="flex items-end">
                 <button type="submit" class="btn-primary w-full">Apply Filters</button>
@@ -129,6 +137,7 @@
                         <th>Face Match</th>
                         <th>Liveness</th>
                         <th>Device</th>
+                        <th>Location</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -142,6 +151,13 @@
                                 </span>
                             </td>
                             <td>{{ $attendance->captured_at?->format('M d, Y H:i') }}</td>
+                            <td class="tabular-nums text-slate-200">
+                                @if($attendance->type === 'check_out' && $attendance->total_hours !== null)
+                                    {{ number_format((float) $attendance->total_hours, 2) }} h
+                                @else
+                                    <span class="text-slate-500">—</span>
+                                @endif
+                            </td>
                             <td>
                                 @if($attendance->face_confidence)
                                     <span class="text-emerald-300">{{ $attendance->face_confidence }}%</span>
@@ -158,6 +174,18 @@
                             </td>
                             <td class="text-slate-300">{{ $attendance->device_id ?? '—' }}</td>
                             <td>
+                                @php
+                                    $meta = is_array($attendance->meta ?? null) ? $attendance->meta : [];
+                                    $lat = data_get($meta, 'latitude');
+                                    $lng = data_get($meta, 'longitude');
+                                @endphp
+                                @if(is_numeric($lat) && is_numeric($lng))
+                                    <a href="https://www.google.com/maps?q={{ (float) $lat }},{{ (float) $lng }}" target="_blank" rel="noopener" class="text-blue-400 hover:text-blue-300">Map</a>
+                                @else
+                                    <span class="text-slate-500">—</span>
+                                @endif
+                            </td>
+                            <td>
                                 <a href="{{ route('attendance.show', $attendance) }}" class="btn-secondary inline-flex items-center text-xs px-3 py-1.5">
                                     View
                                 </a>
@@ -165,7 +193,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center py-8 text-slate-400">No attendance records found.</td>
+                            <td colspan="9" class="text-center py-8 text-slate-400">No attendance records found.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -175,7 +203,10 @@
         <form method="GET" action="{{ route('reports.export') }}" class="mt-4 flex flex-col sm:flex-row sm:items-end sm:justify-end gap-3">
             <input type="hidden" name="date_from" value="{{ $filters['date_from'] }}">
             <input type="hidden" name="date_to" value="{{ $filters['date_to'] }}">
-            <input type="hidden" name="driver_id" value="{{ $filters['driver_id'] }}">
+            <input type="hidden" name="period" value="{{ $filters['period'] ?? 'monthly' }}">
+            @foreach(($filters['driver_ids'] ?? []) as $exportDriverId)
+                <input type="hidden" name="driver_ids[]" value="{{ $exportDriverId }}">
+            @endforeach
             <div>
                 <label for="attendance-export-as" class="form-label">Export As</label>
                 <select id="attendance-export-as" name="export_as" class="form-select min-w-[200px]">

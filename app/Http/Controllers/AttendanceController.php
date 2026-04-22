@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Helpers\AuditLogger;
 use App\Models\Attendance;
 use App\Models\User;
+use App\Notifications\AttendanceNotification;
 use App\Services\FaceRecognitionService;
+use App\Services\Location\RouteComplianceService;
 use App\Services\LivenessService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -15,6 +17,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use App\Models\Setting;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -23,7 +26,8 @@ class AttendanceController extends Controller
 {
     public function __construct(
         private FaceRecognitionService $faceService,
-        private LivenessService $livenessService
+        private LivenessService $livenessService,
+        private RouteComplianceService $routeComplianceService,
     ) {
     }
 
@@ -298,6 +302,12 @@ class AttendanceController extends Controller
             ])->withInput();
         }
 
+        if ($isFaceScoreLow) {
+            return back()->withErrors([
+                'face_image' => 'Unauthorized user. Face recognition confidence is below the minimum threshold.',
+            ])->withInput();
+        }
+
         // Automatically detect device identifier
         $deviceId = $this->detectDevice($request);
 
@@ -317,6 +327,21 @@ class AttendanceController extends Controller
             'face_score_required' => $isFaceScoreLow ? $effectiveMinFaceConfidence : null,
             'face_score_base_required' => $isFaceScoreLow ? $minFaceConfidence : null,
         ], static fn ($v) => $v !== null && $v !== '');
+
+        $requireLocationCheck = (bool) Setting::get('require_location_checkin', false);
+        $routeCompliance = $this->routeComplianceService->evaluate(
+            (int) $data['driver_id'],
+            $meta['latitude'] ?? null,
+            $meta['longitude'] ?? null,
+            $meta['geo_accuracy'] ?? null
+        );
+        $meta['route_compliance'] = $routeCompliance;
+
+        if ($requireLocationCheck && ($routeCompliance['status'] ?? null) === 'outside_buffer') {
+            return back()->withErrors([
+                'latitude' => 'Your current location is outside your operational route.',
+            ])->withInput();
+        }
 
         $capturedAt = now();
         if (! empty($data['captured_at'])) {
@@ -356,9 +381,13 @@ class AttendanceController extends Controller
         }
         AuditLogger::log('created', 'Attendance', $attendance->id, null, $auditNew, "Attendance {$data['type']} recorded for {$driver->name}");
 
+        $attendanceNotificationChannel = (string) Setting::get('attendance_notification_channel', 'both');
+        $wantEmail = in_array($attendanceNotificationChannel, ['both', 'email'], true);
+        $wantApp = in_array($attendanceNotificationChannel, ['both', 'app'], true);
+
         if ($role === 'driver') {
             $user = Auth::user();
-            if ($user && Setting::get('driver_email_notifications') && $user->email) {
+            if ($wantEmail && $user && Setting::get('driver_email_notifications') && $user->email) {
                 $want = $data['type'] === 'check_in'
                     ? Setting::get('driver_email_on_checkin', true)
                     : Setting::get('driver_email_on_checkout', true);
@@ -371,20 +400,38 @@ class AttendanceController extends Controller
                 }
             }
 
-            $driverStatus = $isFaceScoreLow
-                ? 'Attendance saved (low face score detected).'
-                : 'Attendance saved';
+            if ($wantApp && $user instanceof User) {
+                $user->notify(new AttendanceNotification(
+                    $attendance,
+                    'Attendance ' . str_replace('_', ' ', $data['type']) . ' recorded successfully.'
+                ));
+            }
+
+            $adminRecipients = User::query()
+                ->where('role', 'admin')
+                ->where('active', true)
+                ->get();
+            if ($wantApp && $adminRecipients->isNotEmpty()) {
+                Notification::send($adminRecipients, new AttendanceNotification(
+                    $attendance,
+                    ($driver?->name ?? 'Driver') . ' recorded ' . str_replace('_', ' ', $data['type']) . '.'
+                ));
+            }
 
             return redirect()->route('camera.index')
-                ->with('status', $driverStatus)
+                ->with('status', 'Attendance saved')
                 ->with('attendance_recorded', $data['type']);
         }
 
-        $adminStatus = $isFaceScoreLow
-            ? 'Attendance saved (low face score detected).'
-            : 'Attendance saved';
+        $authUser = Auth::user();
+        if ($wantApp && $authUser instanceof User) {
+            $authUser->notify(new AttendanceNotification(
+                $attendance,
+                'Attendance ' . str_replace('_', ' ', $data['type']) . ' recorded.'
+            ));
+        }
 
-        return redirect()->route('attendance.index')->with('status', $adminStatus);
+        return redirect()->route('attendance.index')->with('status', 'Attendance saved');
     }
 
     public function show(Attendance $attendance): View
@@ -393,6 +440,36 @@ class AttendanceController extends Controller
 
         return view('attendance.show', [
             'attendance' => $attendance,
+        ]);
+    }
+
+    public function history(Request $request): View
+    {
+        $user = Auth::user();
+        if (! $user || mb_strtolower((string) ($user->role ?? '')) !== 'driver') {
+            abort(403);
+        }
+
+        $period = (string) $request->query('period', 'daily');
+        if (! in_array($period, ['daily', 'weekly', 'monthly'], true)) {
+            $period = 'daily';
+        }
+
+        $rows = Attendance::query()
+            ->where('driver_id', $user->id)
+            ->orderByDesc('captured_at')
+            ->limit(500)
+            ->get();
+
+        $grouped = match ($period) {
+            'weekly' => $rows->groupBy(fn (Attendance $row) => $row->captured_at?->copy()->startOfWeek()->format('Y-m-d') ?? 'Unknown'),
+            'monthly' => $rows->groupBy(fn (Attendance $row) => $row->captured_at?->format('Y-m') ?? 'Unknown'),
+            default => $rows->groupBy(fn (Attendance $row) => $row->captured_at?->format('Y-m-d') ?? 'Unknown'),
+        };
+
+        return view('attendance.history', [
+            'period' => $period,
+            'groupedHistory' => $grouped,
         ]);
     }
 

@@ -32,6 +32,8 @@ Route::post('/contact', [ContactMessageController::class, 'store'])->name('conta
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
+    Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle'])->name('auth.google.redirect');
+    Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register']);
@@ -80,6 +82,8 @@ Route::middleware(['auth', 'driver.verified'])->group(function () {
 
     Route::get('/attendance', [AttendanceController::class, 'index'])
         ->name('attendance.index');
+    Route::get('/attendance/history', [AttendanceController::class, 'history'])
+        ->name('attendance.history');
     Route::get('/attendance/{attendance}', [AttendanceController::class, 'show'])
         ->middleware('role:admin')
         ->name('attendance.show');

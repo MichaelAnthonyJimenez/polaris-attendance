@@ -14,8 +14,8 @@ class ReportsController extends Controller
 {
     public function index(Request $request): View
     {
-        [$dateFrom, $dateTo, $driverId] = $this->resolveFilters($request);
-        $attendances = $this->attendanceQuery($dateFrom, $dateTo, $driverId)
+        [$dateFrom, $dateTo, $driverIds, $period] = $this->resolveFilters($request);
+        $attendances = $this->attendanceQuery($dateFrom, $dateTo, $driverIds)
             ->orderBy('captured_at', 'desc')
             ->get();
 
@@ -23,18 +23,18 @@ class ReportsController extends Controller
         $stats = [
             'total_check_ins' => Attendance::whereBetween('captured_at', [$dateFrom, $dateTo . ' 23:59:59'])
                 ->where('type', 'check_in')
-                ->when($driverId, fn($q) => $q->where('driver_id', $driverId))
+                ->when($driverIds !== [], fn($q) => $q->whereIn('driver_id', $driverIds))
                 ->count(),
             'total_check_outs' => Attendance::whereBetween('captured_at', [$dateFrom, $dateTo . ' 23:59:59'])
                 ->where('type', 'check_out')
-                ->when($driverId, fn($q) => $q->where('driver_id', $driverId))
+                ->when($driverIds !== [], fn($q) => $q->whereIn('driver_id', $driverIds))
                 ->count(),
             'avg_face_confidence' => Attendance::whereBetween('captured_at', [$dateFrom, $dateTo . ' 23:59:59'])
-                ->when($driverId, fn($q) => $q->where('driver_id', $driverId))
+                ->when($driverIds !== [], fn($q) => $q->whereIn('driver_id', $driverIds))
                 ->whereNotNull('face_confidence')
                 ->avg('face_confidence'),
             'avg_liveness_score' => Attendance::whereBetween('captured_at', [$dateFrom, $dateTo . ' 23:59:59'])
-                ->when($driverId, fn($q) => $q->where('driver_id', $driverId))
+                ->when($driverIds !== [], fn($q) => $q->whereIn('driver_id', $driverIds))
                 ->whereNotNull('liveness_score')
                 ->avg('liveness_score'),
         ];
@@ -46,7 +46,7 @@ class ReportsController extends Controller
                 DB::raw('COUNT(CASE WHEN type = "check_out" THEN 1 END) as check_outs')
             )
             ->whereBetween('captured_at', [$dateFrom, $dateTo . ' 23:59:59'])
-            ->when($driverId, fn($q) => $q->where('driver_id', $driverId))
+            ->when($driverIds !== [], fn($q) => $q->whereIn('driver_id', $driverIds))
             ->groupBy('date')
             ->orderBy('date')
             ->get();
@@ -59,19 +59,20 @@ class ReportsController extends Controller
             'filters' => [
                 'date_from' => $dateFrom,
                 'date_to' => $dateTo,
-                'driver_id' => $driverId,
+                'driver_ids' => $driverIds,
+                'period' => $period,
             ],
         ]);
     }
 
     public function export(Request $request): Response
     {
-        [$dateFrom, $dateTo, $driverId] = $this->resolveFilters($request);
+        [$dateFrom, $dateTo, $driverIds] = $this->resolveFilters($request);
         $format = strtolower((string) $request->input('export_as', 'csv'));
-        $driverName = $this->resolveDriverName($driverId);
+        $driverName = $this->resolveDriverName($driverIds);
         $generatedAt = now()->format('Y-m-d H:i:s');
 
-        $rows = $this->attendanceQuery($dateFrom, $dateTo, $driverId)
+        $rows = $this->attendanceQuery($dateFrom, $dateTo, $driverIds)
             ->orderBy('captured_at', 'desc')
             ->get()
             ->map(function (Attendance $attendance): array {
@@ -88,10 +89,11 @@ class ReportsController extends Controller
                     'Face Match' => $attendance->face_confidence !== null ? $attendance->face_confidence . '%' : '',
                     'Liveness' => $attendance->liveness_score !== null ? number_format((float) $attendance->liveness_score, 2) : '',
                     'Device' => $attendance->device_id ?? '',
+                    'Location' => $this->locationLabel($attendance),
                 ];
             });
 
-        $headers = ['Driver', 'Type', 'Date & Time', 'Total Hours', 'Face Match', 'Liveness', 'Device'];
+        $headers = ['Driver', 'Type', 'Date & Time', 'Total Hours', 'Face Match', 'Liveness', 'Device', 'Location'];
         $filenameBase = "attendance-report-{$dateFrom}-to-{$dateTo}";
         $summary = [
             'Total Records' => $rows->count(),
@@ -128,28 +130,58 @@ class ReportsController extends Controller
 
     private function resolveFilters(Request $request): array
     {
+        $period = (string) $request->input('period', 'monthly');
+        $today = now();
+        [$defaultFrom, $defaultTo] = match ($period) {
+            'daily' => [$today->copy()->format('Y-m-d'), $today->copy()->format('Y-m-d')],
+            'weekly' => [$today->copy()->startOfWeek()->format('Y-m-d'), $today->copy()->endOfWeek()->format('Y-m-d')],
+            default => [$today->copy()->startOfMonth()->format('Y-m-d'), $today->copy()->format('Y-m-d')],
+        };
+
+        $driverIds = array_values(array_filter(array_map('intval', (array) $request->input('driver_ids', []))));
+        if ($driverIds === [] && $request->filled('driver_id')) {
+            $driverIds = [(int) $request->input('driver_id')];
+        }
+
         return [
-            $request->input('date_from', now()->startOfMonth()->format('Y-m-d')),
-            $request->input('date_to', now()->format('Y-m-d')),
-            $request->input('driver_id'),
+            (string) $request->input('date_from', $defaultFrom),
+            (string) $request->input('date_to', $defaultTo),
+            $driverIds,
+            $period,
         ];
     }
 
-    private function attendanceQuery(string $dateFrom, string $dateTo, ?string $driverId)
+    private function attendanceQuery(string $dateFrom, string $dateTo, array $driverIds)
     {
         return Attendance::with('driver')
             ->whereBetween('captured_at', [$dateFrom, $dateTo . ' 23:59:59'])
-            ->when($driverId, fn($query) => $query->where('driver_id', $driverId));
+            ->when($driverIds !== [], fn($query) => $query->whereIn('driver_id', $driverIds));
     }
 
-    private function resolveDriverName(?string $driverId): string
+    private function resolveDriverName(array $driverIds): string
     {
-        if (!$driverId) {
+        if ($driverIds === []) {
             return 'All Drivers';
         }
 
-        $driver = User::query()->select('name')->find($driverId);
-        return $driver?->name ?? 'Unknown Driver';
+        $names = User::query()->whereIn('id', $driverIds)->pluck('name')->all();
+        if ($names === []) {
+            return 'Unknown Driver';
+        }
+
+        return implode(', ', $names);
+    }
+
+    private function locationLabel(Attendance $attendance): string
+    {
+        $meta = is_array($attendance->meta ?? null) ? $attendance->meta : [];
+        $lat = data_get($meta, 'latitude');
+        $lng = data_get($meta, 'longitude');
+        if (is_numeric($lat) && is_numeric($lng)) {
+            return number_format((float) $lat, 6) . ', ' . number_format((float) $lng, 6);
+        }
+
+        return '';
     }
 
     private function buildDelimitedContent(array $meta, array $summary, array $headers, Collection $rows, string $delimiter): string

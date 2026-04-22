@@ -1,4 +1,4 @@
-<?php
+ <?php
 
 return [
 
@@ -43,6 +43,18 @@ return [
         'site_key' => env('TURNSTILE_SITE_KEY'),
         'secret_key' => env('TURNSTILE_SECRET_KEY'),
         'login_enabled' => env('TURNSTILE_LOGIN_ENABLED', true),
+    ],
+
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
+    'ocr_space' => [
+        'api_key' => env('OCR_SPACE_API_KEY'),
+        'endpoint' => env('OCR_SPACE_ENDPOINT', 'https://api.ocr.space/parse/image'),
+        'language' => env('OCR_SPACE_LANGUAGE', 'eng'),
     ],
 
 ];

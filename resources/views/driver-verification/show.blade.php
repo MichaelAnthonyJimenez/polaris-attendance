@@ -213,6 +213,37 @@
 
             {{-- show manual form entries if they exist --}}
             @if(!empty($manualData))
+                @if(isset($manualData['id_type']))
+                    <div>
+                        <label class="text-sm text-slate-400">ID Type</label>
+                        <p class="text-white">{{ ucwords(str_replace('_', ' ', (string) $manualData['id_type'])) }}</p>
+                    </div>
+                @endif
+
+                @if(isset($manualData['proof_mode']))
+                    <div>
+                        <label class="text-sm text-slate-400">Proof Mode</label>
+                        <p class="text-white">{{ ucwords(str_replace('_', ' ', (string) $manualData['proof_mode'])) }}</p>
+                    </div>
+                @endif
+
+                @if(isset($manualData['ocr']) && is_array($manualData['ocr']))
+                    <div>
+                        <label class="text-sm text-slate-400">OCR Status</label>
+                        <p class="text-white">{{ strtoupper((string) ($manualData['ocr']['status'] ?? 'unknown')) }}</p>
+                    </div>
+                    @if(!empty($manualData['ocr']['fields']) && is_array($manualData['ocr']['fields']))
+                        <div>
+                            <label class="text-sm text-slate-400">OCR Extracted Fields</label>
+                            <div class="text-sm text-slate-200 bg-white/5 p-3 rounded-lg space-y-1">
+                                @foreach($manualData['ocr']['fields'] as $fieldKey => $fieldValue)
+                                    <p><span class="text-slate-400">{{ ucwords(str_replace('_', ' ', (string) $fieldKey)) }}:</span> {{ $fieldValue }}</p>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                @endif
+
                 @if(isset($manualData['license_number']))
                     <div>
                         <label class="text-sm text-slate-400">License / ID Number</label>

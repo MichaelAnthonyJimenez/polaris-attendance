@@ -66,4 +66,48 @@
         </div>
     </div>
 </div>
+
+@if(($user->role ?? '') === 'driver')
+<div class="max-w-3xl mx-auto mt-6 glass p-5 sm:p-6">
+    <div class="flex items-center justify-between gap-3 mb-4">
+        <h2 class="text-lg sm:text-xl font-semibold text-white">Attendance History</h2>
+        <a href="{{ route('reports.index', ['driver_ids[]' => [$user->id]]) }}" class="btn-secondary text-xs">Open Reports</a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="table-glass min-w-[560px] w-full">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Captured At</th>
+                    <th>Total Hours</th>
+                    <th>Location</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($recentAttendances as $attendance)
+                    @php
+                        $meta = is_array($attendance->meta ?? null) ? $attendance->meta : [];
+                        $lat = data_get($meta, 'latitude');
+                        $lng = data_get($meta, 'longitude');
+                    @endphp
+                    <tr>
+                        <td>{{ str_replace('_', ' ', $attendance->type) }}</td>
+                        <td>{{ $attendance->captured_at?->format('M d, Y H:i') ?? '—' }}</td>
+                        <td>{{ $attendance->type === 'check_out' && $attendance->total_hours !== null ? number_format((float) $attendance->total_hours, 2) . ' h' : '—' }}</td>
+                        <td>
+                            @if(is_numeric($lat) && is_numeric($lng))
+                                <a href="https://www.google.com/maps?q={{ (float) $lat }},{{ (float) $lng }}" target="_blank" rel="noopener" class="text-blue-400 hover:text-blue-300">Map</a>
+                            @else
+                                —
+                            @endif
+                        </td>
+                    </tr>
+                @empty
+                    <tr><td colspan="4" class="text-center text-slate-400 py-6">No attendance records yet.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
 @endsection

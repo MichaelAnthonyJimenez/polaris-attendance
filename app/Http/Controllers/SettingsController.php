@@ -90,6 +90,7 @@ class SettingsController extends Controller
             'require_location_checkin',
         ],
         'admin_notifications' => [
+            'attendance_notification_channel',
             'email_notifications_enabled',
             'notification_email',
             'notify_on_checkin',
@@ -111,6 +112,7 @@ class SettingsController extends Controller
         ],
         'admin_security' => [
             'audit_log_retention_days',
+            'driver_two_factor_enabled',
             'encrypt_sensitive_data',
         ],
         'admin_system' => [
@@ -148,6 +150,7 @@ class SettingsController extends Controller
             'driver_sync_frequency',
         ],
         'driver_notifications' => [
+            'attendance_notification_channel',
             'driver_browser_notify_checkin',
             'driver_browser_notify_checkout',
             'driver_notification_sound',
@@ -179,6 +182,7 @@ class SettingsController extends Controller
             'driver_reminders_enabled',
         ],
         'driver_security' => [
+            'driver_two_factor_enabled',
             'driver_auto_lockout',
             'driver_lockout_minutes',
             'driver_session_timeout',
@@ -320,6 +324,7 @@ class SettingsController extends Controller
             'driver_show_email',
         ],
         'driver_security' => [
+            'driver_two_factor_enabled',
             'driver_session_timeout',
         ],
     ];

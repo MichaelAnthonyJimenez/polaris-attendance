@@ -25,8 +25,17 @@ class UserController extends Controller
 
     public function show(User $user): View
     {
+        $recentAttendances = collect();
+        if (($user->role ?? '') === 'driver') {
+            $recentAttendances = $user->attendances()
+                ->latest('captured_at')
+                ->limit(20)
+                ->get();
+        }
+
         return view('users.show', [
             'user' => $user,
+            'recentAttendances' => $recentAttendances,
         ]);
     }
 

@@ -315,6 +315,12 @@
                                     <option value="ssl" {{ $setting->value == 'ssl' ? 'selected' : '' }}>SSL</option>
                                     <option value="none" {{ $setting->value == 'none' ? 'selected' : '' }}>None</option>
                                 </select>
+                            @elseif($setting->key === 'attendance_notification_channel')
+                                <select name="settings[{{ $setting->key }}]" class="form-select">
+                                    <option value="email" {{ $setting->value == 'email' ? 'selected' : '' }}>Email only</option>
+                                    <option value="app" {{ $setting->value == 'app' ? 'selected' : '' }}>In-app only</option>
+                                    <option value="both" {{ $setting->value == 'both' ? 'selected' : '' }}>Both email and in-app</option>
+                                </select>
                             @elseif($setting->key === 'driver_font_size')
                                 <select name="settings[{{ $setting->key }}]" class="form-select">
                                     <option value="small" {{ $setting->value == 'small' ? 'selected' : '' }}>Small</option>

@@ -11,6 +11,7 @@
     <form method="POST" action="{{ route('driver-verification.store') }}" id="idVerificationForm" class="flex flex-1 flex-col min-h-0">
             @csrf
         <input type="hidden" name="verification_method" value="id_only">
+        <input type="hidden" name="proof_mode" id="idv_proof_mode" value="selfie_with_id">
         <input type="hidden" name="id_front_base64" id="id_front_base64">
         <input type="hidden" name="id_back_base64" id="id_back_base64">
         <input type="hidden" name="face_selfie_base64" id="face_selfie_base64">
@@ -44,6 +45,33 @@
         </header>
 
         <div class="flex-1 relative min-h-0 bg-black">
+            <div class="absolute top-3 left-3 z-[20] rounded-xl bg-black/50 p-3 backdrop-blur-md border border-white/15 w-[min(92vw,22rem)]">
+                <label class="block text-xs text-slate-300 mb-1">ID type (Philippines)</label>
+                <select id="idv_id_type" name="id_type" class="form-select text-xs py-2 mb-2">
+                    <option value="philsys_national_id">PhilSys National ID</option>
+                    <option value="drivers_license">Driver's License</option>
+                    <option value="passport">Passport</option>
+                    <option value="umid">UMID</option>
+                    <option value="prc_id">PRC ID</option>
+                    <option value="postal_id">Postal ID</option>
+                    <option value="voters_id">Voter's ID</option>
+                    <option value="philhealth_id">PhilHealth ID</option>
+                    <option value="sss_id">SSS ID</option>
+                    <option value="pagibig_loyalty_card">Pag-IBIG Loyalty Card</option>
+                    <option value="senior_citizen_id">Senior Citizen ID</option>
+                    <option value="ofw_id">OFW ID</option>
+                    <option value="barangay_id">Barangay ID</option>
+                    <option value="other">Other</option>
+                </select>
+                <div class="flex gap-2 text-xs">
+                    <button type="button" id="idvModeSelfie" class="btn-secondary px-2 py-1 bg-blue-500/40">Selfie + ID</button>
+                    <button type="button" id="idvModeUpload" class="btn-secondary px-2 py-1">Upload ID files</button>
+                </div>
+                <div id="idvUploadBox" class="hidden mt-2 space-y-2">
+                    <input type="file" id="idv_upload_front" name="id_front_file" accept="image/*" class="form-input text-xs">
+                    <input type="file" id="idv_upload_back" name="id_back_file" accept="image/*" class="form-input text-xs">
+                </div>
+            </div>
             <video id="idvVideo" class="absolute inset-0 h-full w-full object-cover" autoplay playsinline muted></video>
             <img
                 id="idvPreviewImg"
@@ -147,6 +175,11 @@
     const autoBtn = document.getElementById('idvAutoCaptureToggle');
     const cameraToggleBtn = document.getElementById('idvCameraToggle');
     const submitBtn = document.getElementById('idvSubmit');
+    const modeSelfieBtn = document.getElementById('idvModeSelfie');
+    const modeUploadBtn = document.getElementById('idvModeUpload');
+    const proofModeInput = document.getElementById('idv_proof_mode');
+    const uploadBox = document.getElementById('idvUploadBox');
+    const uploadFrontInput = document.getElementById('idv_upload_front');
     const hint = document.getElementById('idvHint');
     const slotHint = document.getElementById('idvSlotHint');
     const stepTitle = document.getElementById('idvStepTitle');
@@ -175,6 +208,7 @@
     let mode = 'live';
     let stepIndex = 0;
     let autoCapture = localStorage.getItem(LS_AUTO) === '1';
+    let proofMode = 'selfie_with_id';
     let cameraFacingMode = 'environment';
     let countdownTimer = null;
     let autoCaptureQueued = false;
@@ -373,6 +407,17 @@
     }
 
     function syncStepUi() {
+        if (proofMode === 'upload_file') {
+            if (stepTitle) stepTitle.textContent = 'Upload ID files';
+            if (slotHint) slotHint.textContent = 'Upload ID front (required), back (optional)';
+            if (guideLabel) guideLabel.textContent = 'Upload clear ID photos';
+            idFrame?.classList.remove('hidden');
+            faceFrame?.classList.add('hidden');
+            faceFrame?.classList.remove('flex');
+            setGuideState(false, false, idZone);
+            setHint('Upload your ID files to continue.');
+            return;
+        }
         const step = steps[stepIndex];
         if (!step) return;
         if (stepTitle) stepTitle.textContent = step.title;
@@ -395,6 +440,10 @@
     }
 
     function refreshSubmit() {
+        if (proofMode === 'upload_file') {
+            submitBtn.disabled = !(uploadFrontInput && uploadFrontInput.files && uploadFrontInput.files.length > 0);
+            return;
+        }
         submitBtn.disabled = !(inputs.front.value && inputs.selfie.value);
     }
 
@@ -404,7 +453,11 @@
         if (live) {
             video.classList.remove('hidden');
             previewImg.classList.add('hidden');
-            liveControls?.classList.remove('hidden');
+            if (proofMode === 'upload_file') {
+                liveControls?.classList.add('hidden');
+            } else {
+                liveControls?.classList.remove('hidden');
+            }
             previewControls?.classList.add('hidden');
             startAlignmentLoop();
         } else {
@@ -537,13 +590,54 @@
             await startCamera();
         }
     });
-    enableBtn?.addEventListener('click', startCamera);
+    function setProofMode(nextMode) {
+        proofMode = nextMode;
+        if (proofModeInput) proofModeInput.value = proofMode;
+        uploadBox?.classList.toggle('hidden', proofMode !== 'upload_file');
+        modeSelfieBtn?.classList.toggle('bg-blue-500/40', proofMode === 'selfie_with_id');
+        modeUploadBtn?.classList.toggle('bg-blue-500/40', proofMode === 'upload_file');
+
+        clearCountdown();
+        stopAlignmentLoop();
+        stepIndex = 0;
+        inputs.front.value = '';
+        inputs.selfie.value = '';
+        previewImg.removeAttribute('src');
+        syncStepUi();
+        refreshSubmit();
+
+        if (proofMode === 'upload_file') {
+            hidePermission();
+            stopCamera();
+            setMode('preview');
+            setHint('Upload your ID files then submit.');
+            previewImg.classList.add('hidden');
+            video.classList.add('hidden');
+            previewControls?.classList.remove('hidden');
+        } else {
+            showPermission('We need camera access for ID verification. Please allow camera to continue.');
+            setMode('live');
+            startCamera();
+        }
+    }
+
+    modeSelfieBtn?.addEventListener('click', () => setProofMode('selfie_with_id'));
+    modeUploadBtn?.addEventListener('click', () => setProofMode('upload_file'));
+    uploadFrontInput?.addEventListener('change', refreshSubmit);
+    enableBtn?.addEventListener('click', () => {
+        if (proofMode === 'upload_file') return;
+        startCamera();
+    });
 
     syncAutoUi();
     syncCameraUi();
     syncStepUi();
     setMode('live');
-    showPermission('We need camera access for ID verification. Please allow camera to continue.');
+    if (proofMode === 'selfie_with_id') {
+        showPermission('We need camera access for ID verification. Please allow camera to continue.');
+    } else {
+        hidePermission();
+    }
     window.addEventListener('beforeunload', stopCamera);
 })();
 </script>

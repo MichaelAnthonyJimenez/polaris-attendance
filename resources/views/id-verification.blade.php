@@ -168,7 +168,7 @@
             </div>
         </footer>
 
-        <div id="idvModeGate" class="absolute inset-0 z-[260] flex items-center justify-center bg-black/88 px-6 text-center">
+        <div id="idvModeGate" class="absolute inset-0 z-[260] flex items-center justify-center bg-black px-6 text-center">
             <div class="w-full max-w-sm rounded-2xl border border-white/10 bg-white/5 p-6">
                 <h2 class="text-lg font-semibold text-white">Select verification mode</h2>
                 <p class="mt-2 text-sm text-slate-300">Choose how you want to submit your ID before opening the camera.</p>
@@ -654,8 +654,10 @@
             setHint('Upload your ID files then submit.');
             previewImg.classList.add('hidden');
             video.classList.add('hidden');
+            document.getElementById('idvGuide')?.classList.add('hidden');
             previewControls?.classList.remove('hidden');
         } else {
+            document.getElementById('idvGuide')?.classList.remove('hidden');
             showPermission('We need camera access for ID verification. Please allow camera to continue.');
             setMode('live');
             startCamera();
@@ -679,6 +681,7 @@
     setMode('preview');
     previewImg.classList.add('hidden');
     video.classList.add('hidden');
+    document.getElementById('idvGuide')?.classList.add('hidden');
     liveControls?.classList.add('hidden');
     previewControls?.classList.add('hidden');
     showPermission('Select a mode first to continue.');

@@ -236,6 +236,9 @@ class DriverVerificationSubmissionController extends Controller
             if ($this->pythonVision->isAvailable()) {
                 try {
                     $fullIdPath = Storage::disk('public')->path($idFrontPath);
+                    if (!file_exists($fullIdPath)) {
+                        throw new \Exception('ID image file not found');
+                    }
                     $imageData = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($fullIdPath));
                     $ocrResult = $this->pythonVision->extractTextFromImage($imageData);
 
@@ -250,8 +253,11 @@ class DriverVerificationSubmissionController extends Controller
                         // Validate ID detection
                         $idDetected = $this->validateIdDetection($ocrResult['text'], $ocrResult['words']);
                         $meta['id_validation'] = $idDetected;
+                    } else {
+                        $meta['python_ocr'] = ['extraction_success' => false, 'error' => $ocrResult['error'] ?? 'OCR processing failed'];
                     }
                 } catch (\Exception $e) {
+                    \Log::error('Python OCR service error', ['error' => $e->getMessage()]);
                     $meta['python_ocr'] = ['extraction_success' => false, 'error' => $e->getMessage()];
                 }
             }
@@ -284,7 +290,7 @@ class DriverVerificationSubmissionController extends Controller
                 ]);
 
                 return back()->withErrors([
-                    'id_front_file' => 'ID image appears to be invalid or unclear. Please upload a clear photo of your government-issued ID.',
+                    'id_front_file' => 'ID image appears to be invalid or unclear. Please upload a clear photo of your government-issued ID with visible text.',
                     'validation_failed' => true
                 ])->withInput();
             }
@@ -309,7 +315,9 @@ class DriverVerificationSubmissionController extends Controller
             return redirect()->intended('/dashboard')->with('status', 'Verification successful. Welcome!');
         }
 
-        return redirect()->route('home')->with('status', 'Verification pending. Please stay on standby while admin review is in progress.');
+        // Instead of redirecting to home (which causes verification loop),
+        // redirect to verification required with a clear success message
+        return redirect()->route('verification.required')->with('status', 'Verification submitted successfully! Your submission is now pending admin review. You will be notified once approved.');
     }
 
     private function storeBase64Image(?string $dataUrl, string $dir): ?string

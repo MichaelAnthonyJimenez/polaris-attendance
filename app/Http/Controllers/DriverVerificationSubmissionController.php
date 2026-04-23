@@ -381,24 +381,21 @@ class DriverVerificationSubmissionController extends Controller
             $meta['debug_info']['using_python_ocr'] = !empty($ocrText);
             $meta['debug_info']['using_fallback_ocr'] = empty($ocrText) && !empty($fallbackText);
 
-            if (!$idDetected['detected'] && strlen($finalText) < 10) {
-                // Only reject if text is very short (likely not an ID)
-                \Log::warning('ID validation failed - text too short', [
+            // Only reject if absolutely no text was extracted (completely failed OCR)
+            if (strlen($finalText) == 0) {
+                \Log::warning('ID validation failed - no text extracted', [
                     'driver_id' => $driver->id,
                     'text_length' => strlen($finalText),
                     'word_count' => count($finalWords),
                     'validation_result' => $idDetected,
-                    'final_text_preview' => substr($finalText, 0, 100)
+                    'ocr_result_available' => !empty($ocrResult),
+                    'fallback_ocr_available' => !empty($fallbackOcr)
                 ]);
 
                 // Enhanced error message with debugging info
-                $errorMessage = 'ID image appears to be invalid or unclear. Please upload a clear photo of your government-issued ID with visible text.';
+                $errorMessage = 'No text could be extracted from your ID image. Please upload a clear photo with visible text.';
                 if (!$this->pythonVision->isAvailable()) {
                     $errorMessage .= ' (OCR service unavailable)';
-                } elseif (strlen($finalText) == 0) {
-                    $errorMessage .= ' (No text could be extracted from the image)';
-                } else {
-                    $errorMessage .= ' (Extracted text: "' . substr($finalText, 0, 50) . '...")';
                 }
 
                 return back()->withErrors([
@@ -505,11 +502,14 @@ class DriverVerificationSubmissionController extends Controller
         $detected = false;
         $error = null;
 
-        // Common ID indicators in OCR text
+        // Common ID indicators in OCR text (expanded for better detection)
         $idIndicators = [
             'license', 'licence', 'identification', 'passport', 'national id',
             'driver license', 'driving license', 'state id', 'government',
-            'official', 'document', 'card', 'permit'
+            'official', 'document', 'card', 'permit', 'id', 'dl', 'ssn',
+            'birth', 'date', 'sex', 'height', 'weight', 'eyes', 'hair',
+            'address', 'city', 'state', 'zip', 'class', 'restrictions',
+            'endorsements', 'organ donor', 'issued', 'expires', 'date of birth'
         ];
 
         $lowerText = strtolower($text);
@@ -548,6 +548,11 @@ class DriverVerificationSubmissionController extends Controller
             if ($hasName && $hasDate) {
                 $detected = true;
             }
+        }
+
+        // Very lenient fallback: if there's any reasonable text, consider it potentially valid
+        if (!$detected && strlen($text) > 3 && count($words) >= 2) {
+            $detected = true;
         }
 
         if (!$detected) {

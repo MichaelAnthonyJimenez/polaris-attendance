@@ -29,7 +29,7 @@
                     $manualDataRaw = $verification->manual_form_data;
                     $manualData = is_array($manualDataRaw)
                         ? $manualDataRaw
-                        : (is_string($manualDataRaw) ? (json_decode($manualDataRaw, true) ?? []) : []);
+                        : (is_string($manualDataRaw) ? json_decode($manualDataRaw, true) : []);
                 @endphp
                 <div class="rounded-2xl border border-white/10 bg-white/5 p-3 sm:p-4">
                     <div class="flex items-start gap-3 min-w-0">

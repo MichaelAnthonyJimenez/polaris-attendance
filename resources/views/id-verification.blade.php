@@ -5,11 +5,11 @@
 
 <div
     id="idvShell"
-    class="fixed inset-0 z-[2147483647] flex flex-col bg-black text-white"
+    class="fixed inset-0 z-[2147483647] flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-white"
     style="position: fixed; top: 0; right: 0; bottom: 0; left: 0; width: 100vw; height: 100vh;"
 >
     <form method="POST" action="{{ route('driver-verification.store') }}" id="idVerificationForm" class="flex flex-1 flex-col min-h-0">
-            @csrf
+        @csrf
         <input type="hidden" name="verification_method" value="id_only">
         <input type="hidden" name="proof_mode" id="idv_proof_mode" value="">
         <input type="hidden" name="id_front_base64" id="id_front_base64">
@@ -20,7 +20,7 @@
         <input type="hidden" name="geo_accuracy" id="idv_geo_accuracy">
 
         <header
-            class="flex shrink-0 items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 bg-gradient-to-b from-black/80 to-transparent"
+            class="idv-header-when-not-upload flex shrink-0 items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 bg-gradient-to-b from-slate-900/90 to-transparent border-b border-white/5"
             style="padding-left: max(0.75rem, env(safe-area-inset-left)); padding-right: max(0.75rem, env(safe-area-inset-right));"
         >
             <a
@@ -34,50 +34,33 @@
             </a>
             <div class="flex-1 min-w-0">
                 <p class="text-sm font-semibold text-white truncate">ID verification</p>
-                <p id="idvHint" class="text-xs text-slate-400 truncate mt-0.5">
-                    Allow camera, then capture ID front and selfie with ID.
-                </p>
-                </div>
-            <div class="flex items-center gap-2">
-                <button type="button" id="idvCameraToggle" class="btn-secondary px-3 py-2" aria-pressed="true" aria-label="Reverse camera">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7h3a2 2 0 012 2v3m-2-5l-3 3m0 0a7 7 0 10.88 9.88M8 17H5a2 2 0 01-2-2v-3m2 5l3-3m0 0a7 7 0 10-.88-9.88"></path>
-                    </svg>
-                </button>
-                <button type="button" id="idvAutoCaptureToggle" class="btn-secondary text-xs px-3 py-2" aria-pressed="false">Auto: off</button>
+                <p id="idvHint" class="text-xs text-slate-400 truncate mt-0.5">Select a mode to continue.</p>
             </div>
         </header>
 
-        <div class="flex-1 relative min-h-0 bg-black">
-            <div class="absolute top-3 left-3 z-[20] rounded-xl bg-black/50 p-3 backdrop-blur-md border border-white/15 w-[min(92vw,22rem)]">
-                <div id="idvTypeWrap" class="hidden">
-                <label class="block text-xs text-slate-300 mb-1">ID type (Philippines)</label>
-                <select id="idv_id_type" name="id_type" class="form-select text-xs py-2 mb-2">
-                    <option value="philsys_national_id">PhilSys National ID</option>
-                    <option value="drivers_license">Driver's License</option>
-                    <option value="passport">Passport</option>
-                    <option value="umid">UMID</option>
-                    <option value="prc_id">PRC ID</option>
-                    <option value="postal_id">Postal ID</option>
-                    <option value="voters_id">Voter's ID</option>
-                    <option value="philhealth_id">PhilHealth ID</option>
-                    <option value="sss_id">SSS ID</option>
-                    <option value="pagibig_loyalty_card">Pag-IBIG Loyalty Card</option>
-                    <option value="senior_citizen_id">Senior Citizen ID</option>
-                    <option value="ofw_id">OFW ID</option>
-                    <option value="barangay_id">Barangay ID</option>
-                    <option value="other">Other</option>
-                </select>
-                </div>
-                <div class="flex gap-2 text-xs">
-                    <button type="button" id="idvModeSelfie" class="btn-secondary px-2 py-1">Selfie + ID</button>
-                    <button type="button" id="idvModeUpload" class="btn-secondary px-2 py-1">Upload ID files</button>
-                </div>
-                <div id="idvUploadBox" class="hidden mt-2 space-y-2">
-                    <input type="file" id="idv_upload_front" name="id_front_file" accept="image/*" class="form-input text-xs">
-                    <input type="file" id="idv_upload_back" name="id_back_file" accept="image/*" class="form-input text-xs">
-                </div>
+        {{-- Upload-only: simple header (no camera) --}}
+        <header
+            id="idvHeaderUpload"
+            class="hidden flex shrink-0 items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 bg-slate-900/50 border-b border-white/5"
+            style="padding-left: max(0.75rem, env(safe-area-inset-left)); padding-right: max(0.75rem, env(safe-area-inset-right));"
+        >
+            <a
+                href="{{ route('verification.required') }}"
+                class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-white hover:bg-white/20 transition"
+                aria-label="Back to verification options"
+            >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </a>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-white truncate">Upload ID</p>
+                <p class="text-xs text-slate-400 truncate mt-0.5">Choose your ID type and images.</p>
             </div>
+        </header>
+
+        {{-- Selfie: camera + guides --}}
+        <div id="idvMainCameraBlock" class="hidden flex-1 relative min-h-0 bg-black">
             <video id="idvVideo" class="absolute inset-0 h-full w-full object-cover" autoplay playsinline muted></video>
             <img
                 id="idvPreviewImg"
@@ -123,17 +106,17 @@
                         <span id="idvGuideLabel" class="text-[10px] sm:text-xs font-medium text-white/90 drop-shadow-md">Align ID front in the card frame</span>
                     </div>
                 </div>
-                </div>
+            </div>
 
             <div id="idvCountdown" class="hidden absolute inset-0 z-[11] items-center justify-center pointer-events-none">
                 <div id="idvCountdownNumber" class="h-20 w-20 rounded-full border-2 border-white/60 bg-black/45 text-3xl font-bold flex items-center justify-center">3</div>
-                </div>
+            </div>
 
             <div
                 id="idvPermissionGate"
                 class="hidden absolute inset-0 z-[210] flex flex-col items-center justify-center gap-4 bg-black/90 px-6 text-center"
             >
-                <div class="rounded-2xl border border-white/10 bg-white/5 p-6 max-w-sm">
+                <div class="rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur-md p-6 max-w-sm">
                     <p class="text-base font-semibold text-white mb-2">Camera access</p>
                     <p id="idvPermissionText" class="text-sm text-slate-300 mb-5">
                         We need camera access for ID verification. Please allow camera when prompted.
@@ -143,8 +126,38 @@
             </div>
         </div>
 
+        {{-- Upload: no camera --}}
+        <div id="idvUploadOnlyBlock" class="hidden flex-1 min-h-0 flex flex-col overflow-y-auto px-4 py-6" style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right));">
+            <div class="w-full max-w-md mx-auto glass p-5 sm:p-6 rounded-2xl border border-white/10">
+                <label class="block text-xs text-slate-300 mb-1.5">ID type (Philippines)</label>
+                <select id="idv_id_type" name="id_type" class="form-select text-sm py-2.5 mb-4 w-full">
+                    <option value="philsys_national_id">PhilSys National ID</option>
+                    <option value="drivers_license">Driver's License</option>
+                    <option value="passport">Passport</option>
+                    <option value="umid">UMID</option>
+                    <option value="prc_id">PRC ID</option>
+                    <option value="postal_id">Postal ID</option>
+                    <option value="voters_id">Voter's ID</option>
+                    <option value="philhealth_id">PhilHealth ID</option>
+                    <option value="sss_id">SSS ID</option>
+                    <option value="pagibig_loyalty_card">Pag-IBIG Loyalty Card</option>
+                    <option value="senior_citizen_id">Senior Citizen ID</option>
+                    <option value="ofw_id">OFW ID</option>
+                    <option value="barangay_id">Barangay ID</option>
+                    <option value="other">Other</option>
+                </select>
+                <label class="block text-xs text-slate-300 mb-1.5">ID front (required)</label>
+                <input type="file" id="idv_upload_front" name="id_front_file" accept="image/*" class="form-input text-sm mb-4 w-full">
+                <label class="block text-xs text-slate-300 mb-1.5">ID back (optional)</label>
+                <input type="file" id="idv_upload_back" name="id_back_file" accept="image/*" class="form-input text-sm mb-6 w-full">
+                <button type="submit" id="idvUploadSubmit" class="btn-primary w-full py-3 text-sm" disabled>Submit verification</button>
+            </div>
+        </div>
+
+        {{-- Selfie mode footer: steps + capture row (reverse beside circle) --}}
         <footer
-            class="shrink-0 flex flex-col items-center gap-4 px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black via-black/95 to-transparent"
+            id="idvSelfieFooter"
+            class="hidden shrink-0 flex flex-col items-center gap-4 px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black via-black/95 to-transparent"
             style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right));"
         >
             <div class="w-full max-w-md text-center">
@@ -152,15 +165,32 @@
                 <p id="idvSlotHint" class="text-xs text-amber-200/90 mt-1">Follow the steps in order.</p>
             </div>
 
-            <div id="idvLiveControls" class="flex flex-col items-center gap-3 w-full max-w-md">
+            <div id="idvLiveControls" class="flex flex-row items-center justify-center gap-5 w-full max-w-md">
+                <button
+                    type="button"
+                    id="idvCameraToggle"
+                    class="btn-secondary h-12 w-12 shrink-0 rounded-full p-0 flex items-center justify-center"
+                    aria-pressed="true"
+                    aria-label="Reverse camera"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7h3a2 2 0 012 2v3m-2-5l-3 3m0 0a7 7 0 10.88 9.88M8 17H5a2 2 0 01-2-2v-3m2 5l3-3m0 0a7 7 0 10-.88-9.88"></path>
+                    </svg>
+                </button>
                 <button
                     type="button"
                     id="idvCapture"
-                    class="h-16 w-16 rounded-full border-4 border-white bg-white/20 shadow-lg ring-4 ring-white/30 disabled:opacity-40 disabled:pointer-events-none"
+                    class="h-16 w-16 rounded-full border-4 border-white bg-white/20 shadow-lg ring-4 ring-white/30 disabled:opacity-40 disabled:pointer-events-none shrink-0"
                     aria-label="Capture photo"
                 ></button>
-                <span class="text-xs text-slate-500">Tap to capture current step</span>
+                <button
+                    type="button"
+                    id="idvAutoCaptureToggle"
+                    class="btn-secondary text-[10px] sm:text-xs px-2.5 py-2 min-w-[4.5rem] h-12 rounded-xl"
+                    aria-pressed="false"
+                >Auto: off</button>
             </div>
+            <span class="text-xs text-slate-500 -mt-1">Tap the circle to capture the current step</span>
 
             <div id="idvPreviewControls" class="hidden flex w-full max-w-md gap-3">
                 <button type="button" id="idvRetakeBtn" class="btn-secondary flex-1 text-sm py-3">Retake</button>
@@ -168,17 +198,21 @@
             </div>
         </footer>
 
-        <div id="idvModeGate" class="absolute inset-0 z-[260] flex items-center justify-center bg-black px-6 text-center">
-            <div class="w-full max-w-sm rounded-2xl border border-white/10 bg-white/5 p-6">
-                <h2 class="text-lg font-semibold text-white">Select verification mode</h2>
-                <p class="mt-2 text-sm text-slate-300">Choose how you want to submit your ID before opening the camera.</p>
-                <div class="mt-5 grid grid-cols-1 gap-3">
+        {{-- Mode gate: system-style (glass) --}}
+        <div
+            id="idvModeGate"
+            class="absolute inset-0 z-[260] flex items-center justify-center p-4 sm:p-6 bg-slate-950/80 backdrop-blur-md"
+        >
+            <div class="w-full max-w-sm glass p-6 sm:p-8 rounded-2xl border border-white/10 shadow-2xl shadow-slate-950/50 text-center">
+                <h2 class="text-lg sm:text-xl font-semibold text-white">Select verification mode</h2>
+                <p class="mt-2 text-sm text-slate-300">Choose how you want to submit your ID.</p>
+                <div class="mt-6 grid grid-cols-1 gap-3">
                     <button type="button" id="idvGateSelfie" class="btn-primary w-full justify-center py-2.5 text-sm">Selfie with ID</button>
                     <button type="button" id="idvGateUpload" class="btn-secondary w-full justify-center py-2.5 text-sm">Upload ID files</button>
                 </div>
             </div>
         </div>
-        </form>
+    </form>
 </div>
 
 <script>
@@ -192,16 +226,18 @@
     const autoBtn = document.getElementById('idvAutoCaptureToggle');
     const cameraToggleBtn = document.getElementById('idvCameraToggle');
     const submitBtn = document.getElementById('idvSubmit');
-    const modeSelfieBtn = document.getElementById('idvModeSelfie');
-    const modeUploadBtn = document.getElementById('idvModeUpload');
-    const modeGate = document.getElementById('idvModeGate');
+    const uploadSubmitBtn = document.getElementById('idvUploadSubmit');
     const gateSelfieBtn = document.getElementById('idvGateSelfie');
     const gateUploadBtn = document.getElementById('idvGateUpload');
+    const modeGate = document.getElementById('idvModeGate');
     const proofModeInput = document.getElementById('idv_proof_mode');
-    const idTypeWrap = document.getElementById('idvTypeWrap');
     const idTypeSelect = document.getElementById('idv_id_type');
-    const uploadBox = document.getElementById('idvUploadBox');
     const uploadFrontInput = document.getElementById('idv_upload_front');
+    const mainCameraBlock = document.getElementById('idvMainCameraBlock');
+    const uploadOnlyBlock = document.getElementById('idvUploadOnlyBlock');
+    const selfieFooter = document.getElementById('idvSelfieFooter');
+    const headerNotUpload = document.querySelectorAll('.idv-header-when-not-upload');
+    const headerUpload = document.getElementById('idvHeaderUpload');
     const hint = document.getElementById('idvHint');
     const slotHint = document.getElementById('idvSlotHint');
     const stepTitle = document.getElementById('idvStepTitle');
@@ -217,7 +253,6 @@
     const faceZone = document.getElementById('idvFaceZone');
     const gridTint = document.getElementById('idvGridTint');
     const gridSvg = document.getElementById('idvGridSvg');
-
     const liveControls = document.getElementById('idvLiveControls');
     const previewControls = document.getElementById('idvPreviewControls');
 
@@ -263,7 +298,7 @@
             gridSvg.style.color = good ? 'rgba(74, 222, 128, 0.92)' : 'rgba(248, 113, 113, 0.9)';
         }
         if (zoneEl) {
-            zoneEl.style.borderColor = good ? 'rgba(34, 197, 94, 0.98)' : 'rgba(239, 68, 68, 0.95)';
+            zoneEl.style.borderColor = good ? 'rgba(34, 197, 92, 0.98)' : 'rgba(239, 68, 68, 0.95)';
         }
     }
 
@@ -428,26 +463,18 @@
     }
 
     function syncStepUi() {
+        if (proofMode === 'upload_file') {
+            return;
+        }
         if (!proofMode) {
             if (stepTitle) stepTitle.textContent = 'Select verification mode';
-            if (slotHint) slotHint.textContent = 'Choose Selfie + ID or Upload ID files first.';
+            if (slotHint) slotHint.textContent = 'Choose a mode on the previous screen.';
             if (guideLabel) guideLabel.textContent = 'Select verification mode to continue';
             idFrame?.classList.remove('hidden');
             faceFrame?.classList.add('hidden');
             faceFrame?.classList.remove('flex');
             setGuideState(false, false, idZone);
             setHint('Select a verification mode first.');
-            return;
-        }
-        if (proofMode === 'upload_file') {
-            if (stepTitle) stepTitle.textContent = 'Upload ID files';
-            if (slotHint) slotHint.textContent = 'Upload ID front (required), back (optional)';
-            if (guideLabel) guideLabel.textContent = 'Upload clear ID photos';
-            idFrame?.classList.remove('hidden');
-            faceFrame?.classList.add('hidden');
-            faceFrame?.classList.remove('flex');
-            setGuideState(false, false, idZone);
-            setHint('Upload your ID files to continue.');
             return;
         }
         const step = steps[stepIndex];
@@ -472,15 +499,15 @@
     }
 
     function refreshSubmit() {
-        if (!proofMode) {
-            submitBtn.disabled = true;
-            return;
-        }
         if (proofMode === 'upload_file') {
-            submitBtn.disabled = !(uploadFrontInput && uploadFrontInput.files && uploadFrontInput.files.length > 0);
+            if (uploadSubmitBtn) {
+                uploadSubmitBtn.disabled = !(uploadFrontInput && uploadFrontInput.files && uploadFrontInput.files.length > 0);
+            }
             return;
         }
-        submitBtn.disabled = !(inputs.front.value && inputs.selfie.value);
+        if (submitBtn) {
+            submitBtn.disabled = !(inputs.front.value && inputs.selfie.value);
+        }
     }
 
     function setMode(next) {
@@ -489,11 +516,7 @@
         if (live) {
             video.classList.remove('hidden');
             previewImg.classList.add('hidden');
-            if (proofMode === 'upload_file') {
-                liveControls?.classList.add('hidden');
-            } else {
-                liveControls?.classList.remove('hidden');
-            }
+            liveControls?.classList.remove('hidden');
             previewControls?.classList.add('hidden');
             startAlignmentLoop();
         } else {
@@ -525,7 +548,7 @@
         countdownTimer = window.setInterval(() => {
             remaining -= 1;
             if (remaining <= 0) {
-                    autoCaptureQueued = false;
+                autoCaptureQueued = false;
                 clearCountdown();
                 onDone();
                 return;
@@ -604,6 +627,56 @@
         setHint('Saved ' + step.label + '. You can now submit.');
     }
 
+    function applyLayoutForMode() {
+        if (proofMode === 'upload_file') {
+            if (headerNotUpload) headerNotUpload.forEach((el) => el.classList.add('hidden'));
+            headerUpload?.classList.remove('hidden');
+            mainCameraBlock?.classList.add('hidden');
+            uploadOnlyBlock?.classList.remove('hidden');
+            selfieFooter?.classList.add('hidden');
+            return;
+        }
+        headerUpload?.classList.add('hidden');
+        if (headerNotUpload) headerNotUpload.forEach((el) => el.classList.remove('hidden'));
+        uploadOnlyBlock?.classList.add('hidden');
+        if (proofMode === 'selfie_with_id') {
+            mainCameraBlock?.classList.remove('hidden');
+            selfieFooter?.classList.remove('hidden');
+        } else {
+            mainCameraBlock?.classList.add('hidden');
+            selfieFooter?.classList.add('hidden');
+        }
+    }
+
+    function setProofMode(nextMode) {
+        proofMode = nextMode;
+        if (proofModeInput) proofModeInput.value = proofMode;
+        if (modeGate) modeGate.classList.add('hidden');
+        if (idTypeSelect) {
+            if (proofMode === 'upload_file') {
+                idTypeSelect.value = idTypeSelect.value || 'philsys_national_id';
+            }
+        }
+        clearCountdown();
+        stopAlignmentLoop();
+        stepIndex = 0;
+        inputs.front.value = '';
+        inputs.selfie.value = '';
+        previewImg.removeAttribute('src');
+        applyLayoutForMode();
+        syncStepUi();
+        refreshSubmit();
+
+        if (proofMode === 'upload_file') {
+            hidePermission();
+            stopCamera();
+        } else if (proofMode === 'selfie_with_id') {
+            document.getElementById('idvGuide')?.classList.remove('hidden');
+            setMode('live');
+            showPermission('We need camera access for ID verification. Please allow camera to continue.');
+        }
+    }
+
     captureBtn?.addEventListener('click', () => captureFrame(false));
     retakeBtn?.addEventListener('click', () => {
         previewImg.removeAttribute('src');
@@ -626,48 +699,13 @@
             await startCamera();
         }
     });
-    function setProofMode(nextMode) {
-        proofMode = nextMode;
-        if (proofModeInput) proofModeInput.value = proofMode;
-        if (modeGate) modeGate.classList.add('hidden');
-        if (idTypeWrap) idTypeWrap.classList.toggle('hidden', proofMode !== 'upload_file');
-        if (idTypeSelect) {
-            idTypeSelect.value = proofMode === 'upload_file' ? (idTypeSelect.value || 'philsys_national_id') : 'other';
-        }
-        uploadBox?.classList.toggle('hidden', proofMode !== 'upload_file');
-        modeSelfieBtn?.classList.toggle('bg-blue-500/40', proofMode === 'selfie_with_id');
-        modeUploadBtn?.classList.toggle('bg-blue-500/40', proofMode === 'upload_file');
 
-        clearCountdown();
-        stopAlignmentLoop();
-        stepIndex = 0;
-        inputs.front.value = '';
-        inputs.selfie.value = '';
-        previewImg.removeAttribute('src');
-        syncStepUi();
-        refreshSubmit();
-
-        if (proofMode === 'upload_file') {
-            hidePermission();
-            stopCamera();
-            setMode('preview');
-            setHint('Upload your ID files then submit.');
-            previewImg.classList.add('hidden');
-            video.classList.add('hidden');
-            document.getElementById('idvGuide')?.classList.add('hidden');
-            previewControls?.classList.remove('hidden');
-        } else {
-            document.getElementById('idvGuide')?.classList.remove('hidden');
-            showPermission('We need camera access for ID verification. Please allow camera to continue.');
-            setMode('live');
-            startCamera();
-        }
-    }
-
-    modeSelfieBtn?.addEventListener('click', () => setProofMode('selfie_with_id'));
-    modeUploadBtn?.addEventListener('click', () => setProofMode('upload_file'));
-    gateSelfieBtn?.addEventListener('click', () => setProofMode('selfie_with_id'));
-    gateUploadBtn?.addEventListener('click', () => setProofMode('upload_file'));
+    gateSelfieBtn?.addEventListener('click', () => {
+        setProofMode('selfie_with_id');
+    });
+    gateUploadBtn?.addEventListener('click', () => {
+        setProofMode('upload_file');
+    });
     uploadFrontInput?.addEventListener('change', refreshSubmit);
     enableBtn?.addEventListener('click', () => {
         if (proofMode === 'upload_file') return;
@@ -676,15 +714,19 @@
 
     syncAutoUi();
     syncCameraUi();
-    if (idTypeWrap) idTypeWrap.classList.add('hidden');
+    applyLayoutForMode();
+    if (idTypeSelect) {
+        idTypeSelect.value = 'philsys_national_id';
+    }
     syncStepUi();
+    if (mainCameraBlock) {
+        mainCameraBlock.classList.add('hidden');
+    }
+    selfieFooter?.classList.add('hidden');
     setMode('preview');
     previewImg.classList.add('hidden');
     video.classList.add('hidden');
-    document.getElementById('idvGuide')?.classList.add('hidden');
-    liveControls?.classList.add('hidden');
-    previewControls?.classList.add('hidden');
-    showPermission('Select a mode first to continue.');
+    hidePermission();
     window.addEventListener('beforeunload', stopCamera);
 })();
 </script>

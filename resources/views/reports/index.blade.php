@@ -18,24 +18,14 @@
                     <option value="monthly" {{ ($filters['period'] ?? '') === 'monthly' ? 'selected' : '' }}>Monthly</option>
                 </select>
             </div>
-            <div>
-                <label class="form-label">Date From</label>
-                <input type="date" name="date_from" value="{{ $filters['date_from'] }}" class="form-input">
-            </div>
-            <div>
-                <label class="form-label">Date To</label>
-                <input type="date" name="date_to" value="{{ $filters['date_to'] }}" class="form-input">
-            </div>
             <div class="md:col-span-2">
-                <label class="form-label">Drivers (multi-select)</label>
-                <div class="max-h-32 overflow-y-auto rounded-lg border border-white/10 bg-white/5 p-2 space-y-1">
+                <label class="form-label">Drivers</label>
+                <select name="driver_id" class="form-select">
+                    <option value="">All Users</option>
                     @foreach($drivers as $driver)
-                        <label class="flex items-center gap-2 text-xs text-slate-200">
-                            <input type="checkbox" name="driver_ids[]" value="{{ $driver->id }}" {{ in_array($driver->id, $filters['driver_ids'] ?? [], true) ? 'checked' : '' }}>
-                            <span>{{ $driver->name }}</span>
-                        </label>
+                        <option value="{{ $driver->id }}" {{ ($filters['driver_id'] ?? '') == $driver->id ? 'selected' : '' }}>{{ $driver->name }}</option>
                     @endforeach
-                </div>
+                </select>
             </div>
             <div class="flex items-end">
                 <button type="submit" class="btn-primary w-full">Apply Filters</button>
@@ -201,12 +191,10 @@
         </div>
 
         <form method="GET" action="{{ route('reports.export') }}" class="mt-4 flex flex-col sm:flex-row sm:items-end sm:justify-end gap-3">
-            <input type="hidden" name="date_from" value="{{ $filters['date_from'] }}">
-            <input type="hidden" name="date_to" value="{{ $filters['date_to'] }}">
             <input type="hidden" name="period" value="{{ $filters['period'] ?? 'monthly' }}">
-            @foreach(($filters['driver_ids'] ?? []) as $exportDriverId)
-                <input type="hidden" name="driver_ids[]" value="{{ $exportDriverId }}">
-            @endforeach
+            @if($filters['driver_id'] ?? null)
+                <input type="hidden" name="driver_id" value="{{ $filters['driver_id'] }}">
+            @endif
             <div>
                 <label for="attendance-export-as" class="form-label">Export As</label>
                 <select id="attendance-export-as" name="export_as" class="form-select min-w-[200px]">

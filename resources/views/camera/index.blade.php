@@ -72,6 +72,16 @@
                 height="1"
             />
 
+            {{-- Driver name frame overlay --}}
+            <div class="absolute top-4 left-4 right-4 pointer-events-none">
+                <div class="inline-flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
+                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    <span class="text-white text-sm font-medium">{{ Auth::user()->name }}</span>
+                </div>
+            </div>
+
             <canvas id="driverCanvas" class="hidden" width="2" height="2"></canvas>
 
             <div

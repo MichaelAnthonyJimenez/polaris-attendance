@@ -11,6 +11,12 @@
             <a href="{{ route('attendance.history', ['period' => 'daily']) }}" class="btn-secondary text-xs {{ $period === 'daily' ? 'bg-blue-500/30' : '' }}">Daily</a>
             <a href="{{ route('attendance.history', ['period' => 'weekly']) }}" class="btn-secondary text-xs {{ $period === 'weekly' ? 'bg-blue-500/30' : '' }}">Weekly</a>
             <a href="{{ route('attendance.history', ['period' => 'monthly']) }}" class="btn-secondary text-xs {{ $period === 'monthly' ? 'bg-blue-500/30' : '' }}">Monthly</a>
+            <button onclick="exportAttendanceHistory()" class="btn-secondary text-xs flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Export
+            </button>
         </div>
     </div>
 
@@ -55,32 +61,6 @@
         </div>
     </div>
 
-    @php
-        $latestMapPoint = null;
-        foreach ($groupedHistory as $bucketRows) {
-            foreach ($bucketRows as $row) {
-                $meta = is_array($row->meta ?? null) ? $row->meta : [];
-                if (is_numeric(data_get($meta, 'latitude')) && is_numeric(data_get($meta, 'longitude'))) {
-                    $latestMapPoint = ['lat' => (float) data_get($meta, 'latitude'), 'lng' => (float) data_get($meta, 'longitude')];
-                    break 2;
-                }
-            }
-        }
-    @endphp
-    <div class="glass p-4 sm:p-6">
-        <h2 class="text-lg font-semibold text-white mb-3">Latest Check-in/Out Map</h2>
-        @if($latestMapPoint)
-            <iframe
-                title="Driver attendance map"
-                src="https://maps.google.com/maps?q={{ $latestMapPoint['lat'] }},{{ $latestMapPoint['lng'] }}&z=16&output=embed"
-                class="w-full h-72 rounded-xl border border-white/10"
-                loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade"
-            ></iframe>
-        @else
-            <p class="text-slate-400 text-sm">No location data found yet.</p>
-        @endif
-    </div>
 
     @forelse($groupedHistory as $bucket => $rows)
         <div class="glass p-4 sm:p-6">
@@ -94,29 +74,16 @@
                             <th>Total Hours</th>
                             <th>Face</th>
                             <th>Liveness</th>
-                            <th>Location</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($rows as $row)
-                            @php
-                                $meta = is_array($row->meta ?? null) ? $row->meta : [];
-                                $lat = data_get($meta, 'latitude');
-                                $lng = data_get($meta, 'longitude');
-                            @endphp
                             <tr>
                                 <td>{{ str_replace('_', ' ', $row->type) }}</td>
                                 <td>{{ $row->captured_at?->format('M d, Y H:i') ?? '—' }}</td>
                                 <td>{{ $row->type === 'check_out' && $row->total_hours !== null ? number_format((float) $row->total_hours, 2) . ' h' : '—' }}</td>
                                 <td>{{ $row->face_confidence ? $row->face_confidence . '%' : '—' }}</td>
                                 <td>{{ $row->liveness_score ? number_format((float) $row->liveness_score, 2) : '—' }}</td>
-                                <td>
-                                    @if(is_numeric($lat) && is_numeric($lng))
-                                        <a href="https://www.google.com/maps?q={{ (float) $lat }},{{ (float) $lng }}" class="text-blue-400 hover:text-blue-300" target="_blank" rel="noopener">View Map</a>
-                                    @else
-                                        —
-                                    @endif
-                                </td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -127,5 +94,20 @@
         <div class="glass p-6 text-slate-400 text-center">No attendance history found.</div>
     @endforelse
 </div>
+
+<script>
+function exportAttendanceHistory() {
+    const period = '{{ $period }}';
+    const url = '{{ route("attendance.export") }}?period=' + encodeURIComponent(period);
+
+    // Create a temporary link to trigger download
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'attendance-history-' + period + '.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
 @endsection
 

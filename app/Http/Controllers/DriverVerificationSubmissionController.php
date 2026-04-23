@@ -231,6 +231,7 @@ class DriverVerificationSubmissionController extends Controller
                 : (string) ($data['id_type'] ?? 'other');
             // Enhanced OCR using Python Tesseract service
             $ocrResult = null;
+            $idDetected = false;
             if ($this->pythonVision->isAvailable()) {
                 try {
                     $fullIdPath = Storage::disk('public')->path($idFrontPath);
@@ -244,6 +245,10 @@ class DriverVerificationSubmissionController extends Controller
                             'avg_confidence' => $ocrResult['avg_confidence'],
                             'extraction_success' => true
                         ];
+
+                        // Validate ID detection
+                        $idDetected = $this->validateIdDetection($ocrResult['text'], $ocrResult['words']);
+                        $meta['id_validation'] = $idDetected;
                     }
                 } catch (\Exception $e) {
                     $meta['python_ocr'] = ['extraction_success' => false, 'error' => $e->getMessage()];
@@ -251,7 +256,21 @@ class DriverVerificationSubmissionController extends Controller
             }
 
             // Fallback to original OCR service
-            $meta['ocr'] = $this->idOcrService->extractFromPublicPath($idFrontPath);
+            $fallbackOcr = $this->idOcrService->extractFromPublicPath($idFrontPath);
+            $meta['ocr'] = $fallbackOcr;
+
+            // Validate ID detection with fallback if Python service failed
+            if (!$idDetected && $fallbackOcr) {
+                $idDetected = $this->validateIdDetection($fallbackOcr['text'] ?? '', $fallbackOcr['words'] ?? []);
+                $meta['id_validation'] = $idDetected;
+            }
+
+            // Return validation error if ID not detected properly
+            if (!$idDetected['detected']) {
+                return back()->withErrors([
+                    'id_front_file' => $idDetected['error'] ?? 'Incorrect ID detected. Please select an option that corresponds/matches to your ID.',
+                ]);
+            }
         }
 
         if ($meta !== []) {
@@ -291,5 +310,71 @@ class DriverVerificationSubmissionController extends Controller
         Storage::disk('public')->put($path, base64_decode($content));
 
         return $path;
+    }
+
+    /**
+     * Validate ID detection from OCR text and words
+     */
+    private function validateIdDetection(string $text, array $words): array
+    {
+        $detected = false;
+        $error = null;
+
+        // Common ID indicators in OCR text
+        $idIndicators = [
+            'license', 'licence', 'identification', 'passport', 'national id',
+            'driver license', 'driving license', 'state id', 'government',
+            'official', 'document', 'card', 'permit'
+        ];
+
+        $lowerText = strtolower($text);
+        $lowerWords = array_map('strtolower', $words);
+
+        // Check for ID indicators in text
+        foreach ($idIndicators as $indicator) {
+            if (str_contains($lowerText, $indicator)) {
+                $detected = true;
+                break;
+            }
+        }
+
+        // Check for common ID patterns
+        if (!$detected) {
+            // Look for patterns like "DL-", "ID#", etc.
+            if (preg_match('/(dl[-\s]*|id[-\s]*|passport[-\s]*|license[-\s]*)/i', $text)) {
+                $detected = true;
+            }
+        }
+
+        // Check for name and date patterns (common in IDs)
+        if (!$detected) {
+            $hasName = false;
+            $hasDate = false;
+
+            foreach ($lowerWords as $word) {
+                if (preg_match('/^[a-z\s]+$/i', $word) && strlen($word) > 2) {
+                    $hasName = true;
+                }
+                if (preg_match('/\d{4}|\d{2}\/\d{2}|\d{2}-\d{2}-\d{2}/', $word)) {
+                    $hasDate = true;
+                }
+            }
+
+            if ($hasName && $hasDate) {
+                $detected = true;
+            }
+        }
+
+        if (!$detected) {
+            $error = 'No valid ID document detected. Please upload a clear photo of your government-issued ID.';
+        }
+
+        return [
+            'detected' => $detected,
+            'error' => $error,
+            'text_length' => strlen($text),
+            'word_count' => count($words),
+            'indicators_found' => array_intersect($idIndicators, $lowerWords)
+        ];
     }
 }

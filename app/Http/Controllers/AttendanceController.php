@@ -514,6 +514,55 @@ class AttendanceController extends Controller
         ]);
     }
 
+    public function export(Request $request)
+    {
+        $user = Auth::user();
+        if (! $user || mb_strtolower((string) ($user->role ?? '')) !== 'driver') {
+            abort(403);
+        }
+
+        $period = (string) $request->query('period', 'daily');
+        if (! in_array($period, ['daily', 'weekly', 'monthly'], true)) {
+            $period = 'daily';
+        }
+
+        $rows = Attendance::query()
+            ->where('driver_id', $user->id)
+            ->with('driver')
+            ->orderByDesc('captured_at')
+            ->limit(1000)
+            ->get();
+
+        $filename = 'attendance-history-' . $period . '-' . now()->format('Y-m-d') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function () use ($rows) {
+            $file = fopen('php://output', 'w');
+
+            // CSV header
+            fputcsv($file, ['Type', 'Date', 'Time', 'Total Hours', 'Face Confidence', 'Liveness Score']);
+
+            foreach ($rows as $row) {
+                fputcsv($file, [
+                    $row->type,
+                    $row->captured_at?->format('Y-m-d'),
+                    $row->captured_at?->format('H:i:s'),
+                    $row->type === 'check_out' && $row->total_hours !== null ? number_format((float) $row->total_hours, 2) : '',
+                    $row->face_confidence ? $row->face_confidence . '%' : '',
+                    $row->liveness_score ? number_format((float) $row->liveness_score, 2) : '',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
     /**
      * Automatically detect device identifier based on browser and IP
      */

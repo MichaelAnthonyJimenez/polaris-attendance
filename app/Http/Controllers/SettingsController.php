@@ -51,6 +51,9 @@ class SettingsController extends Controller
         ],
         'admin_backup' => [
             'auto_backup_enabled',
+            'backup_frequency',
+            'backup_time',
+            'backup_start_date',
             'backup_include_files',
             'backup_location',
             'backup_retention_days',
@@ -130,7 +133,6 @@ class SettingsController extends Controller
         ],
         'driver_attendance' => [
             'require_photo_attendance',
-            'show_attendance_history',
         ],
         'driver_camera' => [
             'auto_capture_photo',
@@ -161,8 +163,6 @@ class SettingsController extends Controller
             'driver_announcement_email',
         ],
         'driver_privacy' => [
-            'driver_analytics_opt_in',
-            'driver_data_export',
             'driver_profile_visible',
             'driver_share_location',
             'driver_share_photo',
@@ -279,9 +279,7 @@ class SettingsController extends Controller
             'driver_animations',
         ],
         'driver_camera' => ['auto_capture_photo', 'auto_submit_camera'],
-        'driver_attendance' => [
-            'show_attendance_history',
-        ],
+        'driver_attendance' => [],
         'driver_notifications' => [
             'show_notifications',
             'driver_notification_sound',
@@ -314,8 +312,6 @@ class SettingsController extends Controller
             'driver_sync_frequency',
         ],
         'driver_privacy' => [
-            'driver_analytics_opt_in',
-            'driver_data_export',
             'driver_profile_visible',
             'driver_share_photo',
         ],

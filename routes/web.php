@@ -84,6 +84,8 @@ Route::middleware(['auth', 'driver.verified'])->group(function () {
         ->name('attendance.index');
     Route::get('/attendance/history', [AttendanceController::class, 'history'])
         ->name('attendance.history');
+    Route::get('/attendance/export', [AttendanceController::class, 'export'])
+        ->name('attendance.export');
     Route::get('/attendance/{attendance}', [AttendanceController::class, 'show'])
         ->middleware('role:admin')
         ->name('attendance.show');

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\FaceRecognitionService;
 use App\Services\LivenessService;
 use App\Services\Ocr\IdOcrService;
+use App\Services\PythonVisionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -19,6 +20,7 @@ class DriverVerificationSubmissionController extends Controller
         private FaceRecognitionService $faceService,
         private LivenessService $livenessService,
         private IdOcrService $idOcrService,
+        private PythonVisionService $pythonVision,
     ) {
     }
 
@@ -85,13 +87,90 @@ class DriverVerificationSubmissionController extends Controller
                 $fullPath = Storage::disk('public')->path($frontPath);
                 $meta['liveness_score'] = $this->livenessService->score($fullPath);
 
+                // Enhanced face detection using Python DeepFace service
+                $pythonFaceResult = null;
+                if ($this->pythonVision->isAvailable()) {
+                    try {
+                        $imageData = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($fullPath));
+                        $detectionResult = $this->pythonVision->detectFaces($imageData, true);
+
+                        if ($detectionResult['success']) {
+                            $meta['python_face_detection'] = [
+                                'total_faces' => $detectionResult['total_faces'],
+                                'faces_detected' => $detectionResult['faces'],
+                                'detection_success' => true
+                            ];
+
+                            // Analyze face attributes
+                            $analysisResult = $this->pythonVision->analyzeFace($imageData, ['age', 'gender', 'emotion']);
+                            if ($analysisResult['success']) {
+                                $meta['python_face_analysis'] = $analysisResult['analysis'];
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        $meta['python_face_detection'] = ['detection_success' => false, 'error' => $e->getMessage()];
+                    }
+                }
+
                 $hasExistingFace = DriverFace::where('driver_id', $driver->id)->exists();
 
                 if ($hasExistingFace) {
-                    $similarity = $this->faceService->matchLatestForDriver($driver->id, $fullPath);
+                    // Try Python service first for face verification
+                    $similarity = null;
+                    if ($this->pythonVision->isAvailable() && isset($meta['python_face_detection']['detection_success']) && $meta['python_face_detection']['detection_success']) {
+                        try {
+                            $latestFace = DriverFace::where('driver_id', $driver->id)->latest()->first();
+                            if ($latestFace && $latestFace->image_path && file_exists(storage_path('app/public/' . $latestFace->image_path))) {
+                                $storedFaceData = 'data:image/jpeg;base64,' . base64_encode(file_get_contents(storage_path('app/public/' . $latestFace->image_path)));
+                                $verificationResult = $this->pythonVision->verifyFaces($imageData, $storedFaceData, 'VGG-Face');
+
+                                if ($verificationResult['success']) {
+                                    $similarity = $verificationResult['confidence'];
+                                    $meta['python_face_verification'] = [
+                                        'verified' => $verificationResult['verified'],
+                                        'confidence' => $verificationResult['confidence'],
+                                        'distance' => $verificationResult['distance'],
+                                        'model' => $verificationResult['model']
+                                    ];
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            $meta['python_face_verification'] = ['error' => $e->getMessage()];
+                        }
+                    }
+
+                    // Fallback to original method if Python service failed
+                    if ($similarity === null) {
+                        $similarity = $this->faceService->matchLatestForDriver($driver->id, $fullPath);
+                    }
+
                     $meta['deepface_recognition_similarity'] = $similarity;
                 } else {
-                    $template = $this->faceService->enrollFaceForDriver($driver->id, $fullPath);
+                    // Enroll new face using Python service if available
+                    $template = null;
+                    if ($this->pythonVision->isAvailable() && isset($meta['python_face_detection']['detection_success']) && $meta['python_face_detection']['detection_success']) {
+                        try {
+                            $dbPath = storage_path('app/public/faces');
+                            $this->pythonVision->createFaceDatabase($dbPath);
+                            $enrollResult = $this->pythonVision->enrollFace($imageData, $driver->id, $dbPath);
+
+                            if ($enrollResult['success']) {
+                                $meta['python_face_enrollment'] = [
+                                    'enrolled' => true,
+                                    'filepath' => $enrollResult['filepath'],
+                                    'faces_detected' => $enrollResult['faces_detected']
+                                ];
+                            }
+                        } catch (\Exception $e) {
+                            $meta['python_face_enrollment'] = ['error' => $e->getMessage()];
+                        }
+                    }
+
+                    // Fallback to original enrollment
+                    if ($template === null) {
+                        $template = $this->faceService->enrollFaceForDriver($driver->id, $fullPath);
+                    }
+
                     DriverFace::create([
                         'driver_id' => $driver->id,
                         'image_path' => $frontPath,
@@ -150,6 +229,28 @@ class DriverVerificationSubmissionController extends Controller
             $meta['id_type'] = $proofMode === 'selfie_with_id'
                 ? 'ocr_auto_detect'
                 : (string) ($data['id_type'] ?? 'other');
+            // Enhanced OCR using Python Tesseract service
+            $ocrResult = null;
+            if ($this->pythonVision->isAvailable()) {
+                try {
+                    $fullIdPath = Storage::disk('public')->path($idFrontPath);
+                    $imageData = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($fullIdPath));
+                    $ocrResult = $this->pythonVision->extractTextFromImage($imageData);
+
+                    if ($ocrResult['success']) {
+                        $meta['python_ocr'] = [
+                            'text' => $ocrResult['text'],
+                            'words' => $ocrResult['words'],
+                            'avg_confidence' => $ocrResult['avg_confidence'],
+                            'extraction_success' => true
+                        ];
+                    }
+                } catch (\Exception $e) {
+                    $meta['python_ocr'] = ['extraction_success' => false, 'error' => $e->getMessage()];
+                }
+            }
+
+            // Fallback to original OCR service
             $meta['ocr'] = $this->idOcrService->extractFromPublicPath($idFrontPath);
         }
 

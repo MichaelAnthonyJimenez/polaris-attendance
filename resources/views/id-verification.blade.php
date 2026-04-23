@@ -286,19 +286,43 @@
         if (!isDetected) {
             if (gridTint) gridTint.style.opacity = '0';
             if (gridSvg) gridSvg.style.color = 'rgba(255,255,255,0.52)';
-            if (zoneEl) zoneEl.style.borderColor = 'rgba(255,255,255,0.86)';
+            if (zoneEl) {
+                zoneEl.style.borderColor = 'rgba(255,255,255,0.86)';
+                zoneEl.style.boxShadow = '0 0 0 1px rgba(0, 0, 0, 0.32) inset';
+            }
             return;
         }
         const good = !!isGood;
         if (gridTint) {
-            gridTint.style.background = good ? 'rgba(34, 197, 94, 0.22)' : 'rgba(239, 68, 68, 0.22)';
-            gridTint.style.opacity = '1';
+            if (good) {
+                gridTint.style.background = 'rgba(34, 197, 94, 0.35)';
+                gridTint.style.opacity = '1';
+            } else {
+                gridTint.style.background = 'rgba(239, 68, 68, 0.25)';
+                gridTint.style.opacity = '1';
+            }
         }
         if (gridSvg) {
-            gridSvg.style.color = good ? 'rgba(74, 222, 128, 0.92)' : 'rgba(248, 113, 113, 0.9)';
+            if (good) {
+                gridSvg.style.color = 'rgba(74, 222, 128, 1)';
+                gridSvg.style.filter = 'drop-shadow(0 0 8px rgba(74, 222, 128, 0.6))';
+            } else {
+                gridSvg.style.color = 'rgba(248, 113, 113, 0.9)';
+                gridSvg.style.filter = 'none';
+            }
         }
         if (zoneEl) {
-            zoneEl.style.borderColor = good ? 'rgba(34, 197, 92, 0.98)' : 'rgba(239, 68, 68, 0.95)';
+            if (good) {
+                zoneEl.style.borderColor = 'rgba(34, 197, 92, 1)';
+                zoneEl.style.borderWidth = '4px';
+                zoneEl.style.boxShadow = '0 0 0 2px rgba(34, 197, 92, 0.3), 0 0 20px rgba(34, 197, 92, 0.4)';
+                zoneEl.style.transition = 'all 0.3s ease';
+            } else {
+                zoneEl.style.borderColor = 'rgba(239, 68, 68, 0.95)';
+                zoneEl.style.borderWidth = '3px';
+                zoneEl.style.boxShadow = '0 0 0 1px rgba(0, 0, 0, 0.32) inset';
+                zoneEl.style.transition = 'all 0.2s ease';
+            }
         }
     }
 
@@ -318,6 +342,12 @@
             let centerLum = 0;
             let centerCount = 0;
             let outerCount = 0;
+
+            // More accurate face detection zone - tighter circle bounds
+            const centerX = w / 2;
+            const centerY = h / 2;
+            const faceRadius = Math.min(w, h) * 0.25; // 25% of smaller dimension
+
             for (let y = 1; y < h - 1; y += 2) {
                 for (let x = 1; x < w - 1; x += 2) {
                     const idx = (y * w + x) * 4;
@@ -326,8 +356,12 @@
                     const downIdx = ((y + 1) * w + x) * 4;
                     const down = (image[downIdx] * 0.299) + (image[downIdx + 1] * 0.587) + (image[downIdx + 2] * 0.114);
                     const edge = Math.abs(g - right) + Math.abs(g - down);
-                    const inCenter = x > 42 && x < 118 && y > 26 && y < 94;
-                    if (inCenter) {
+
+                    // Check if pixel is within face circle
+                    const distFromCenter = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+                    const inFaceCircle = distFromCenter <= faceRadius;
+
+                    if (inFaceCircle) {
                         centerEnergy += edge;
                         centerLum += g;
                         centerCount += 1;
@@ -340,9 +374,11 @@
             const centerAvg = centerCount ? centerEnergy / centerCount : 0;
             const outerAvg = outerCount ? outerEnergy / outerCount : 0;
             const lumAvg = centerCount ? centerLum / centerCount : 0;
-            const detected = (centerAvg > 6 || outerAvg > 6) && lumAvg > 35;
+
+            // More sensitive detection thresholds
+            const detected = (centerAvg > 4 || outerAvg > 4) && lumAvg > 30;
             const edgeBalance = outerAvg > 0 ? (centerAvg / outerAvg) : 1;
-            const good = detected && edgeBalance > 0.82 && edgeBalance < 1.18 && lumAvg > 55 && lumAvg < 210;
+            const good = detected && edgeBalance > 0.75 && edgeBalance < 1.25 && lumAvg > 45 && lumAvg < 220;
             return { detected, good };
         };
 
@@ -363,7 +399,8 @@
                     };
                 })();
             const { xRatio, yRatio, sizeRatio } = layout;
-            const good = xRatio > 0.33 && xRatio < 0.67 && yRatio > 0.28 && yRatio < 0.63 && sizeRatio > 0.20 && sizeRatio < 0.58;
+            // More accurate face position and size constraints
+            const good = xRatio > 0.30 && xRatio < 0.70 && yRatio > 0.25 && yRatio < 0.65 && sizeRatio > 0.18 && sizeRatio < 0.45;
             return { detected: true, good };
         } catch (_e) {
             return heuristic();

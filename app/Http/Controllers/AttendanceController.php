@@ -14,6 +14,7 @@ use App\Services\PythonVisionService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use App\Mail\DriverAttendanceMail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -328,10 +329,20 @@ class AttendanceController extends Controller
             // Check if driver has any enrolled face before showing unknown user error
             $hasEnrolledFace = DriverFace::where('driver_id', $data['driver_id'])->exists();
             if (!$hasEnrolledFace) {
+                \Log::warning('No enrolled face found for driver', ['driver_id' => $data['driver_id']]);
                 return back()->withErrors([
                     'face_image' => 'No face enrolled. Please complete facial verification first.',
                 ])->withInput();
             }
+
+            // Try to get the latest enrolled face for debugging
+            $latestFace = DriverFace::where('driver_id', $data['driver_id'])->latest()->first();
+            \Log::warning('Face recognition failed', [
+                'driver_id' => $data['driver_id'],
+                'has_enrolled_face' => $hasEnrolledFace,
+                'latest_face_path' => $latestFace?->face_image_path,
+                'face_template_exists' => !empty($latestFace?->face_template)
+            ]);
 
             return back()->withErrors([
                 'face_image' => 'Face not recognized. Please ensure proper lighting and try again.',

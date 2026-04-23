@@ -266,19 +266,36 @@ class DriverVerificationSubmissionController extends Controller
                 $meta['id_validation'] = $idDetected;
             }
 
-            // Return validation error if ID not detected properly
-            if (!$idDetected['detected']) {
-                // Log the validation result for debugging
-                \Log::warning('ID validation failed', [
-                    'ocr_result' => $ocrResult ?? null,
-                    'fallback_ocr' => $fallbackOcr ?? null,
+            // Make ID validation more lenient - only fail if completely empty or invalid
+            $ocrText = $ocrResult['text'] ?? '';
+            $ocrWords = $ocrResult['words'] ?? [];
+            $fallbackText = $fallbackOcr['text'] ?? '';
+            $fallbackWords = $fallbackOcr['words'] ?? [];
+
+            $finalText = !empty($ocrText) ? $ocrText : $fallbackText;
+            $finalWords = !empty($ocrWords) ? $ocrWords : $fallbackWords;
+
+            if (!$idDetected['detected'] && strlen($finalText) < 10) {
+                // Only reject if text is very short (likely not an ID)
+                \Log::warning('ID validation failed - text too short', [
+                    'text_length' => strlen($finalText),
+                    'word_count' => count($finalWords),
                     'validation_result' => $idDetected
                 ]);
 
                 return back()->withErrors([
-                    'id_front_file' => $idDetected['error'] ?? 'Incorrect ID detected. Please select an option that corresponds/matches to your ID.',
+                    'id_front_file' => 'ID image appears to be invalid or unclear. Please upload a clear photo of your government-issued ID.',
                     'validation_failed' => true
                 ])->withInput();
+            }
+
+            // If ID validation is uncertain but there's some text, proceed with warning
+            if (!$idDetected['detected']) {
+                \Log::info('ID validation passed with warning - proceeding with submission', [
+                    'text_length' => strlen($finalText),
+                    'word_count' => count($finalWords),
+                    'validation_result' => $idDetected
+                ]);
             }
         }
 

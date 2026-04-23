@@ -46,7 +46,11 @@
                     <p class="text-xs font-medium text-emerald-300 truncate">{{ $statusMessage }}</p>
                 @endif
                 @if ($errors->any())
-                    <p class="text-xs font-medium text-red-300 truncate">{{ $errors->first() }}</p>
+                    <div class="space-y-1">
+                        @foreach ($errors->all() as $error)
+                            <p class="text-xs font-medium text-red-300 truncate">{{ $error }}</p>
+                        @endforeach
+                    </div>
                 @endif
                 <p id="cameraHint" class="text-xs text-slate-400 truncate @if($statusMessage || $errors->any()) mt-0.5 @endif">
                     Enable camera access when prompted, then capture your photo.
@@ -71,6 +75,16 @@
                 width="1"
                 height="1"
             />
+
+            {{-- User detection frame overlay --}}
+            <div id="userDetectionFrame" class="absolute top-4 left-4 right-4 pointer-events-none hidden">
+                <div class="inline-flex items-center gap-2 bg-green-600/80 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v5a2 2 0 002 2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <span class="text-white text-sm font-medium">User Detected: {{ Auth::user()->name }}</span>
+                </div>
+            </div>
 
             {{-- Driver name frame overlay --}}
             <div class="absolute top-4 left-4 right-4 pointer-events-none">
@@ -403,7 +417,7 @@
         function captureFrame(opts) {
             const isAuto = opts && opts.auto;
             if (!video.videoWidth) {
-                if (!isAuto) setHint('Wait for the camera preview to appear.');
+                if (!isAuto) setHint('Wait for camera preview to appear.');
                 return;
             }
             const ctx = canvas.getContext('2d');
@@ -426,9 +440,23 @@
             setMode('preview');
             setHint(isAuto ? 'Photo captured automatically. Submit or retake.' : 'Review your photo, then submit.');
 
+            // Show user detection frame when photo is captured
+            showUserDetection();
+
             if (autoSubmit && !submitting) {
                 submitting = true;
                 form.requestSubmit();
+            }
+        }
+
+        function showUserDetection() {
+            const userDetectionFrame = document.getElementById('userDetectionFrame');
+            if (userDetectionFrame) {
+                userDetectionFrame.classList.remove('hidden');
+                // Auto-hide after 3 seconds
+                setTimeout(() => {
+                    userDetectionFrame.classList.add('hidden');
+                }, 3000);
             }
         }
 

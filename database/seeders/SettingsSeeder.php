@@ -261,6 +261,7 @@ class SettingsSeeder extends Seeder
 
             // Driver Settings - Security
             ['key' => 'driver_require_pin', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_security', 'description' => 'Require PIN for attendance'],
+            ['key' => 'driver_two_factor_enabled', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_security', 'description' => 'Enable two-factor authentication (OTP)'],
             ['key' => 'driver_auto_lockout', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_security', 'description' => 'Auto-lock after inactivity'],
             ['key' => 'driver_lockout_minutes', 'value' => '15', 'type' => 'integer', 'group' => 'driver_security', 'description' => 'Auto-lock timeout (minutes)'],
             ['key' => 'driver_biometric_auth', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_security', 'description' => 'Enable biometric authentication'],

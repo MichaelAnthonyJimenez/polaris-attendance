@@ -11,6 +11,7 @@ use App\Services\Ocr\IdOcrService;
 use App\Services\PythonVisionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -267,9 +268,17 @@ class DriverVerificationSubmissionController extends Controller
 
             // Return validation error if ID not detected properly
             if (!$idDetected['detected']) {
+                // Log the validation result for debugging
+                \Log::warning('ID validation failed', [
+                    'ocr_result' => $ocrResult ?? null,
+                    'fallback_ocr' => $fallbackOcr ?? null,
+                    'validation_result' => $idDetected
+                ]);
+
                 return back()->withErrors([
                     'id_front_file' => $idDetected['error'] ?? 'Incorrect ID detected. Please select an option that corresponds/matches to your ID.',
-                ]);
+                    'validation_failed' => true
+                ])->withInput();
             }
         }
 

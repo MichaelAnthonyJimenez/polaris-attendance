@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers\AuditLogger;
 use App\Models\Attendance;
+use App\Models\DriverFace;
 use App\Models\User;
 use App\Notifications\AttendanceNotification;
 use App\Services\FaceRecognitionService;
@@ -324,8 +325,16 @@ class AttendanceController extends Controller
         }
 
         if ($faceRecognitionEnabled && $fullPath && $confidence === null) {
+            // Check if driver has any enrolled face before showing unknown user error
+            $hasEnrolledFace = DriverFace::where('driver_id', $data['driver_id'])->exists();
+            if (!$hasEnrolledFace) {
+                return back()->withErrors([
+                    'face_image' => 'No face enrolled. Please complete facial verification first.',
+                ])->withInput();
+            }
+
             return back()->withErrors([
-                'face_image' => 'Unknown user, unable to ' . str_replace('_', ' ', (string) $data['type']) . '.',
+                'face_image' => 'Face not recognized. Please ensure proper lighting and try again.',
             ])->withInput();
         }
 
@@ -512,55 +521,6 @@ class AttendanceController extends Controller
             'period' => $period,
             'groupedHistory' => $grouped,
         ]);
-    }
-
-    public function export(Request $request)
-    {
-        $user = Auth::user();
-        if (! $user || mb_strtolower((string) ($user->role ?? '')) !== 'driver') {
-            abort(403);
-        }
-
-        $period = (string) $request->query('period', 'daily');
-        if (! in_array($period, ['daily', 'weekly', 'monthly'], true)) {
-            $period = 'daily';
-        }
-
-        $rows = Attendance::query()
-            ->where('driver_id', $user->id)
-            ->with('driver')
-            ->orderByDesc('captured_at')
-            ->limit(1000)
-            ->get();
-
-        $filename = 'attendance-history-' . $period . '-' . now()->format('Y-m-d') . '.csv';
-
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ];
-
-        $callback = function () use ($rows) {
-            $file = fopen('php://output', 'w');
-
-            // CSV header
-            fputcsv($file, ['Type', 'Date', 'Time', 'Total Hours', 'Face Confidence', 'Liveness Score']);
-
-            foreach ($rows as $row) {
-                fputcsv($file, [
-                    $row->type,
-                    $row->captured_at?->format('Y-m-d'),
-                    $row->captured_at?->format('H:i:s'),
-                    $row->type === 'check_out' && $row->total_hours !== null ? number_format((float) $row->total_hours, 2) : '',
-                    $row->face_confidence ? $row->face_confidence . '%' : '',
-                    $row->liveness_score ? number_format((float) $row->liveness_score, 2) : '',
-                ]);
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
     }
 
     /**

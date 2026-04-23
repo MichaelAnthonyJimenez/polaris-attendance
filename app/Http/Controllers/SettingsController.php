@@ -183,8 +183,10 @@ class SettingsController extends Controller
         ],
         'driver_security' => [
             'driver_two_factor_enabled',
+            'driver_require_pin',
             'driver_auto_lockout',
             'driver_lockout_minutes',
+            'driver_biometric_auth',
             'driver_session_timeout',
         ],
         'general' => [
@@ -321,6 +323,10 @@ class SettingsController extends Controller
         ],
         'driver_security' => [
             'driver_two_factor_enabled',
+            'driver_require_pin',
+            'driver_auto_lockout',
+            'driver_lockout_minutes',
+            'driver_biometric_auth',
             'driver_session_timeout',
         ],
     ];

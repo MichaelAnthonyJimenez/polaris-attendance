@@ -756,6 +756,66 @@
                     }
                 });
             }
+
+            // Auto-hide success and error messages after longer duration
+            const autoHideMessages = function() {
+                const successAlerts = document.querySelectorAll('.alert-success');
+                const errorAlerts = document.querySelectorAll('.alert-error');
+
+                // Hide success messages after 10 seconds
+                successAlerts.forEach(function(alert) {
+                    setTimeout(function() {
+                        alert.style.transition = 'opacity 0.5s ease-out';
+                        alert.style.opacity = '0';
+                        setTimeout(function() {
+                            alert.remove();
+                        }, 500);
+                    }, 10000);
+                });
+
+                // Hide error messages after 15 seconds (longer for users to read)
+                errorAlerts.forEach(function(alert) {
+                    setTimeout(function() {
+                        alert.style.transition = 'opacity 0.5s ease-out';
+                        alert.style.opacity = '0';
+                        setTimeout(function() {
+                            alert.remove();
+                        }, 500);
+                    }, 15000);
+                });
+            };
+
+            // Run auto-hide on page load
+            autoHideMessages();
+
+            // Also run after any form submission that might show new messages
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList') {
+                        // Check if any new alerts were added
+                        const addedNodes = Array.from(mutation.addedNodes);
+                        const hasNewAlerts = addedNodes.some(function(node) {
+                            return node.nodeType === 1 && (
+                                node.classList.contains('alert-success') ||
+                                node.classList.contains('alert-error')
+                            );
+                        });
+
+                        if (hasNewAlerts) {
+                            autoHideMessages();
+                        }
+                    }
+                });
+            });
+
+            // Start observing the main content area for new alerts
+            const mainContent = document.querySelector('main');
+            if (mainContent) {
+                observer.observe(mainContent, {
+                    childList: true,
+                    subtree: true
+                });
+            }
         });
     </script>
     @endauth

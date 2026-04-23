@@ -124,11 +124,11 @@
     }
 
     .alert-success {
-        @apply bg-emerald-500/10 backdrop-blur-md border border-emerald-500/30 shadow-xl rounded-2xl p-4 text-sm text-emerald-100;
+        @apply bg-emerald-500/10 backdrop-blur-md border border-emerald-500/30 shadow-xl rounded-2xl p-4 text-sm text-emerald-100 transition-opacity duration-500;
     }
 
     .alert-error {
-        @apply bg-rose-500/10 backdrop-blur-md border border-rose-500/30 shadow-xl rounded-2xl p-4 text-sm text-rose-100;
+        @apply bg-rose-500/10 backdrop-blur-md border border-rose-500/30 shadow-xl rounded-2xl p-4 text-sm text-rose-100 transition-opacity duration-500;
     }
 
     .nav-link {

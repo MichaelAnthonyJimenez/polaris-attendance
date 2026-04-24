@@ -1,38 +1,140 @@
 #!/usr/bin/env python3
 """
 OCR Service for ID Card Text Extraction
-Uses pytesseract for OCR functionality
+Uses PaddleOCR for OCR functionality
+Supports multiple image formats: JPEG, PNG, TIFF, BMP, WEBP
 """
 
 import os
 import sys
 import json
 import base64
+import mimetypes
 from io import BytesIO
 from PIL import Image
-import pytesseract
+import numpy as np
+from paddleocr import PaddleOCR
 
-# Configure pytesseract path
-# Try common installation paths
-tesseract_paths = [
-    r"C:\Program Files\Tesseract-OCR\tesseract.exe",
-    r"C:\Tesseract-OCR\tesseract.exe",
-    r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
-    "tesseract"  # If in PATH
-]
+# Supported image formats
+SUPPORTED_FORMATS = {
+    'image/jpeg': ['.jpg', '.jpeg'],
+    'image/png': ['.png'],
+    'image/tiff': ['.tiff', '.tif'],
+    'image/bmp': ['.bmp'],
+    'image/webp': ['.webp']
+}
 
-tesseract_path = None
-for path in tesseract_paths:
-    if os.path.exists(path) or path == "tesseract":
-        tesseract_path = path
-        break
+# Max file size (10MB)
+MAX_FILE_SIZE = 10 * 1024 * 1024
 
-if tesseract_path:
-    pytesseract.pytesseract.tesseract_cmd = tesseract_path
-    print(f"Using Tesseract at: {tesseract_path}")
-else:
-    print("Tesseract not found. Please install Tesseract OCR.")
+# Initialize PaddleOCR
+try:
+    ocr = PaddleOCR(lang='en')
+    print("PaddleOCR initialized successfully")
+except Exception as e:
+    print(f"Failed to initialize PaddleOCR: {e}")
     sys.exit(1)
+
+def validate_image_format(image_data, is_base64=False):
+    """
+    Validate image format and file size
+
+    Args:
+        image_data: Image data (bytes or file path)
+        is_base64: Whether the input is base64 encoded
+
+    Returns:
+        tuple: (is_valid, format_info, error_message)
+    """
+    try:
+        if is_base64:
+            # For base64, check the data URI prefix
+            if isinstance(image_data, str) and image_data.startswith('data:image'):
+                mime_type = image_data.split(';')[0].split(':')[1]
+                if mime_type not in SUPPORTED_FORMATS:
+                    return False, None, f"Unsupported image format: {mime_type}"
+                return True, {'mime_type': mime_type}, None
+            else:
+                return False, None, "Invalid base64 image data URI"
+        else:
+            # For file paths, check if file exists and try to open as image
+            if not os.path.exists(image_data):
+                return False, None, "File does not exist"
+
+            file_size = os.path.getsize(image_data)
+            if file_size > MAX_FILE_SIZE:
+                return False, None, f"File too large. Max size: {MAX_FILE_SIZE // (1024*1024)}MB"
+
+            # First try to open the file as an image to verify it's actually an image
+            try:
+                with Image.open(image_data) as img:
+                    # Verify we can load the image
+                    img.verify()
+
+                # Reopen for format detection (verify() closes the file)
+                with Image.open(image_data) as img:
+                    file_ext = os.path.splitext(image_data)[1].lower()
+                    actual_format = img.format.upper() if img.format else 'UNKNOWN'
+
+                    # Check if extension is supported
+                    for mime_type, extensions in SUPPORTED_FORMATS.items():
+                        if file_ext in extensions:
+                            return True, {
+                                'mime_type': mime_type,
+                                'extension': file_ext,
+                                'actual_format': actual_format
+                            }, None
+
+                    # If extension is not recognized but the file is a valid image,
+                    # try to map the actual format to a supported MIME type
+                    format_mapping = {
+                        'JPEG': 'image/jpeg',
+                        'PNG': 'image/png',
+                        'TIFF': 'image/tiff',
+                        'BMP': 'image/bmp',
+                        'WEBP': 'image/webp'
+                    }
+
+                    if actual_format in format_mapping:
+                        mime_type = format_mapping[actual_format]
+                        return True, {
+                            'mime_type': mime_type,
+                            'extension': file_ext,
+                            'actual_format': actual_format,
+                            'extension_mismatch': True
+                        }, None
+
+                    return False, None, f"The file is a valid {actual_format} image but this format is not supported"
+
+            except Exception as e:
+                # If we can't open it as an image, it's not a valid image file
+                return False, None, f"The file must be an image. Error: {str(e)}"
+
+    except Exception as e:
+        return False, None, f"Validation error: {str(e)}"
+
+def convert_to_rgb(image):
+    """
+    Convert image to RGB format for OCR processing
+
+    Args:
+        image: PIL Image object
+
+    Returns:
+        PIL Image in RGB format
+    """
+    if image.mode != 'RGB':
+        return image.convert('RGB')
+    return image
+
+def get_supported_formats():
+    """
+    Get list of supported image formats
+
+    Returns:
+        dict: Supported formats with MIME types and extensions
+    """
+    return SUPPORTED_FORMATS
 
 def extract_text_from_image(image_data):
     """
@@ -45,51 +147,134 @@ def extract_text_from_image(image_data):
         dict: Extracted text and metadata
     """
     try:
+        # Determine input type and validate
+        is_base64 = isinstance(image_data, str) and image_data.startswith('data:image')
+        is_file_path = isinstance(image_data, str) and os.path.exists(image_data)
+
+        if not (is_base64 or is_file_path):
+            raise ValueError("Invalid image data format. Expected base64 data URI or file path.")
+
+        # Validate image format
+        is_valid, format_info, error_msg = validate_image_format(image_data, is_base64)
+        if not is_valid:
+            raise ValueError(error_msg)
+
+        print(f"Processing image: {format_info}")
+
         # Handle base64 input
-        if isinstance(image_data, str) and image_data.startswith('data:image'):
-            # Extract base64 data
+        if is_base64:
             try:
+                # Extract base64 data
                 image_data = image_data.split(',')[1]
                 image_bytes = base64.b64decode(image_data)
                 image = Image.open(BytesIO(image_bytes))
+                image = convert_to_rgb(image)
             except Exception as e:
                 print(f"Error processing base64 image: {e}")
                 raise ValueError("Invalid base64 image data")
-        elif isinstance(image_data, str) and os.path.exists(image_data):
+        elif is_file_path:
             # Handle file path
-            image = Image.open(image_data)
+            image_path = image_data
+            try:
+                image = Image.open(image_path)
+                image = convert_to_rgb(image)
+            except Exception as e:
+                raise ValueError(f"Cannot open image file: {e}")
         else:
             raise ValueError("Invalid image data format")
 
-        # Configure for better ID card OCR
-        custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz '
+        # For file path input, use the path directly; for base64, save to temp file
+        if is_file_path:
+            result = ocr.ocr(image_data)
+        else:
+            # Save base64 image to temporary file with appropriate extension
+            import tempfile
 
-        # Extract text
-        text = pytesseract.image_to_string(image, config=custom_config)
+            # Determine file extension from format info
+            if format_info and 'mime_type' in format_info:
+                mime_type = format_info['mime_type']
+                extensions = SUPPORTED_FORMATS.get(mime_type, ['.png'])
+                suffix = extensions[0]
+            else:
+                suffix = '.png'
 
-        # Get detailed data
-        data = pytesseract.image_to_data(image, output_type=pytesseract.Output.DICT, config=custom_config)
+            # Create temp file and ensure it's properly closed before OCR
+            temp_file_path = None
+            try:
+                with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp_file:
+                    temp_file_path = tmp_file.name
+                    # Determine PIL format name
+                    pil_format = image.format or 'PNG'
+                    if pil_format in ['JPG', 'JPEG']:
+                        pil_format = 'JPEG'
+                    elif pil_format == 'JPG':
+                        pil_format = 'JPEG'
+                    image.save(tmp_file.name, format=pil_format)
+
+                # Run OCR on the saved temp file
+                result = ocr.ocr(temp_file_path)
+
+            finally:
+                # Clean up temp file
+                if temp_file_path and os.path.exists(temp_file_path):
+                    try:
+                        os.unlink(temp_file_path)
+                    except:
+                        pass  # Ignore cleanup errors
 
         # Process results
         words = []
-        for i in range(len(data['text'])):
-            if data['text'][i].strip():
-                words.append({
-                    'text': data['text'][i],
-                    'confidence': data['conf'][i],
-                    'bbox': {
-                        'x': data['left'][i],
-                        'y': data['top'][i],
-                        'width': data['width'][i],
-                        'height': data['height'][i]
-                    }
-                })
+
+        if result and len(result) > 0:
+            # New PaddleOCR format returns a list with dictionaries
+            ocr_result = result[0]
+
+            if 'rec_texts' in ocr_result and 'rec_scores' in ocr_result and 'rec_polys' in ocr_result:
+                texts = ocr_result['rec_texts']
+                scores = ocr_result['rec_scores']
+                polys = ocr_result['rec_polys']
+
+                for i in range(len(texts)):
+                    if i < len(scores) and i < len(polys):
+                        bbox_points = polys[i]
+                        text = texts[i]
+                        confidence = scores[i]
+
+                        # Convert bbox points to x,y,width,height format
+                        x_coords = [point[0] for point in bbox_points]
+                        y_coords = [point[1] for point in bbox_points]
+                        x_min, x_max = min(x_coords), max(x_coords)
+                        y_min, y_max = min(y_coords), max(y_coords)
+
+                        words.append({
+                            'text': text,
+                            'confidence': confidence * 100,  # Convert to percentage
+                            'bbox': {
+                                'x': int(x_min),
+                                'y': int(y_min),
+                                'width': int(x_max - x_min),
+                                'height': int(y_max - y_min)
+                            }
+                        })
+
+        # Combine all text
+        text = '\n'.join([word['text'] for word in words])
+
+        # Get image metadata
+        image_metadata = {
+            'width': image.width,
+            'height': image.height,
+            'mode': image.mode,
+            'format': image.format
+        }
 
         return {
             'success': True,
             'text': text.strip(),
             'words': words,
-            'avg_confidence': sum(w['confidence'] for w in words) / len(words) if words else 0
+            'avg_confidence': sum(w['confidence'] for w in words) / len(words) if words else 0,
+            'format_info': format_info,
+            'image_metadata': image_metadata
         }
 
     except Exception as e:

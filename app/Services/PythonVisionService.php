@@ -53,7 +53,7 @@ class PythonVisionService
             if ($enforceDetection) {
                 $args[] = '--enforce-detection';
             }
-            
+
             $result = $this->runPythonScript('deepface_service.py', array_merge(['detect'], $args));
             return json_decode($result, true) ?: [
                 'success' => false,
@@ -85,7 +85,7 @@ class PythonVisionService
                 '--model',
                 $model
             ]);
-            
+
             return json_decode($result, true) ?: [
                 'success' => false,
                 'error' => 'Failed to parse face verification response',
@@ -117,7 +117,7 @@ class PythonVisionService
         try {
             $args = array_merge(['analyze', $imageData], array_map(fn($action) => "--action=$action", $actions));
             $result = $this->runPythonScript('deepface_service.py', $args);
-            
+
             return json_decode($result, true) ?: [
                 'success' => false,
                 'error' => 'Failed to parse face analysis response',
@@ -148,7 +148,7 @@ class PythonVisionService
                 '--db-path',
                 $dbPath
             ]);
-            
+
             return json_decode($result, true) ?: [
                 'success' => false,
                 'error' => 'Failed to parse face enrollment response',
@@ -182,7 +182,7 @@ class PythonVisionService
                 '--threshold',
                 (string)$threshold
             ]);
-            
+
             return json_decode($result, true) ?: [
                 'success' => false,
                 'error' => 'Failed to parse face search response',
@@ -206,17 +206,17 @@ class PythonVisionService
     private function runPythonScript(string $script, array $args = []): string
     {
         $scriptPath = $this->scriptPath . '/' . $script;
-        
+
         if (!file_exists($scriptPath)) {
             throw new \Exception("Python script not found: $scriptPath");
         }
 
         // Build command with escaped arguments
         $command = array_merge([$this->pythonPath, $scriptPath], $args);
-        
+
         // Run the process
         $process = Process::run($command);
-        
+
         if (!$process->successful()) {
             $errorOutput = $process->errorOutput();
             $output = $process->output();
@@ -244,14 +244,14 @@ class PythonVisionService
      */
     public function checkDependencies(): array
     {
-        $packages = ['deepface', 'opencv-python', 'pytesseract', 'pillow'];
+        $packages = ['deepface', 'opencv-python', 'paddleocr', 'paddlepaddle', 'pillow'];
         $results = [];
 
         foreach ($packages as $package) {
             try {
                 $process = Process::run([
-                    $this->pythonPath, 
-                    '-c', 
+                    $this->pythonPath,
+                    '-c',
                     "import {$package}; print('OK')"
                 ]);
                 $results[$package] = $process->successful() && str_contains($process->output(), 'OK');

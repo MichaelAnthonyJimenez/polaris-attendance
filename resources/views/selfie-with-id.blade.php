@@ -73,7 +73,21 @@
                         </button>
                     </div>
 
-                    <div id="idvPreviewControls" class="hidden space-y-3">
+                    <div id="idvPreviewControls" class="hidden absolute inset-0 z-[6] flex items-center justify-between px-1 sm:px-3 pointer-events-none" aria-hidden="true">
+                        <button type="button" id="idvPreviewPrev" class="pointer-events-auto flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/65 disabled:opacity-25 disabled:pointer-events-none" aria-label="Previous photo">
+                            <svg class="h-7 w-7 sm:h-8 sm:w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                        </button>
+
+                        <button type="button" id="idvPreviewNext" class="pointer-events-auto flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/65 disabled:opacity-25 disabled:pointer-events-none" aria-label="Next photo">
+                            <svg class="h-7 w-7 sm:h-8 sm:w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="hidden space-y-3">
                         <button type="button" id="idvRetakeBtn" class="btn-secondary w-full py-3 text-sm">
                             Retake
                         </button>
@@ -330,6 +344,24 @@
         setMode('live');
         syncStepUi();
         refreshSubmit();
+    });
+
+    document.getElementById('idvPreviewPrev')?.addEventListener('click', () => {
+        if (stepIndex > 0) {
+            stepIndex -= 1;
+            syncStepUi();
+            setMode('live');
+            startCamera();
+        }
+    });
+
+    document.getElementById('idvPreviewNext')?.addEventListener('click', () => {
+        if (stepIndex < steps.length - 1) {
+            stepIndex += 1;
+            syncStepUi();
+            setMode('live');
+            startCamera();
+        }
     });
 
     autoBtn?.addEventListener('click', () => {

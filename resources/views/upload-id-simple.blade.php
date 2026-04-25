@@ -64,19 +64,23 @@
                 <label class="block text-xs text-slate-300 mb-1.5">ID back (optional)</label>
                 <input type="file" id="idv_upload_back" name="id_back_file" accept="image/*" class="form-input text-sm mb-6 w-full">
 
-                <!-- OCR Confirmation Section -->
-                <div id="idvOcrConfirmation" class="hidden mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <!-- ID Confirmation Section -->
+                <div id="idvIdConfirmation" class="hidden mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <h3 class="text-lg font-semibold text-blue-900 mb-3">Confirm ID Information</h3>
                     <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ID Type:</label>
+                            <input type="text" id="idv_confirmed_type" class="form-input text-sm" readonly>
+                        </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Extracted Text:</label>
                             <textarea id="idv_extracted_text" class="form-input text-sm" rows="4" readonly></textarea>
                         </div>
                     </div>
                     <div class="flex gap-3 mt-4">
-                        <button type="button" id="idv_confirm_ocr" class="btn-primary flex-1 py-2.5 text-sm">Confirm & Submit</button>
-                        <button type="button" id="idv_retry_ocr" class="btn-secondary flex-1 py-2.5 text-sm">Retry OCR</button>
-                        <button type="button" id="idv_cancel_ocr" class="btn-danger flex-1 py-2.5 text-sm">Cancel</button>
+                        <button type="button" id="idv_confirm_id" class="btn-primary flex-1 py-2.5 text-sm">Confirm & Continue</button>
+                        <button type="button" id="idv_retry_id" class="btn-secondary flex-1 py-2.5 text-sm">Retry OCR</button>
+                        <button type="button" id="idv_cancel_id" class="btn-danger flex-1 py-2.5 text-sm">Cancel</button>
                     </div>
                 </div>
 
@@ -95,11 +99,12 @@
     const uploadSubmitBtn = document.getElementById('idvUploadSubmit');
     const idTypeSelect = document.getElementById('idv_id_type');
     const hint = document.getElementById('idvHint');
-    const confirmationSection = document.getElementById('idvOcrConfirmation');
+    const confirmationSection = document.getElementById('idvIdConfirmation');
     const extractedTextInput = document.getElementById('idv_extracted_text');
-    const confirmOcrBtn = document.getElementById('idv_confirm_ocr');
-    const retryOcrBtn = document.getElementById('idv_retry_ocr');
-    const cancelOcrBtn = document.getElementById('idv_cancel_ocr');
+    const confirmedTypeInput = document.getElementById('idv_confirmed_type');
+    const confirmIdBtn = document.getElementById('idv_confirm_id');
+    const retryIdBtn = document.getElementById('idv_retry_id');
+    const cancelIdBtn = document.getElementById('idv_cancel_id');
 
     const inputs = {
         front: document.getElementById('id_front_base64'),
@@ -123,20 +128,25 @@
         }
     }
 
-    // OCR confirmation functionality
-    async function processOcrConfirmation(imageData) {
+    // ID confirmation functionality
+    async function processIdConfirmation(imageData) {
         try {
             setHint('Processing OCR... Please wait.');
 
             // Show loading state
             extractedTextInput.value = 'Processing OCR...';
 
+            // Set ID type from dropdown
+            if (idTypeSelect && confirmedTypeInput) {
+                confirmedTypeInput.value = idTypeSelect.options[idTypeSelect.selectedIndex]?.text || 'Unknown';
+            }
+
             // Try to use Optiic service if available
             if (typeof window.OptiicService !== 'undefined') {
                 const result = await window.OptiicService.extractTextFromImage(imageData);
                 if (result.success) {
                     extractedTextInput.value = result.text || 'No text extracted';
-                    setHint('OCR processing complete. Please confirm the information.');
+                    setHint('OCR processing complete. Please confirm the ID information.');
                 } else {
                     extractedTextInput.value = 'OCR processing failed: ' + result.error;
                     setHint('OCR processing failed. You can still submit manually.');
@@ -147,7 +157,7 @@
                 setHint('OCR service not available. You can still submit your ID.');
             }
         } catch (error) {
-            console.error('OCR confirmation error:', error);
+            console.error('ID confirmation error:', error);
             extractedTextInput.value = 'OCR processing failed. Please verify manually.';
             setHint('OCR processing failed. Please try again or submit manually.');
         }
@@ -192,32 +202,38 @@
         }
     });
 
-    // Event listeners for OCR confirmation buttons
-    confirmOcrBtn?.addEventListener('click', () => {
-        // Store confirmed OCR data in hidden inputs for form submission
+    // Event listeners for ID confirmation buttons
+    confirmIdBtn?.addEventListener('click', () => {
+        // Store confirmed ID data in hidden inputs for form submission
         const form = document.getElementById('idVerificationForm');
 
-        // Add confirmed OCR data as hidden inputs
+        // Add confirmed ID data as hidden inputs
         const confirmedText = document.createElement('input');
         confirmedText.type = 'hidden';
         confirmedText.name = 'idv_confirmed_text';
         confirmedText.value = extractedTextInput.value;
         form.appendChild(confirmedText);
 
+        const confirmedType = document.createElement('input');
+        confirmedType.type = 'hidden';
+        confirmedType.name = 'idv_confirmed_type';
+        confirmedType.value = confirmedTypeInput.value;
+        form.appendChild(confirmedType);
+
         // Submit the form
         form.submit();
     });
 
-    retryOcrBtn?.addEventListener('click', () => {
+    retryIdBtn?.addEventListener('click', () => {
         const imageData = inputs.front.value;
         if (imageData) {
-            processOcrConfirmation(imageData);
+            processIdConfirmation(imageData);
         }
     });
 
-    cancelOcrBtn?.addEventListener('click', () => {
+    cancelIdBtn?.addEventListener('click', () => {
         confirmationSection.classList.add('hidden');
-        setHint('OCR confirmation cancelled. You can still submit your ID.');
+        setHint('ID confirmation cancelled. You can still submit your ID.');
     });
 
     // Initialize

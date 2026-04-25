@@ -151,10 +151,11 @@ class DriverVerificationSubmissionController extends Controller
                 ? 'ocr_auto_detect'
                 : (string) ($data['id_type'] ?? 'other');
 
-            // Handle OCR confirmation data if present
+            // Handle ID confirmation data if present
             if ($request->has('idv_confirmed_text')) {
                 $meta['ocr'] = [
                     'text' => $request->input('idv_confirmed_text'),
+                    'type' => $request->input('idv_confirmed_type'),
                     'confirmed' => true,
                     'method' => 'optiic'
                 ];

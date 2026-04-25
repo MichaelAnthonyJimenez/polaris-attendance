@@ -45,8 +45,8 @@ class DriverVerificationSubmissionController extends Controller
             'id_front_base64' => ['nullable', 'string'],
             'id_back_base64' => ['nullable', 'string'],
             'face_selfie_base64' => ['nullable', 'string'],
-            'id_front_file' => ['nullable', 'file', 'max:5120'],
-            'id_back_file' => ['nullable', 'file', 'max:5120'],
+            'id_front_file' => ['nullable', 'file', 'max:10240'],
+            'id_back_file' => ['nullable', 'file', 'max:10240'],
         ]);
 
         if ($role !== 'driver') {
@@ -178,7 +178,7 @@ class DriverVerificationSubmissionController extends Controller
         $data = $request->validate([
             'proof_mode' => ['required', 'in:selfie_with_id,upload_file'],
             'id_front_base64' => ['nullable', 'string'],
-            'id_front_file' => ['nullable', 'file', 'max:5120'],
+            'id_front_file' => ['nullable', 'file', 'max:10240'],
         ]);
 
         $ocrPath = null;

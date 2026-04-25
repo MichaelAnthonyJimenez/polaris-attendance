@@ -153,13 +153,9 @@ class AuthController extends Controller
             $user->name = $name;
             $user->password = Hash::make(Str::random(40));
             $user->role = 'driver';
-            $user->email_verified_at = now();
         } else {
             if ($user->name === '' && $name !== '') {
                 $user->name = $name;
-            }
-            if (! $user->email_verified_at) {
-                $user->email_verified_at = now();
             }
         }
         try {

@@ -23,6 +23,33 @@
         @endif
     </div>
 
+    @if($role === 'admin')
+    @php
+        $calendarDate = now();
+        $monthStart = $calendarDate->copy()->startOfMonth();
+        $daysInMonth = (int) $monthStart->daysInMonth;
+        $firstDayOfWeek = (int) $monthStart->dayOfWeek;
+    @endphp
+    <div class="glass p-5">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-base font-semibold text-white">Calendar</h2>
+            <span class="text-xs text-slate-300">{{ $monthStart->format('F Y') }}</span>
+        </div>
+        <div class="grid grid-cols-7 gap-1 text-center text-[11px] text-slate-400 mb-1">
+            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+        </div>
+        <div class="grid grid-cols-7 gap-1 text-center text-xs">
+            @for($i = 0; $i < $firstDayOfWeek; $i++)
+                <span class="py-2 rounded bg-white/0"></span>
+            @endfor
+            @for($day = 1; $day <= $daysInMonth; $day++)
+                @php $isToday = $calendarDate->isSameDay($monthStart->copy()->day($day)); @endphp
+                <span class="py-2 rounded {{ $isToday ? 'bg-blue-500/30 text-blue-100 border border-blue-400/30' : 'bg-white/5 text-slate-200' }}">{{ $day }}</span>
+            @endfor
+        </div>
+    </div>
+    @endif
+
     @if($role === 'driver')
     <div class="space-y-4 md:space-y-5">
         <div class="grid grid-cols-2 gap-3 sm:gap-4">

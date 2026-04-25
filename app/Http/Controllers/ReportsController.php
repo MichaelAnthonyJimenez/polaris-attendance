@@ -109,7 +109,7 @@ class ReportsController extends Controller
         ];
 
         return match ($format) {
-            'excel' => response($this->buildDelimitedContent($meta, $summary, $headers, $rows, "\t"), 200, [
+            'excel' => response("\xEF\xBB\xBF" . $this->buildDelimitedContent($meta, $summary, $headers, $rows, "\t"), 200, [
                 'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
                 'Content-Disposition' => 'attachment; filename="' . $filenameBase . '.xls"',
             ]),
@@ -249,11 +249,14 @@ class ReportsController extends Controller
         $lines[] = str_repeat('-', 120);
         foreach ($rows as $row) {
             $line = implode(' | ', array_map(fn($value) => (string) $value, array_values($row)));
-            $lines[] = mb_substr($line, 0, 120);
+            $chunks = mb_str_split($line, 95);
+            foreach ($chunks as $chunk) {
+                $lines[] = $chunk;
+            }
         }
 
         $y = 800;
-        $commands = ["BT /F1 10 Tf 40 {$y} Td"];
+        $commands = ["BT /F1 10 Tf 12 TL 40 {$y} Td"];
         foreach ($lines as $line) {
             $safeLine = str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $line);
             $commands[] = '(' . $safeLine . ') Tj';

@@ -16,7 +16,6 @@ class SettingsController extends Controller
     private const ADMIN_GROUP_ORDER = [
         'admin_attendance',
         'admin_backup',
-        'admin_compliance',
         'admin_driver_management',
         'admin_email',
         'admin_export',
@@ -28,12 +27,9 @@ class SettingsController extends Controller
         'admin_security',
         'admin_system',
         'driver_accessibility',
-        'driver_attendance',
-        'driver_camera',
         'driver_dashboard',
         'driver_data_usage',
         'driver_notifications',
-        'driver_privacy',
         'driver_profile',
         'driver_reminders',
         'driver_security',
@@ -46,19 +42,13 @@ class SettingsController extends Controller
             'attendance_reminder_enabled',
             'face_recognition_enabled',
             'liveness_detection_enabled',
-            'min_face_confidence',
-            'min_liveness_score',
         ],
         'admin_backup' => [
             'auto_backup_enabled',
+            'backup_schedule',
             'backup_include_files',
             'backup_location',
             'backup_retention_days',
-        ],
-        'admin_compliance' => [
-            'data_retention_days',
-            'gdpr_compliance',
-            'require_privacy_consent',
         ],
         'admin_driver_management' => [
             'driver_approval_required',
@@ -81,6 +71,8 @@ class SettingsController extends Controller
             'face_matching_threshold',
             'face_recognition_provider',
             'max_face_images_per_driver',
+            'min_face_confidence',
+            'min_liveness_score',
         ],
         'admin_location' => [
             'geofence_enabled',
@@ -112,7 +104,6 @@ class SettingsController extends Controller
         ],
         'admin_security' => [
             'audit_log_retention_days',
-            'driver_two_factor_enabled',
             'encrypt_sensitive_data',
         ],
         'admin_system' => [
@@ -128,14 +119,6 @@ class SettingsController extends Controller
             'driver_keyboard_shortcuts',
             'driver_screen_reader',
         ],
-        'driver_attendance' => [
-            'require_photo_attendance',
-            'show_attendance_history',
-        ],
-        'driver_camera' => [
-            'auto_capture_photo',
-            'auto_submit_camera',
-        ],
         'driver_dashboard' => [
             'driver_dashboard_layout',
             'driver_refresh_interval',
@@ -146,7 +129,6 @@ class SettingsController extends Controller
         'driver_data_usage' => [
             'driver_auto_load_images',
             'driver_data_saver_mode',
-            'driver_offline_mode',
             'driver_sync_frequency',
         ],
         'driver_notifications' => [
@@ -159,13 +141,6 @@ class SettingsController extends Controller
             'show_notifications',
             'driver_announcement_in_app',
             'driver_announcement_email',
-        ],
-        'driver_privacy' => [
-            'driver_analytics_opt_in',
-            'driver_data_export',
-            'driver_profile_visible',
-            'driver_share_location',
-            'driver_share_photo',
         ],
         'driver_profile' => [
             'driver_allow_profile_updates',
@@ -188,69 +163,22 @@ class SettingsController extends Controller
             'driver_session_timeout',
         ],
         'general' => [
-            'address',
-            'allowed_file_types',
-            'backup_frequency',
-            'cache_duration',
             'company_name',
             'contact_email',
-            'cookie_consent_required',
-            'enable_activity_logging',
-            'enable_analytics',
-            'enable_animations',
-            'enable_api_access',
-            'enable_audit_logging',
             'enable_backup',
-            'enable_bulk_actions',
-            'enable_cache',
-            'enable_compression',
-            'enable_cookies',
-            'enable_csrf_protection',
-            'enable_debug_mode',
-            'enable_developer_tools',
-            'enable_device_tracking',
-            'enable_email_verification',
-            'enable_encryption',
-            'enable_error_logging',
             'enable_export',
-            'enable_filters',
-            'enable_geo_blocking',
-            'enable_import',
-            'enable_location_tracking',
             'enable_logging',
-            'enable_maintenance',
             'enable_notifications',
-            'enable_offline_mode',
-            'enable_pagination',
-            'enable_password_reset',
-            'enable_performance_monitoring',
-            'enable_rate_limiting',
             'enable_registration',
-            'enable_search',
-            'enable_sorting',
-            'enable_sql_injection_protection',
-            'enable_ssl',
             'enable_sync',
-            'enable_tooltips',
-            'enable_webhooks',
-            'enable_xss_protection',
             'footer_text',
             'items_per_page',
-            'log_retention_days',
-            'maintenance_message',
             'max_upload_size',
-            'notification_sound',
             'phone_number',
-            'privacy_policy_url',
-            'rate_limit_per_minute',
-            'remember_me_duration',
             'session_lifetime',
             'site_description',
             'site_name',
             'support_email',
-            'sync_interval',
-            'terms_of_service_url',
-            'timezone',
             'welcome_message',
         ],
     ];
@@ -258,13 +186,10 @@ class SettingsController extends Controller
     /** @var list<string> */
     private const DRIVER_GROUP_ORDER = [
         'driver_accessibility',
-        'driver_camera',
-        'driver_attendance',
         'driver_notifications',
         'driver_reminders',
         'driver_dashboard',
         'driver_data_usage',
-        'driver_privacy',
         'driver_profile',
         'driver_security',
     ];
@@ -277,10 +202,6 @@ class SettingsController extends Controller
             'driver_keyboard_shortcuts',
             'driver_screen_reader',
             'driver_animations',
-        ],
-        'driver_camera' => ['auto_capture_photo', 'auto_submit_camera'],
-        'driver_attendance' => [
-            'show_attendance_history',
         ],
         'driver_notifications' => [
             'show_notifications',
@@ -312,12 +233,6 @@ class SettingsController extends Controller
         'driver_data_usage' => [
             'driver_auto_load_images',
             'driver_sync_frequency',
-        ],
-        'driver_privacy' => [
-            'driver_analytics_opt_in',
-            'driver_data_export',
-            'driver_profile_visible',
-            'driver_share_photo',
         ],
         'driver_profile' => [
             'driver_allow_profile_updates',
@@ -386,12 +301,26 @@ class SettingsController extends Controller
 
         // Ensure all settings are seeded (firstOrCreate will only create missing ones)
         // Check if we have a reasonable number of settings, if not, seed them
-        $requiredKeys = ['driver_announcement_in_app', 'driver_announcement_email'];
+        $requiredKeys = ['driver_announcement_in_app', 'driver_announcement_email', 'backup_schedule'];
         $missingRequiredKeys = Setting::query()->whereIn('key', $requiredKeys)->count() < count($requiredKeys);
 
         if (Setting::count() < 100 || $missingRequiredKeys) {
             Artisan::call('db:seed', ['--class' => 'SettingsSeeder', '--force' => true]);
         }
+
+        // Keep face confidence and liveness settings under face recognition group.
+        Setting::query()
+            ->where('key', 'min_face_confidence')
+            ->where('group', '!=', 'admin_face_recognition')
+            ->update(['group' => 'admin_face_recognition']);
+        Setting::query()
+            ->where('key', 'min_liveness_score')
+            ->where('group', '!=', 'admin_face_recognition')
+            ->update(['group' => 'admin_face_recognition']);
+        Setting::query()
+            ->where('key', 'driver_two_factor_enabled')
+            ->where('group', '!=', 'driver_security')
+            ->update(['group' => 'driver_security']);
 
         // Filter settings based on user role
         $query = Setting::query();
@@ -438,7 +367,7 @@ class SettingsController extends Controller
         foreach ($validated['settings'] as $key => $value) {
             $setting = Setting::where('key', $key)->first();
 
-            if (!$setting) {
+            if (! $setting instanceof Setting) {
                 continue;
             }
 
@@ -461,8 +390,7 @@ class SettingsController extends Controller
 
             if ($setting->value != $normalizedValue) {
                 $oldValue = $setting->value;
-                $setting->value = $normalizedValue;
-                $setting->save();
+                Setting::query()->whereKey($setting->id)->update(['value' => $normalizedValue]);
                 $changedSettings[$key] = ['old' => $oldValue, 'new' => $normalizedValue];
                 $sideEffects[$key] = $normalizedValue;
             }
@@ -520,7 +448,12 @@ class SettingsController extends Controller
             $user->location_updated_at = null;
         }
 
-        $user->save();
+        \App\Models\User::query()->whereKey($user->id)->update([
+            'location_sharing_enabled' => $user->location_sharing_enabled,
+            'latitude' => $user->latitude,
+            'longitude' => $user->longitude,
+            'location_updated_at' => $user->location_updated_at,
+        ]);
 
         AuditLogger::log(
             'updated',

@@ -134,6 +134,7 @@
                     <option value="philsys_national_id">PhilSys National ID</option>
                     <option value="drivers_license">Driver's License</option>
                     <option value="passport">Passport</option>
+                    <option value="student_id">Student ID</option>
                     <option value="umid">UMID</option>
                     <option value="prc_id">PRC ID</option>
                     <option value="postal_id">Postal ID</option>

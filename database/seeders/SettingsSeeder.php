@@ -14,7 +14,6 @@ class SettingsSeeder extends Seeder
             ['key' => 'site_name', 'value' => 'Polaris Attendance', 'type' => 'string', 'group' => 'general', 'description' => 'Site name'],
             ['key' => 'site_description', 'value' => 'Taxi Driver Attendance Management System', 'type' => 'string', 'group' => 'general', 'description' => 'Site description'],
             ['key' => 'company_name', 'value' => 'Polaris Multipurpose Cooperative', 'type' => 'string', 'group' => 'general', 'description' => 'Company name'],
-            ['key' => 'timezone', 'value' => 'UTC', 'type' => 'string', 'group' => 'general', 'description' => 'Default timezone'],
             ['key' => 'default_language', 'value' => 'en', 'type' => 'string', 'group' => 'general', 'description' => 'Default language'],
             ['key' => 'date_format', 'value' => 'Y-m-d', 'type' => 'string', 'group' => 'general', 'description' => 'Default date format'],
             ['key' => 'time_format', 'value' => 'H:i', 'type' => 'string', 'group' => 'general', 'description' => 'Default time format'],
@@ -63,7 +62,6 @@ class SettingsSeeder extends Seeder
             ['key' => 'enable_tooltips', 'value' => '1', 'type' => 'boolean', 'group' => 'general', 'description' => 'Enable tooltips'],
             ['key' => 'enable_animations', 'value' => '1', 'type' => 'boolean', 'group' => 'general', 'description' => 'Enable UI animations'],
             ['key' => 'enable_keyboard_shortcuts', 'value' => '1', 'type' => 'boolean', 'group' => 'general', 'description' => 'Enable keyboard shortcuts'],
-            ['key' => 'enable_offline_mode', 'value' => '0', 'type' => 'boolean', 'group' => 'general', 'description' => 'Enable offline mode'],
             ['key' => 'enable_sync', 'value' => '1', 'type' => 'boolean', 'group' => 'general', 'description' => 'Enable data synchronization'],
             ['key' => 'sync_interval', 'value' => '5', 'type' => 'integer', 'group' => 'general', 'description' => 'Sync interval in minutes'],
             ['key' => 'enable_cache', 'value' => '1', 'type' => 'boolean', 'group' => 'general', 'description' => 'Enable caching'],
@@ -98,8 +96,6 @@ class SettingsSeeder extends Seeder
             // Admin Settings - Attendance
             ['key' => 'face_recognition_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_attendance', 'description' => 'Enable facial recognition'],
             ['key' => 'liveness_detection_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_attendance', 'description' => 'Enable liveness detection'],
-            ['key' => 'min_face_confidence', 'value' => '80', 'type' => 'integer', 'group' => 'admin_attendance', 'description' => 'Minimum face confidence percentage'],
-            ['key' => 'min_liveness_score', 'value' => '0.7', 'type' => 'string', 'group' => 'admin_attendance', 'description' => 'Minimum liveness score'],
             ['key' => 'auto_checkout_hours', 'value' => '8', 'type' => 'integer', 'group' => 'admin_attendance', 'description' => 'Auto checkout after hours (0 to disable)'],
             ['key' => 'attendance_reminder_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_attendance', 'description' => 'Enable attendance reminders'],
 
@@ -107,6 +103,8 @@ class SettingsSeeder extends Seeder
             ['key' => 'face_recognition_provider', 'value' => 'default', 'type' => 'string', 'group' => 'admin_face_recognition', 'description' => 'Face recognition provider'],
             ['key' => 'max_face_images_per_driver', 'value' => '5', 'type' => 'integer', 'group' => 'admin_face_recognition', 'description' => 'Maximum face images per driver'],
             ['key' => 'face_matching_threshold', 'value' => '0.85', 'type' => 'string', 'group' => 'admin_face_recognition', 'description' => 'Face matching threshold (0-1)'],
+            ['key' => 'min_face_confidence', 'value' => '80', 'type' => 'integer', 'group' => 'admin_face_recognition', 'description' => 'Minimum face confidence percentage'],
+            ['key' => 'min_liveness_score', 'value' => '0.7', 'type' => 'string', 'group' => 'admin_face_recognition', 'description' => 'Minimum liveness score'],
 
             // Admin Settings - Notifications
             ['key' => 'email_notifications_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_notifications', 'description' => 'Enable email notifications'],
@@ -118,7 +116,6 @@ class SettingsSeeder extends Seeder
 
             // Admin Settings - Security
             ['key' => 'two_factor_enabled', 'value' => '0', 'type' => 'boolean', 'group' => 'admin_security', 'description' => 'Enable two-factor authentication'],
-            ['key' => 'driver_two_factor_enabled', 'value' => '0', 'type' => 'boolean', 'group' => 'admin_security', 'description' => 'Require OTP for driver logins'],
             ['key' => 'ip_whitelist_enabled', 'value' => '0', 'type' => 'boolean', 'group' => 'admin_security', 'description' => 'Enable IP whitelist'],
             ['key' => 'audit_log_retention_days', 'value' => '90', 'type' => 'integer', 'group' => 'admin_security', 'description' => 'Audit log retention (days)'],
             ['key' => 'encrypt_sensitive_data', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_security', 'description' => 'Encrypt sensitive data'],
@@ -158,6 +155,7 @@ class SettingsSeeder extends Seeder
             // Admin Settings - Backup & Data
             ['key' => 'auto_backup_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_backup', 'description' => 'Enable automatic backups'],
             ['key' => 'backup_frequency', 'value' => 'daily', 'type' => 'string', 'group' => 'admin_backup', 'description' => 'Backup frequency (daily/weekly/monthly)'],
+            ['key' => 'backup_schedule', 'value' => 'daily', 'type' => 'string', 'group' => 'admin_backup', 'description' => 'Backup schedule (hourly/daily/weekly/monthly/yearly)'],
             ['key' => 'backup_retention_days', 'value' => '30', 'type' => 'integer', 'group' => 'admin_backup', 'description' => 'Backup retention period (days)'],
             ['key' => 'backup_location', 'value' => 'local', 'type' => 'string', 'group' => 'admin_backup', 'description' => 'Backup storage location'],
             ['key' => 'backup_include_files', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_backup', 'description' => 'Include uploaded files in backup'],
@@ -204,7 +202,6 @@ class SettingsSeeder extends Seeder
             ['key' => 'max_upload_size_mb', 'value' => '10', 'type' => 'integer', 'group' => 'admin_performance', 'description' => 'Maximum upload size (MB)'],
 
             // Admin Settings - Compliance
-            ['key' => 'gdpr_compliance', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_compliance', 'description' => 'Enable GDPR compliance features'],
             ['key' => 'data_retention_days', 'value' => '730', 'type' => 'integer', 'group' => 'admin_compliance', 'description' => 'Data retention period (days)'],
             ['key' => 'privacy_policy_url', 'value' => '', 'type' => 'string', 'group' => 'admin_compliance', 'description' => 'Privacy policy URL'],
             ['key' => 'terms_of_service_url', 'value' => '', 'type' => 'string', 'group' => 'admin_compliance', 'description' => 'Terms of service URL'],
@@ -219,10 +216,6 @@ class SettingsSeeder extends Seeder
             ['key' => 'email_from_name', 'value' => 'Polaris Attendance', 'type' => 'string', 'group' => 'admin_email', 'description' => 'Default from name'],
 
             // Driver Settings - Privacy
-            ['key' => 'driver_share_location', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_privacy', 'description' => 'Share location with system'],
-            ['key' => 'driver_share_photo', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_privacy', 'description' => 'Allow photo sharing'],
-            ['key' => 'driver_profile_visible', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_privacy', 'description' => 'Make profile visible to admins'],
-            ['key' => 'driver_data_export', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_privacy', 'description' => 'Allow data export'],
             ['key' => 'driver_analytics_opt_in', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_privacy', 'description' => 'Opt-in to analytics'],
 
             // Driver Settings - Accessibility
@@ -242,7 +235,6 @@ class SettingsSeeder extends Seeder
             // Driver Settings - Data Usage
             ['key' => 'driver_data_saver_mode', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_data_usage', 'description' => 'Enable data saver mode'],
             ['key' => 'driver_auto_load_images', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_data_usage', 'description' => 'Auto-load images'],
-            ['key' => 'driver_offline_mode', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_data_usage', 'description' => 'Enable offline mode'],
             ['key' => 'driver_sync_frequency', 'value' => '5', 'type' => 'integer', 'group' => 'driver_data_usage', 'description' => 'Data sync frequency (minutes)'],
 
             // Driver Settings - Profile
@@ -262,6 +254,7 @@ class SettingsSeeder extends Seeder
 
             // Driver Settings - Security
             ['key' => 'driver_require_pin', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_security', 'description' => 'Require PIN for attendance'],
+            ['key' => 'driver_two_factor_enabled', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_security', 'description' => 'Require OTP for logins'],
             ['key' => 'driver_auto_lockout', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_security', 'description' => 'Auto-lock after inactivity'],
             ['key' => 'driver_lockout_minutes', 'value' => '15', 'type' => 'integer', 'group' => 'driver_security', 'description' => 'Auto-lock timeout (minutes)'],
             ['key' => 'driver_biometric_auth', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_security', 'description' => 'Enable biometric authentication'],

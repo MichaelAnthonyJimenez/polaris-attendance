@@ -391,7 +391,7 @@
                     @unless($isFullscreenCameraPage)
                         <div
                             class="lg:hidden shrink-0 w-full"
-                            style="min-height: calc(4rem + env(safe-area-inset-bottom, 0px));"
+                            style="min-height: calc(2rem + env(safe-area-inset-bottom, 0px));"
                             aria-hidden="true"
                         ></div>
                     @endunless

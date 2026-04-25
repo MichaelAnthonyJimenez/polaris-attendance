@@ -56,7 +56,6 @@
                             $groupLabels = [
                                 'admin_attendance' => 'Attendance',
                                 'admin_backup' => 'Backup',
-                                'admin_compliance' => 'Compliance',
                                 'admin_driver_management' => 'Management',
                                 'admin_email' => 'Email',
                                 'admin_export' => 'Export',
@@ -68,12 +67,9 @@
                                 'admin_security' => 'Security',
                                 'admin_system' => 'System',
                                 'driver_accessibility' => 'Accessibility',
-                                'driver_attendance' => 'Attendance',
-                                'driver_camera' => 'Camera',
                                 'driver_dashboard' => 'Dashboard',
                                 'driver_data_usage' => 'Data usage',
                                 'driver_notifications' => 'Notifications',
-                                'driver_privacy' => 'Privacy',
                                 'driver_profile' => 'Profile',
                                 'driver_reminders' => 'Reminders',
                                 'driver_security' => 'Security',
@@ -155,7 +151,6 @@
                         $groupLabels = [
                             'admin_attendance' => 'Attendance',
                             'admin_backup' => 'Backup',
-                            'admin_compliance' => 'Compliance',
                             'admin_driver_management' => 'Management',
                             'admin_email' => 'Email',
                             'admin_export' => 'Export',
@@ -167,12 +162,9 @@
                             'admin_security' => 'Security',
                             'admin_system' => 'System',
                             'driver_accessibility' => 'Accessibility',
-                            'driver_attendance' => 'Attendance',
-                            'driver_camera' => 'Camera',
                             'driver_dashboard' => 'Dashboard',
                             'driver_data_usage' => 'Data usage',
                             'driver_notifications' => 'Notifications',
-                            'driver_privacy' => 'Privacy',
                             'driver_profile' => 'Profile',
                             'driver_reminders' => 'Reminders',
                             'driver_security' => 'Security',
@@ -230,6 +222,7 @@
                             @php
                                 $customLabels = [
                                     'driver_approval_required' => 'Approval Required',
+                                    'driver_two_factor_enabled' => 'Require OTP for Login',
                                     'driver_browser_notify_checkin' => 'Notify Checkin',
                                     'driver_browser_notify_checkout' => 'Notify Checkout',
                                     'driver_announcement_in_app' => 'Announcements in Notification Bell',
@@ -291,11 +284,13 @@
                                     <option value="Asia/Tokyo" {{ $setting->value == 'Asia/Tokyo' ? 'selected' : '' }}>Tokyo</option>
                                     <option value="Australia/Sydney" {{ $setting->value == 'Australia/Sydney' ? 'selected' : '' }}>Sydney</option>
                                 </select>
-                            @elseif($setting->key === 'backup_frequency')
+                            @elseif($setting->key === 'backup_schedule' || $setting->key === 'backup_frequency')
                                 <select name="settings[{{ $setting->key }}]" class="form-select">
+                                    <option value="hourly" {{ $setting->value == 'hourly' ? 'selected' : '' }}>Hourly</option>
                                     <option value="daily" {{ $setting->value == 'daily' ? 'selected' : '' }}>Daily</option>
                                     <option value="weekly" {{ $setting->value == 'weekly' ? 'selected' : '' }}>Weekly</option>
                                     <option value="monthly" {{ $setting->value == 'monthly' ? 'selected' : '' }}>Monthly</option>
+                                    <option value="yearly" {{ $setting->value == 'yearly' ? 'selected' : '' }}>Yearly</option>
                                 </select>
                             @elseif($setting->key === 'backup_location')
                                 <select name="settings[{{ $setting->key }}]" class="form-select">

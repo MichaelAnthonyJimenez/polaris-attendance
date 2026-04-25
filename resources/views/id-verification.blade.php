@@ -739,9 +739,24 @@
             inputs.front.value = imageData;
             refreshSubmit();
 
+            // Show confirmation dialog with OCR processing
+            confirmationSection.classList.remove('hidden');
+            setHint('Processing OCR... Please wait.');
+
+            // Show loading state in confirmation inputs
+            confirmedNameInput.value = 'Processing...';
+            confirmedIdNumberInput.value = 'Please wait...';
+            confirmedAddressInput.value = 'Processing...';
+            confirmedBirthDateInput.value = 'Please wait...';
+
             // Process OCR for uploaded file
             if (imageData) {
                 processOcrConfirmation(imageData);
+            } else {
+                // If no image data, hide confirmation after a short delay
+                setTimeout(() => {
+                    confirmationSection.classList.add('hidden');
+                }, 2000);
             }
         }
     });

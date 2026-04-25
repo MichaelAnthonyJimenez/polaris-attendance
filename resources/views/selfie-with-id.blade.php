@@ -140,7 +140,7 @@
                 <div class="rounded-2xl border border-white/10 bg-white/5 p-6 max-w-sm">
                     <p class="text-base font-semibold text-white mb-2">Camera access</p>
                     <p id="idvPermissionText" class="text-sm text-slate-300 mb-5">
-                        We need your camera for verification. When your browser asks, choose <strong class="text-white">Allow</strong> for the camera.
+                        We need your camera for facial verification. Tap below and allow camera access when prompted.
                     </p>
                     <button type="button" id="idvRetryBtn" class="btn-primary w-full justify-center text-sm py-2.5">
                         Enable camera

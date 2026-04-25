@@ -153,7 +153,7 @@
         </div>
 
         <footer
-            class="shrink-0 flex flex-col items-center gap-4 px-4 pt-6 pb-[max(3rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black via-black/95 to-transparent"
+            class="shrink-0 flex flex-col items-center gap-4 px-4 pt-6 pb-[max(5rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black via-black/95 to-transparent"
             style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right));"
         >
             <div class="w-full max-w-md text-center">
@@ -362,6 +362,8 @@
                 stream.getTracks().forEach(track => track.stop());
             }
 
+            setHint('Opening camera…');
+
             const constraints = {
                 video: {
                     facingMode: cameraFacingMode,
@@ -373,20 +375,31 @@
             stream = await navigator.mediaDevices.getUserMedia(constraints);
             video.srcObject = stream;
 
+            // Hide permission gate when successful
+            const permissionGate = document.getElementById('idvPermissionGate');
+            if (permissionGate) {
+                permissionGate.classList.add('hidden');
+            }
+
             // Start alignment checking
             startAlignmentLoop();
         } catch (error) {
             console.error('Camera error:', error);
-            if (error.name === 'NotAllowedError') {
-                // Show permission gate when access is denied
-                const permissionGate = document.getElementById('idvPermissionGate');
-                if (permissionGate) {
-                    permissionGate.classList.remove('hidden');
-                }
-                setHint('Camera permission required');
-            } else {
-                setHint('Camera access denied or unavailable');
+            captureBtn.disabled = true;
+
+            // Show permission gate when access is denied
+            const permissionGate = document.getElementById('idvPermissionGate');
+            if (permissionGate) {
+                permissionGate.classList.remove('hidden');
             }
+
+            // Update permission text to match facial verification
+            const permissionText = document.getElementById('idvPermissionText');
+            if (permissionText) {
+                permissionText.innerHTML = 'We could not use the camera. Allow camera access in your browser settings, or tap below to try again.';
+            }
+
+            setHint('Camera not available.');
         }
     }
 

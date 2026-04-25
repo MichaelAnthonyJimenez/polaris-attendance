@@ -217,14 +217,6 @@
             const imageData = await fileToBase64(file);
             inputs.front.value = imageData;
             refreshSubmit();
-
-            // Show confirmation dialog with OCR processing
-            confirmationSection.classList.remove('hidden');
-
-            // Process OCR for uploaded file
-            if (imageData) {
-                processOcrConfirmation(imageData);
-            }
         }
     });
 
@@ -234,6 +226,19 @@
             const imageData = await fileToBase64(file);
             inputs.back.value = imageData;
             refreshSubmit();
+        }
+    });
+
+    // Submit button event listener - show confirmation before actual submission
+    uploadSubmitBtn?.addEventListener('click', async (e) => {
+        e.preventDefault(); // Prevent actual form submission
+
+        // Show confirmation dialog with OCR processing
+        confirmationSection.classList.remove('hidden');
+
+        // Process OCR for uploaded file
+        if (inputs.front.value) {
+            processOcrConfirmation(inputs.front.value);
         }
     });
 

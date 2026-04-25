@@ -67,9 +67,6 @@
                     </svg>
                     <span>Google</span>
                 </a>
-                <p class="text-xs text-center text-slate-400 mt-2">
-                    Sign in to polaris-attendance.up.railway.app - Google will allow to access info about you
-                </p>
                 <div class="text-sm text-center">
                     <a href="{{ route('password.request') }}" class="text-blue-400 hover:text-blue-300 font-medium">Forgot password?</a>
                 </div>

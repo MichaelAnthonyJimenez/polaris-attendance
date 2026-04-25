@@ -7,13 +7,12 @@
     id="idvShell"
     class="fixed inset-0 z-[100] flex flex-col bg-black text-white"
 >
-    <form method="POST" action="{{ route('driver-verification.store') }}" id="idVerificationForm" class="flex flex-1 flex-col min-h-0">
+    <form id="idVerificationForm" method="POST" action="{{ route('driver-verification.store') }}" class="flex flex-1 flex-col min-h-0">
         @csrf
         <input type="hidden" name="verification_method" value="id_only">
-        <input type="hidden" name="proof_mode" id="idv_proof_mode" value="selfie_with_id">
-        <input type="hidden" name="id_front_base64" id="id_front_base64">
-        <input type="hidden" name="id_back_base64" id="id_back_base64">
-        <input type="hidden" name="face_selfie_base64" id="face_selfie_base64">
+        <input type="hidden" name="proof_mode" value="selfie_with_id">
+        <input type="hidden" name="id_front_base64" id="idv_id_front_base64" value="">
+        <input type="hidden" name="face_selfie_base64" id="idv_face_selfie_base64" value="">
         <input type="hidden" name="latitude" id="idv_latitude">
         <input type="hidden" name="longitude" id="idv_longitude">
         <input type="hidden" name="geo_accuracy" id="idv_geo_accuracy">
@@ -32,9 +31,24 @@
                 </svg>
             </a>
             <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-white truncate">Selfie with ID</p>
-                <p id="idvHint" class="text-xs text-slate-400 truncate mt-0.5">Position your ID card in the frame.</p>
+                <p class="text-sm font-semibold text-white truncate">Selfie with ID verification</p>
+                <p id="idvHint" class="text-xs text-slate-400 truncate mt-0.5">
+                    Allow camera, align with the grid, then capture: ID card, selfie with ID.
+                </p>
             </div>
+            <button
+                type="button"
+                id="idvAutoCaptureToggle"
+                class="shrink-0 flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition border-white/20 bg-white/10 text-white"
+                aria-pressed="false"
+                aria-label="Toggle auto capture"
+                title="Auto capture when each step is ready"
+            >
+                <span class="relative flex h-2 w-2">
+                    <span class="h-2 w-2 rounded-full bg-red-500" aria-hidden="true"></span>
+                </span>
+                <span id="idvAutoCaptureLabel">Auto: off</span>
+            </button>
         </header>
 
         <div class="flex-1 relative min-h-0 bg-black">
@@ -55,7 +69,7 @@
             />
 
             <div
-                id="idvPreviewControls"
+                id="idvPreviewNav"
                 class="hidden absolute inset-0 z-[6] flex items-center justify-between px-1 sm:px-3 pointer-events-none"
                 aria-hidden="true"
             >
@@ -76,33 +90,34 @@
                     aria-label="Next photo"
                 >
                     <svg class="h-7 w-7 sm:h-8 sm:w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                     </svg>
                 </button>
             </div>
 
-            {{-- Guideline grid: ID card + face --}}
+            {{-- Guideline grid: changes based on step --}}
             <div id="idvGuide" class="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center p-4" style="z-index: 5;">
                 <div
                     class="relative rounded-2xl border-2 overflow-hidden"
-                    style="width: 88%; max-width: 32rem; aspect-ratio: 4 / 3; border-color: rgba(255, 255, 255, 0.72); box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.42);"
+                    style="width: 88%; max-width: 32rem; aspect-ratio: 3 / 4; border-color: rgba(255, 255, 255, 0.72); box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.42);"
                 >
                     <svg
                         id="idvGridSvg"
                         class="absolute inset-0 h-full w-full"
-                        viewBox="0 0 100 75"
+                        viewBox="0 0 300 400"
                         preserveAspectRatio="none"
                         style="color: rgba(255,255,255,0.52);"
                         aria-hidden="true"
                     >
-                        <!-- ID card frame -->
-                        <rect x="10" y="5" width="35" height="22" fill="none" stroke="rgba(59, 130, 246, 0.5)" stroke-width="0.5" stroke-dasharray="2 1"/>
-                        <text x="27.5" y="3" fill="rgba(59, 130, 246, 0.8)" font-size="2" text-anchor="middle" font-weight="600">ID CARD</text>
-
-                        <!-- Face frame -->
-                        <rect x="55" y="20" width="35" height="45" fill="none" stroke="rgba(34, 197, 94, 0.5)" stroke-width="0.5" stroke-dasharray="2 1"/>
-                        <text x="72.5" y="18" fill="rgba(34, 197, 94, 0.8)" font-size="2" text-anchor="middle" font-weight="600">FACE</text>
+                        <line x1="100" y1="0" x2="100" y2="400" stroke="currentColor" stroke-width="1.6" />
+                        <line x1="200" y1="0" x2="200" y2="400" stroke="currentColor" stroke-width="1.6" />
+                        <line x1="0" y1="133.3" x2="300" y2="133.3" stroke="currentColor" stroke-width="1.6" />
+                        <line x1="0" y1="266.6" x2="300" y2="266.6" stroke="currentColor" stroke-width="1.6" />
                     </svg>
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
+                        <div id="idvIdZone" class="rounded-full border-[3px] border-dashed" style="width: 62%; max-width: 220px; aspect-ratio: 1 / 1; border-color: rgba(255,255,255,0.86); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.32) inset;"></div>
+                    </div>
+                    <div id="idvGridTint" class="absolute inset-0 transition-opacity duration-200" style="opacity: 0; background: rgba(34, 197, 94, 0.22);"></div>
                     <div class="absolute top-2 right-2 rounded-lg bg-black/45 px-2 py-1 text-[10px] sm:text-xs font-medium text-white/90">
                         <span class="inline-flex items-center gap-1.5 mr-2">
                             <span class="inline-block h-2.5 w-2.5 rounded-full bg-green-500"></span> Proper
@@ -124,7 +139,7 @@
                 <div class="rounded-2xl border border-white/10 bg-white/5 p-6 max-w-sm">
                     <p class="text-base font-semibold text-white mb-2">Camera access</p>
                     <p id="idvPermissionText" class="text-sm text-slate-300 mb-5">
-                        We need your camera for verification. When your browser asks, choose <strong class="text-white">Allow</strong> for camera.
+                        We need your camera for verification. When your browser asks, choose <strong class="text-white">Allow</strong> for the camera.
                     </p>
                     <button type="button" id="idvRetryBtn" class="btn-primary w-full justify-center text-sm py-2.5">
                         Enable camera
@@ -136,76 +151,91 @@
             </div>
         </div>
 
-                    <div class="hidden space-y-3">
-                        <button type="button" id="idvRetakeBtn" class="btn-secondary w-full py-3 text-sm">
-                            Retake
-                        </button>
-
-                        <button type="submit" id="idvSubmit" class="btn-primary w-full py-3 text-sm hidden">
-                            Submit verification
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Countdown overlay -->
-                <div id="idvCountdown" class="hidden absolute inset-0 z-[11] items-center justify-center pointer-events-none">
-                    <div id="idvCountdownNumber" class="h-20 w-20 rounded-full border-2 border-white/60 bg-black/45 text-3xl font-bold flex items-center justify-center">3</div>
-                </div>
-            </div>
-        </div>
-
-        {{-- Footer with controls --}}
         <footer
-            id="idvSelfieFooter"
             class="shrink-0 flex flex-col items-center gap-4 px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black via-black/95 to-transparent"
             style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right));"
         >
-            <div class="flex items-center gap-3 text-xs text-slate-400">
-                <span id="idvStepTitle">Step 1 of 2: Position ID</span>
+            <div class="w-full max-w-md text-center">
+                <p class="text-xs text-slate-400 mb-1">Selfie with ID verification process</p>
+                <p id="idvStepTitle" class="text-sm font-semibold text-white">Step 1 of 2: Capture ID card</p>
+            </div>
+
+            <div id="idvStepThumbsRow" class="hidden w-full max-w-md grid grid-cols-2 gap-2">
+                <button type="button" id="idvStepCellFront" class="dvv-step-thumb rounded-xl border border-white/15 bg-white/5 p-2 text-left transition ring-offset-2 ring-offset-black focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40" data-preview-index="0" tabindex="-1" aria-label="View ID card capture">
+                    <p class="text-[10px] text-slate-300 mb-1 text-center">Step 1</p>
+                    <img id="idvStepPreviewFront" src="" alt="ID card preview" class="hidden h-14 w-full rounded-md object-cover" width="1" height="1" />
+                    <div id="idvStepPlaceholderFront" class="h-14 w-full rounded-md border border-dashed border-white/20 text-[10px] text-slate-400 flex items-center justify-center">Pending</div>
+                </button>
+                <button type="button" id="idvStepCellSelfie" class="dvv-step-thumb rounded-xl border border-white/15 bg-white/5 p-2 text-left transition ring-offset-2 ring-offset-black focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40" data-preview-index="1" tabindex="-1" aria-label="View selfie capture">
+                    <p class="text-[10px] text-slate-300 mb-1 text-center">Step 2</p>
+                    <img id="idvStepPreviewSelfie" src="" alt="Selfie preview" class="hidden h-14 w-full rounded-md object-cover" width="1" height="1" />
+                    <div id="idvStepPlaceholderSelfie" class="h-14 w-full rounded-md border border-dashed border-white/20 text-[10px] text-slate-400 flex items-center justify-center">Pending</div>
+                </button>
+            </div>
+
+            <div id="idvLiveControls" class="flex flex-col items-center gap-3 w-full max-w-md">
+                <button
+                    type="button"
+                    id="idvCaptureBtn"
+                    class="h-16 w-16 rounded-full border-4 border-white bg-white/20 shadow-lg ring-4 ring-white/30 disabled:opacity-40 disabled:pointer-events-none"
+                    aria-label="Capture photo"
+                ></button>
+                <span class="text-xs text-slate-500">Tap to capture current step</span>
+            </div>
+
+            <div id="idvPreviewControls" class="hidden flex w-full max-w-md gap-3">
+                <button type="button" id="idvRetakeBtn" class="btn-secondary flex-1 text-sm py-3">Retake</button>
+                <button type="submit" id="idvSubmitBtn" class="btn-primary flex-1 text-sm py-3">Submit verification</button>
             </div>
         </footer>
     </form>
 </div>
 
-<!-- OCR Confirmation Script -->
-<script src="{{ asset('js/optiic-service.js') }}"></script>
 <script>
 (() => {
     const LS_AUTO = 'idv_auto_capture';
     const video = document.getElementById('idvVideo');
     const previewImg = document.getElementById('idvPreviewImg');
     const canvas = document.getElementById('idvCanvas');
-    const captureBtn = document.getElementById('idvCapture');
+    const captureBtn = document.getElementById('idvCaptureBtn');
     const retakeBtn = document.getElementById('idvRetakeBtn');
-    const submitBtn = document.getElementById('idvSubmit');
+    const submitBtn = document.getElementById('idvSubmitBtn');
     const hint = document.getElementById('idvHint');
     const stepTitle = document.getElementById('idvStepTitle');
-    const guide = document.getElementById('idvGuide');
-    const autoBtn = document.getElementById('idvAutoCaptureToggle');
-    const cameraToggleBtn = document.getElementById('idvCameraToggle');
+    const stepThumbsRow = document.getElementById('idvStepThumbsRow');
     const liveControls = document.getElementById('idvLiveControls');
     const previewControls = document.getElementById('idvPreviewControls');
+    const previewPrev = document.getElementById('idvPreviewPrev');
+    const previewNext = document.getElementById('idvPreviewNext');
+    const autoBtn = document.getElementById('idvAutoCaptureToggle');
+    const autoLabel = document.getElementById('idvAutoCaptureLabel');
     const countdownWrap = document.getElementById('idvCountdown');
     const countdownNumber = document.getElementById('idvCountdownNumber');
+    const gridSvg = document.getElementById('idvGridSvg');
+    const idZone = document.getElementById('idvIdZone');
+    const gridTint = document.getElementById('idvGridTint');
+    const guide = document.getElementById('idvGuide');
 
     const inputs = {
-        front: document.getElementById('id_front_base64'),
-        selfie: document.getElementById('face_selfie_base64'),
+        front: document.getElementById('idv_id_front_base64'),
+        selfie: document.getElementById('idv_face_selfie_base64'),
     };
 
-    let stream = null;
-    let mode = 'live';
-    let stepIndex = 0;
-    let autoCapture = localStorage.getItem('idv_auto_capture') === '1';
-    let cameraFacingMode = 'environment';
-    let countdownTimer = null;
-    let autoCaptureQueued = false;
-    let alignmentGood = false;
-    let alignCheckTimer = null;
+    // Step definitions
     const steps = [
-        { key: 'front', label: 'ID card front', title: 'Step 1 of 2: Capture ID front', hint: 'Hold the front side of your ID inside the rectangle frame.', guide: 'id' },
-        { key: 'selfie', label: 'Selfie with ID', title: 'Step 2 of 2: Capture selfie with ID', hint: 'Keep your face in the circle and ID visible in frame.', guide: 'face' },
+        { key: 'front', label: 'ID card', title: 'Step 1 of 2: Capture ID card', hint: 'Hold your ID card inside the frame.', guide: 'id' },
+        { key: 'selfie', label: 'Selfie with ID', title: 'Step 2 of 2: Capture selfie with ID', hint: 'Hold your ID card and face in the frame.', guide: 'face' },
     ];
+
+    let stepIndex = 0;
+    let mode = 'live'; // 'live' or 'preview'
+    let stream = null;
+    let cameraFacingMode = 'environment';
+    let autoCapture = localStorage.getItem(LS_AUTO) === '1';
+    let autoCaptureQueued = false;
+    let countdownTimer = null;
+    let alignmentCheckTimer = null;
+    let alignmentGood = false;
 
     function setHint(text) {
         if (hint) hint.textContent = text;
@@ -213,16 +243,20 @@
 
     function setMode(newMode) {
         mode = newMode;
-        if (mode === 'live') {
+        if (newMode === 'live') {
             video.classList.remove('hidden');
             previewImg.classList.add('hidden');
-            captureBtn.classList.remove('hidden');
-            retakeBtn.classList.add('hidden');
+            previewPrev.classList.add('hidden');
+            previewNext.classList.add('hidden');
+            liveControls.classList.remove('hidden');
+            previewControls.classList.add('hidden');
         } else {
             video.classList.add('hidden');
             previewImg.classList.remove('hidden');
-            captureBtn.classList.add('hidden');
-            retakeBtn.classList.remove('hidden');
+            previewPrev.classList.remove('hidden');
+            previewNext.classList.remove('hidden');
+            liveControls.classList.add('hidden');
+            previewControls.classList.remove('hidden');
         }
     }
 
@@ -230,114 +264,97 @@
         const step = steps[stepIndex];
         if (!step) return;
         if (stepTitle) stepTitle.textContent = step.title;
-        if (hint) setHint(step.hint);
+        if (hint) setHint('Current: ' + step.label);
+
+        // Update guide based on step
+        updateGuideForStep(step);
     }
 
-    function syncAutoUi() {
-        if (!autoBtn) return;
-        autoBtn.textContent = autoCapture ? 'Auto: on' : 'Auto: off';
-        autoBtn.setAttribute('aria-pressed', autoCapture ? 'true' : 'false');
-    }
+    function updateGuideForStep(step) {
+        if (!guide || !gridSvg) return;
 
-    function syncCameraUi() {
-        if (!cameraToggleBtn) return;
-        const isRear = cameraFacingMode === 'environment';
-        cameraToggleBtn.textContent = isRear ? 'Rear' : 'Front';
-        cameraToggleBtn.setAttribute('aria-pressed', isRear ? 'true' : 'false');
-    }
-
-    function clearCountdown() {
-        if (countdownTimer) {
-            window.clearInterval(countdownTimer);
-            countdownTimer = null;
+        if (step.guide === 'id') {
+            // ID card guide - show ID card frame
+            gridSvg.innerHTML = `
+                <rect x="50" y="100" width="200" height="120" fill="none" stroke="rgba(59, 130, 246, 0.8)" stroke-width="2" stroke-dasharray="5 3"/>
+                <text x="150" y="90" fill="rgba(59, 130, 246, 0.9)" font-size="16" text-anchor="middle" font-weight="600">ID CARD</text>
+            `;
+        } else {
+            // Selfie with ID guide - show face + ID
+            gridSvg.innerHTML = `
+                <line x1="100" y1="0" x2="100" y2="400" stroke="currentColor" stroke-width="1.6" />
+                <line x1="200" y1="0" x2="200" y2="400" stroke="currentColor" stroke-width="1.6" />
+                <line x1="0" y1="133.3" x2="300" y2="133.3" stroke="currentColor" stroke-width="1.6" />
+                <line x1="0" y1="266.6" x2="300" y2="266.6" stroke="currentColor" stroke-width="1.6" />
+                <circle cx="150" cy="200" r="60" fill="none" stroke="rgba(34, 197, 94, 0.8)" stroke-width="2" stroke-dasharray="5 3"/>
+                <text x="150" y="130" fill="rgba(34, 197, 94, 0.9)" font-size="16" text-anchor="middle" font-weight="600">FACE</text>
+                <rect x="50" y="280" width="80" height="50" fill="none" stroke="rgba(59, 130, 246, 0.8)" stroke-width="2" stroke-dasharray="5 3"/>
+                <text x="90" y="340" fill="rgba(59, 130, 246, 0.9)" font-size="12" text-anchor="middle" font-weight="600">ID</text>
+            `;
         }
-        autoCaptureQueued = false;
-        if (countdownWrap) countdownWrap.classList.add('hidden');
-    }
-
-    function runAutoCountdown(onDone) {
-        clearCountdown();
-        autoCaptureQueued = true;
-        let remaining = 3;
-        if (countdownNumber) countdownNumber.textContent = String(remaining);
-        if (countdownWrap) {
-            countdownWrap.classList.remove('hidden');
-            countdownWrap.classList.add('flex');
-        }
-
-        countdownTimer = window.setInterval(() => {
-            remaining -= 1;
-            if (countdownNumber) countdownNumber.textContent = String(remaining);
-            if (remaining <= 0) {
-                autoCaptureQueued = false;
-                clearCountdown();
-                onDone();
-                return;
-            }
-        }, 1000);
-    }
-
-    function queueAutoCapture() {
-        if (!autoCapture || autoCaptureQueued || !alignmentGood) return;
-        runAutoCountdown(() => captureFrame(true));
-    }
-
-    function stopAlignmentLoop() {
-        if (alignCheckTimer) {
-            window.clearInterval(alignCheckTimer);
-            alignCheckTimer = null;
-        }
-    }
-
-    function startAlignmentLoop() {
-        stopAlignmentLoop();
-        alignCheckTimer = window.setInterval(async () => {
-            if (mode !== 'live' || !stream) return;
-            // Simple alignment check - in real implementation, use face detection
-            alignmentGood = true; // Simplified for now
-
-            if (!alignmentGood) {
-                if (autoCaptureQueued) {
-                    clearCountdown();
-                }
-                return;
-            }
-            if (autoCapture && !autoCaptureQueued && video.videoWidth) {
-                queueAutoCapture();
-            }
-        }, 350);
     }
 
     function refreshSubmit() {
         const hasFront = inputs.front.value && inputs.front.value.length > 0;
         const hasSelfie = inputs.selfie.value && inputs.selfie.value.length > 0;
+        const hasAll = hasFront && hasSelfie;
 
-        if (hasFront && hasSelfie) {
-            submitBtn.classList.remove('hidden');
-            setHint('All photos captured. You can now submit.');
-        } else if (hasFront) {
-            setHint('ID captured. Now capture selfie with ID.');
-        } else {
-            setHint('Position your ID in the frame and capture.');
+        if (submitBtn) {
+            submitBtn.disabled = !hasAll;
+            submitBtn.classList.toggle('hidden', !hasAll);
+        }
+
+        // Update step thumbnails
+        updateStepThumbnails();
+    }
+
+    function updateStepThumbnails() {
+        const frontThumb = document.getElementById('idvStepPreviewFront');
+        const selfieThumb = document.getElementById('idvStepPreviewSelfie');
+        const frontPlaceholder = document.getElementById('idvStepPlaceholderFront');
+        const selfiePlaceholder = document.getElementById('idvStepPlaceholderSelfie');
+
+        if (frontThumb && inputs.front.value) {
+            frontThumb.src = inputs.front.value;
+            frontThumb.classList.remove('hidden');
+            frontPlaceholder.classList.add('hidden');
+        }
+
+        if (selfieThumb && inputs.selfie.value) {
+            selfieThumb.src = inputs.selfie.value;
+            selfieThumb.classList.remove('hidden');
+            selfiePlaceholder.classList.add('hidden');
+        }
+
+        // Show thumbnails row when we have at least one capture
+        if (stepThumbsRow && (inputs.front.value || inputs.selfie.value)) {
+            stepThumbsRow.classList.remove('hidden');
         }
     }
 
+    // Camera functions
     async function startCamera() {
         try {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+
             const constraints = {
                 video: {
-                    facingMode: 'environment',
+                    facingMode: cameraFacingMode,
                     width: { ideal: 1280 },
-                    height: { ideal: 960 }
+                    height: { ideal: 720 }
                 }
             };
 
             stream = await navigator.mediaDevices.getUserMedia(constraints);
             video.srcObject = stream;
-            setHint('Camera ready. Position your ID in the frame.');
+
+            // Start alignment checking
+            startAlignmentLoop();
         } catch (error) {
             console.error('Camera error:', error);
-            setHint('Camera access denied or not available.');
+            setHint('Camera access denied or unavailable');
         }
     }
 
@@ -348,38 +365,108 @@
         }
     }
 
+    // Capture functions
     function captureFrame(isAuto = false) {
-        if (!video.videoWidth) {
-            if (!isAuto) setHint('Start the camera first.');
-            return;
-        }
+        if (!video || !video.videoWidth || !video.videoHeight) return;
 
-        const ctx = canvas.getContext('2d');
+        const context = canvas.getContext('2d');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        context.drawImage(video, 0, 0);
 
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
         const step = steps[stepIndex];
         if (!step) return;
 
-        if (step.key === 'front') inputs.front.value = dataUrl;
-        if (step.key === 'selfie') inputs.selfie.value = dataUrl;
+        // Store the captured image
+        if (step.key === 'front') {
+            inputs.front.value = dataUrl;
+        } else if (step.key === 'selfie') {
+            inputs.selfie.value = dataUrl;
+        }
 
+        // Update preview
+        previewImg.src = dataUrl;
+        setMode('preview');
         refreshSubmit();
 
+        // Move to next step or finish
         if (stepIndex < steps.length - 1) {
             stepIndex += 1;
             syncStepUi();
             if (!autoCapture) {
                 setHint('Saved ' + step.label + '. Continue to ' + steps[stepIndex].label + '.');
             }
-            return;
+        } else {
+            setHint('All captures complete. Review and submit.');
+            submitBtn.classList.remove('hidden');
         }
+    }
 
-        previewImg.src = dataUrl;
-        setMode('preview');
-        setHint('All photos captured. You can now submit.');
+    // Auto capture functions
+    function syncAutoUi() {
+        if (!autoBtn) return;
+        autoLabel.textContent = autoCapture ? 'Auto: on' : 'Auto: off';
+        autoBtn.setAttribute('aria-pressed', autoCapture ? 'true' : 'false');
+    }
+
+    function queueAutoCapture() {
+        if (!autoCapture || autoCaptureQueued || !alignmentGood) return;
+        runAutoCountdown(() => captureFrame(true));
+    }
+
+    function runAutoCountdown(callback) {
+        if (countdownTimer) return;
+
+        autoCaptureQueued = true;
+        let count = 3;
+
+        countdownWrap.classList.remove('hidden');
+        countdownNumber.textContent = count;
+
+        countdownTimer = setInterval(() => {
+            count--;
+            if (count > 0) {
+                countdownNumber.textContent = count;
+            } else {
+                clearInterval(countdownTimer);
+                countdownTimer = null;
+                countdownWrap.classList.add('hidden');
+                callback();
+                autoCaptureQueued = false;
+            }
+        }, 1000);
+    }
+
+    function clearCountdown() {
+        if (countdownTimer) {
+            clearInterval(countdownTimer);
+            countdownTimer = null;
+        }
+        countdownWrap.classList.add('hidden');
+        autoCaptureQueued = false;
+    }
+
+    // Alignment checking
+    function startAlignmentLoop() {
+        stopAlignmentLoop();
+        alignmentCheckTimer = setInterval(() => {
+            // Simple alignment check - in real implementation, this would use face detection
+            alignmentGood = Math.random() > 0.3; // Simulated alignment
+            if (alignmentGood) {
+                gridTint.style.opacity = '1';
+                queueAutoCapture();
+            } else {
+                gridTint.style.opacity = '0';
+            }
+        }, 500);
+    }
+
+    function stopAlignmentLoop() {
+        if (alignmentCheckTimer) {
+            clearInterval(alignmentCheckTimer);
+            alignmentCheckTimer = null;
+        }
     }
 
     // Event listeners
@@ -387,15 +474,12 @@
 
     retakeBtn?.addEventListener('click', () => {
         previewImg.removeAttribute('src');
-        stepIndex = 0;
-        inputs.front.value = '';
-        inputs.selfie.value = '';
         setMode('live');
         syncStepUi();
         refreshSubmit();
     });
 
-    document.getElementById('idvPreviewPrev')?.addEventListener('click', () => {
+    previewPrev?.addEventListener('click', () => {
         if (stepIndex > 0) {
             stepIndex -= 1;
             syncStepUi();
@@ -404,7 +488,7 @@
         }
     });
 
-    document.getElementById('idvPreviewNext')?.addEventListener('click', () => {
+    previewNext?.addEventListener('click', () => {
         if (stepIndex < steps.length - 1) {
             stepIndex += 1;
             syncStepUi();
@@ -415,25 +499,13 @@
 
     autoBtn?.addEventListener('click', () => {
         autoCapture = !autoCapture;
-        localStorage.setItem('idv_auto_capture', autoCapture ? '1' : '0');
+        localStorage.setItem(LS_AUTO, autoCapture ? '1' : '0');
         syncAutoUi();
-    });
-
-    cameraToggleBtn?.addEventListener('click', async () => {
-        cameraFacingMode = cameraFacingMode === 'environment' ? 'user' : 'environment';
-        syncCameraUi();
-        if (mode === 'live') {
-            await startCamera();
-        }
     });
 
     // Initialize
     syncStepUi();
-    syncAutoUi();
-    syncCameraUi();
-    startCamera();
-    startAlignmentLoop();
-    window.addEventListener('beforeunload', stopCamera);
-})();
+    refreshSubmit();
+});
 </script>
 @endsection

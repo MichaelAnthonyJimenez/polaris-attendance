@@ -51,7 +51,7 @@
             </button>
         </header>
 
-        <div class="flex-1 relative min-h-0 bg-black">
+        <div class="flex-1 relative bg-black overflow-hidden">
             <video
                 id="idvVideo"
                 class="absolute inset-0 h-full w-full object-cover"

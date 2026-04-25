@@ -82,8 +82,6 @@
                         <button type="button" id="idv_cancel_id" class="btn-danger flex-1 py-2.5 text-sm">Cancel</button>
                     </div>
                 </div>
-
-                <button type="submit" id="idvUploadSubmit" class="btn-primary w-full py-3 text-sm" disabled>Submit verification</button>
             </div>
         </div>
 
@@ -94,6 +92,22 @@
             <div class="w-full max-w-md text-center">
                 <p class="text-xs text-slate-400 mb-1">Upload ID verification process</p>
                 <p class="text-sm font-semibold text-white">Upload your ID documents</p>
+            </div>
+
+            <!-- Preview Navigation -->
+            <div id="idvPreviewNav" class="hidden w-full max-w-md flex gap-2 mb-4">
+                <button type="button" id="idvPreviewPrev" class="btn-secondary flex-1 py-2 text-sm">
+                    <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Previous
+                </button>
+                <button type="button" id="idvPreviewNext" class="btn-secondary flex-1 py-2 text-sm">
+                    Next
+                    <svg class="h-4 w-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </button>
             </div>
 
             <div class="w-full max-w-md space-y-3">
@@ -116,6 +130,9 @@
     const confirmIdBtn = document.getElementById('idv_confirm_id');
     const retryIdBtn = document.getElementById('idv_retry_id');
     const cancelIdBtn = document.getElementById('idv_cancel_id');
+    const previewNav = document.getElementById('idvPreviewNav');
+    const previewPrev = document.getElementById('idvPreviewPrev');
+    const previewNext = document.getElementById('idvPreviewNext');
 
     const inputs = {
         front: document.getElementById('id_front_base64'),
@@ -250,14 +267,26 @@
 
     cancelIdBtn?.addEventListener('click', () => {
         confirmationSection.classList.add('hidden');
-        setHint('ID confirmation cancelled. You can still submit your ID.');
+        previewNav.classList.add('hidden');
+        setHint('Upload your ID documents.');
+    });
+
+    // Preview navigation
+    previewPrev?.addEventListener('click', () => {
+        // Go to previous step in preview
+        console.log('Previous preview');
+    });
+
+    previewNext?.addEventListener('click', () => {
+        // Go to next step in preview
+        console.log('Next preview');
     });
 
     // Initialize
+    setHint('Upload your ID documents.');
     if (idTypeSelect) {
         idTypeSelect.value = 'philsys_national_id';
     }
-    refreshSubmit();
 })();
 </script>
 @endsection

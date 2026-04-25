@@ -217,6 +217,17 @@
             <div class="w-full max-w-sm glass rounded-2xl border border-white/10 p-5 sm:p-6">
                 <h3 class="text-base sm:text-lg font-semibold text-white">Confirm information</h3>
                 <p class="mt-2 text-sm text-slate-300">Please confirm your verification information is correct before submitting.</p>
+                <div class="mt-4 rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-slate-200 space-y-1">
+                    <p><span class="text-slate-400">Mode:</span> <span id="idvConfirmMode">-</span></p>
+                    <p><span class="text-slate-400">ID type:</span> <span id="idvConfirmIdType">-</span></p>
+                    <p><span class="text-slate-400">ID front:</span> <span id="idvConfirmFront">-</span></p>
+                    <p><span class="text-slate-400">Selfie:</span> <span id="idvConfirmSelfie">-</span></p>
+                </div>
+                <div class="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
+                    <p class="text-xs font-medium text-white">OCR status</p>
+                    <p id="idvConfirmOcrStatus" class="mt-1 text-xs text-slate-300">Checking OCR…</p>
+                    <div id="idvConfirmOcrFields" class="mt-2 space-y-1 text-xs text-slate-200"></div>
+                </div>
                 <div class="mt-5 flex gap-3">
                     <button type="button" id="idvConfirmCancel" class="btn-secondary flex-1 py-2.5 text-sm">Cancel</button>
                     <button type="button" id="idvConfirmProceed" class="btn-primary flex-1 py-2.5 text-sm">Submit</button>
@@ -244,6 +255,12 @@
     const confirmModal = document.getElementById('idvConfirmModal');
     const confirmCancelBtn = document.getElementById('idvConfirmCancel');
     const confirmProceedBtn = document.getElementById('idvConfirmProceed');
+    const confirmMode = document.getElementById('idvConfirmMode');
+    const confirmIdType = document.getElementById('idvConfirmIdType');
+    const confirmFront = document.getElementById('idvConfirmFront');
+    const confirmSelfie = document.getElementById('idvConfirmSelfie');
+    const confirmOcrStatus = document.getElementById('idvConfirmOcrStatus');
+    const confirmOcrFields = document.getElementById('idvConfirmOcrFields');
     const modeGate = document.getElementById('idvModeGate');
     const proofModeInput = document.getElementById('idv_proof_mode');
     const idTypeSelect = document.getElementById('idv_id_type');
@@ -286,6 +303,8 @@
     let autoCaptureQueued = false;
     let alignmentGood = false;
     let alignCheckTimer = null;
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const ocrPreviewEndpoint = @json(route('driver-verification.ocr-preview'));
     const detector = ('FaceDetector' in window) ? new window.FaceDetector({ fastMode: true, maxDetectedFaces: 1 }) : null;
 
     const steps = [
@@ -663,6 +682,83 @@
         }
     }
 
+    function resetConfirmOcrView(text = 'Checking OCR…') {
+        if (confirmOcrStatus) confirmOcrStatus.textContent = text;
+        if (confirmOcrFields) confirmOcrFields.innerHTML = '';
+    }
+
+    function renderConfirmStaticDetails() {
+        const modeText = proofMode === 'upload_file' ? 'Upload ID files' : 'Selfie with ID';
+        const idTypeText = proofMode === 'selfie_with_id'
+            ? 'Auto detect via OCR'
+            : (idTypeSelect?.selectedOptions?.[0]?.textContent?.trim() || 'Not selected');
+        if (confirmMode) confirmMode.textContent = modeText;
+        if (confirmIdType) confirmIdType.textContent = idTypeText;
+        if (confirmFront) {
+            const hasFront = proofMode === 'upload_file'
+                ? !!(uploadFrontInput?.files && uploadFrontInput.files.length > 0)
+                : !!inputs.front.value;
+            confirmFront.textContent = hasFront ? 'Provided' : 'Missing';
+        }
+        if (confirmSelfie) {
+            const hasSelfie = proofMode === 'selfie_with_id' ? !!inputs.selfie.value : false;
+            confirmSelfie.textContent = proofMode === 'selfie_with_id' ? (hasSelfie ? 'Provided' : 'Missing') : 'Not required';
+        }
+    }
+
+    async function loadOcrPreviewForConfirmation() {
+        resetConfirmOcrView('Checking OCR…');
+        const formData = new FormData();
+        formData.append('proof_mode', proofMode || 'upload_file');
+        if (proofMode === 'upload_file') {
+            if (uploadFrontInput?.files && uploadFrontInput.files.length > 0) {
+                formData.append('id_front_file', uploadFrontInput.files[0]);
+            }
+        } else if (inputs.front.value) {
+            formData.append('id_front_base64', inputs.front.value);
+        }
+
+        try {
+            const res = await fetch(ocrPreviewEndpoint, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'application/json',
+                },
+                credentials: 'same-origin',
+                body: formData,
+            });
+            const payload = await res.json();
+            if (!res.ok || payload.status !== 'ok') {
+                if (confirmOcrStatus) confirmOcrStatus.textContent = 'OCR failed or unavailable.';
+                return;
+            }
+            const ocr = payload.ocr || {};
+            const status = String(ocr.status || 'unknown');
+            if (status !== 'ok') {
+                if (confirmOcrStatus) confirmOcrStatus.textContent = 'OCR status: ' + status;
+                return;
+            }
+            const fields = (ocr.fields && typeof ocr.fields === 'object') ? ocr.fields : {};
+            const entries = Object.entries(fields);
+            if (entries.length === 0) {
+                if (confirmOcrStatus) confirmOcrStatus.textContent = 'OCR worked, but no clear fields were extracted.';
+                return;
+            }
+            if (confirmOcrStatus) confirmOcrStatus.textContent = 'OCR worked. Please review extracted fields:';
+            if (confirmOcrFields) {
+                confirmOcrFields.innerHTML = '';
+                entries.forEach(([key, value]) => {
+                    const p = document.createElement('p');
+                    p.innerHTML = '<span class=\"text-slate-400\">' + key.replace(/_/g, ' ') + ':</span> ' + String(value ?? '');
+                    confirmOcrFields.appendChild(p);
+                });
+            }
+        } catch (_err) {
+            if (confirmOcrStatus) confirmOcrStatus.textContent = 'OCR failed or unavailable.';
+        }
+    }
+
     function setProofMode(nextMode) {
         proofMode = nextMode;
         if (proofModeInput) proofModeInput.value = proofMode;
@@ -733,8 +829,10 @@
             return;
         }
         e.preventDefault();
+        renderConfirmStaticDetails();
         confirmModal?.classList.remove('hidden');
         confirmModal?.classList.add('flex');
+        loadOcrPreviewForConfirmation();
     });
 
     confirmCancelBtn?.addEventListener('click', () => {

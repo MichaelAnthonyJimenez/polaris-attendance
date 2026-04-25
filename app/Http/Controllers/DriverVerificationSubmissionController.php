@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\FaceRecognitionService;
 use App\Services\LivenessService;
 use App\Services\Ocr\IdOcrService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -165,6 +166,38 @@ class DriverVerificationSubmissionController extends Controller
         }
 
         return redirect()->route('home')->with('status', 'Verification pending. Please stay on standby while admin review is in progress.');
+    }
+
+    public function previewOcr(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['status' => 'error', 'reason' => 'unauthorized'], 401);
+        }
+
+        $data = $request->validate([
+            'proof_mode' => ['required', 'in:selfie_with_id,upload_file'],
+            'id_front_base64' => ['nullable', 'string'],
+            'id_front_file' => ['nullable', 'image', 'max:5120'],
+        ]);
+
+        $ocrPath = null;
+        if ($request->hasFile('id_front_file')) {
+            $ocrPath = $request->file('id_front_file')->store('verification/tmp/'.$user->id, 'public');
+        } elseif (! empty($data['id_front_base64'])) {
+            $ocrPath = $this->storeBase64Image($data['id_front_base64'], 'verification/tmp/'.$user->id);
+        }
+
+        if (! $ocrPath) {
+            return response()->json(['status' => 'error', 'reason' => 'missing_id_front'], 422);
+        }
+
+        $ocr = $this->idOcrService->extractFromPublicPath($ocrPath);
+
+        return response()->json([
+            'status' => 'ok',
+            'ocr' => $ocr,
+        ]);
     }
 
     private function storeBase64Image(?string $dataUrl, string $dir): ?string

@@ -20,8 +20,6 @@ use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\CameraController;
 use App\Http\Controllers\ContactMessageController;
 use App\Http\Controllers\UserController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -61,64 +59,8 @@ Route::middleware('auth')->group(function () {
     Route::view('/verification/required', 'verify-popup')->name('verification.required');
     Route::view('/verification/facial', 'facial-verification')->name('verification.facial');
     Route::view('/id-verification', 'id-verification')->name('verification.id');
-    Route::view('/selfie-with-id', 'selfie-with-id')->name('verification.selfie');
-    Route::post('/selfie-with-id', [DriverVerificationSubmissionController::class, 'store'])->name('selfie-with-id.store');
-    Route::view('/upload-id-files', 'upload-id-files')->name('verification.upload');
-    Route::view('/upload-id-simple', 'upload-id-simple')->name('verification.upload-simple');
-    Route::view('/verification/id-confirmation', 'id-confirmation')->name('verification.id-confirmation');
     Route::post('/driver-verification', [DriverVerificationSubmissionController::class, 'store'])->name('driver-verification.store');
-    Route::post('/api/ocr-process', function (Request $request) {
-        try {
-            $imageData = $request->input('image_data');
-
-            if (!$imageData) {
-                return response()->json(['success' => false, 'error' => 'No image data provided']);
-            }
-
-            // Check if PythonVisionService is available
-            $visionService = app(\App\Services\PythonVisionService::class);
-
-            if (!$visionService->isAvailable()) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'OCR service not available - Python not installed',
-                    'text' => '',
-                    'words' => [],
-                    'avg_confidence' => 0
-                ]);
-            }
-
-            // Check OCR dependencies
-            $dependencies = $visionService->checkDependencies();
-            if (!$dependencies['paddleocr'] && !$dependencies['opencv-python']) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'OCR libraries not installed',
-                    'text' => '',
-                    'words' => [],
-                    'avg_confidence' => 0
-                ]);
-            }
-
-            // Use PythonVisionService for OCR processing
-            $result = $visionService->extractTextFromImage($imageData);
-
-            return response()->json($result);
-        } catch (\Exception $e) {
-            // Log the error for debugging
-            Log::error('OCR API Error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'error' => 'OCR processing failed',
-                'text' => '',
-                'words' => [],
-                'avg_confidence' => 0
-            ]);
-        }
-    })->name('api.ocr.process');
+    Route::post('/driver-verification/ocr-preview', [DriverVerificationSubmissionController::class, 'previewOcr'])->name('driver-verification.ocr-preview');
 });
 
 Route::middleware(['auth', 'driver.verified'])->group(function () {

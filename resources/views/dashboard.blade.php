@@ -26,6 +26,7 @@
     @if($role === 'admin')
     @php
         $calendarDate = $adminCalendarDate ?? now();
+        $calendarMonthOffset = (int) ($adminCalendarMonthOffset ?? 0);
         $monthStart = $calendarDate->copy()->startOfMonth();
         $daysInMonth = (int) $monthStart->daysInMonth;
         $firstDayOfWeek = (int) $monthStart->dayOfWeek;
@@ -33,7 +34,11 @@
     <div class="glass p-5">
         <div class="flex items-center justify-between mb-3">
             <h2 class="text-base font-semibold text-white">Calendar</h2>
-            <span class="text-xs text-slate-300">{{ $monthStart->format('F Y') }}</span>
+            <div class="flex items-center gap-2">
+                <a href="{{ route('dashboard', ['calendar_month' => $calendarMonthOffset - 1]) }}" class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-white/15 bg-white/5 text-slate-200 hover:bg-white/10" aria-label="Previous month">&lt;</a>
+                <span class="text-xs text-slate-300 min-w-24 text-center">{{ $monthStart->format('F Y') }}</span>
+                <a href="{{ route('dashboard', ['calendar_month' => $calendarMonthOffset + 1]) }}" class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-white/15 bg-white/5 text-slate-200 hover:bg-white/10" aria-label="Next month">&gt;</a>
+            </div>
         </div>
         <div class="grid grid-cols-7 gap-1 text-center text-[11px] text-slate-400 mb-1">
             <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>

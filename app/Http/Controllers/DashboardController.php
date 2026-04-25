@@ -7,16 +7,19 @@ use App\Models\DriverVerification;
 use App\Models\Setting;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __invoke(): View
+    public function __invoke(Request $request): View
     {
         $appTz = (string) config('app.timezone', 'UTC');
         $now = Carbon::now($appTz);
+        $calendarMonthOffset = (int) $request->integer('calendar_month', 0);
+        $calendarDate = $now->copy()->startOfMonth()->addMonths($calendarMonthOffset);
         $today = $now->copy()->startOfDay();
         $todayEnd = $now->copy()->endOfDay();
         $role = is_string(Auth::user()?->role) ? mb_strtolower(trim((string) Auth::user()?->role)) : '';
@@ -408,7 +411,8 @@ class DashboardController extends Controller
             'driverDashboard' => $driverDashboard,
             'driverReminderClient' => $driverReminderClient,
             'driverLocationSharingEnabled' => (bool) (Auth::user()?->location_sharing_enabled ?? false),
-            'adminCalendarDate' => $now,
+            'adminCalendarDate' => $calendarDate,
+            'adminCalendarMonthOffset' => $calendarMonthOffset,
         ]);
     }
 }

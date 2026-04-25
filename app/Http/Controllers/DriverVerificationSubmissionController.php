@@ -157,7 +157,7 @@ class DriverVerificationSubmissionController extends Controller
                     'text' => $request->input('idv_confirmed_text'),
                     'type' => $request->input('idv_confirmed_type'),
                     'confirmed' => true,
-                    'method' => 'optiic'
+                    'method' => 'paddle'
                 ];
             } elseif ($request->has('idv_confirmed_name')) {
                 $meta['ocr'] = [

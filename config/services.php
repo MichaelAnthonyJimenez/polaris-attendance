@@ -57,11 +57,11 @@ return [
         'endpoint' => env('OCR_SPACE_ENDPOINT', 'https://api.ocr.space/parse/image'),
         'language' => env('OCR_SPACE_LANGUAGE', 'eng'),
     ],
-
-    'optiic' => [
-        'api_key' => env('OPTIIC_API_KEY'),
-        'endpoint' => env('OPTIIC_ENDPOINT', 'https://api.optiic.dev'),
-        'timeout' => env('OPTIIC_TIMEOUT', 30),
-    ],
+    // Optiic.dev OCR Service (disabled - using PaddleOCR instead)
+    // 'optiic' => [
+    //     'api_key' => env('OPTIIC_API_KEY'),
+    //     'endpoint' => env('OPTIIC_ENDPOINT', 'https://api.optiic.dev'),
+    //     'timeout' => 30,
+    // ],env('OPTIIC_TIMEOUT', 30),
 
 ];

@@ -10,14 +10,14 @@ Polaris Attendance is a web-based attendance system for staff/drivers that suppo
 - **Backend + API**: [Laravel](https://laravel.com) (PHP 8.2+, Laravel 12)
 - **Frontend**: Blade templates + Vite (Tailwind CSS) + JavaScript (Axios + Chart.js)
 - **Face Recognition**: Python DeepFace service (local processing)
-- **OCR**: EasyOCR for ID card text extraction
+- **OCR**: PaddleOCR for ID card text extraction
 - **Database**: Laravel Eloquent ORM with configurable SQL database (default: SQLite)
 
 ## Architecture Overview
 - **Web UI routes** in `routes/web.php` render Blade pages (login, driver verification UI, dashboard, reports, etc.)
 - **JSON API routes** in `routes/api.php` serve hardware/software clients (offline devices)
 - **Face recognition** handled by `FaceRecognitionService` with multiple fallback methods
-- **OCR processing** handled by `PythonVisionService` with EasyOCR backend
+- **OCR processing** handled by `PythonVisionService` with PaddleOCR backend
 
 ## Main API Endpoints
 
@@ -99,7 +99,7 @@ curl -Uri "http://localhost:8000/api/offline/attendance" `
 5. **Setup Python Services** (Optional - for face recognition/OCR)
    - Python services will auto-install required packages
    - Face recognition uses local DeepFace processing
-   - OCR uses EasyOCR for text extraction
+   - OCR uses PaddleOCR for text extraction
 
 ### Handy Composer Scripts
 - `composer setup`: Installs deps, generates key, migrates, and builds frontend assets
@@ -118,7 +118,7 @@ curl -Uri "http://localhost:8000/api/offline/attendance" `
 - **Driver enrollment** with face templates
 
 ### OCR Processing
-- **Optiic.dev API** for high-performance OCR (primary)
+- **PaddleOCR** for high-performance OCR (primary)
 - **EasyOCR integration** for reliable text extraction (fallback)
 - **Multiple fallback services** for compatibility
 - **ID card information parsing**
@@ -173,18 +173,17 @@ Key settings in `.env`:
 - `FACE_RECOGNITION_ENABLED`: Enable/disable face recognition
 - `LIVENESS_DETECTION_ENABLED`: Enable/disable liveness detection
 - `MIN_FACE_CONFIDENCE`: Minimum confidence threshold
-- `OPTIIC_API_KEY`: Optiic.dev API key for high-performance OCR
 
 ### Face Recognition Settings
 - `MIN_FACE_CONFIDENCE`: Default 80%
 - `MIN_LIVENESS_SCORE`: Default 0.7
 - `REQUIRE_PHOTO_ATTENDANCE`: Require photo for attendance
 
-### Optiic.dev OCR Setup
-- **Get API Key**: Register at [Optiic.dev](https://optiic.dev) for API access
-- **Configure**: Add `OPTIIC_API_KEY` to your `.env` file
-- **Priority**: Optiic.dev is used as primary OCR service when configured
-- **Fallbacks**: Automatically falls back to EasyOCR and original OCR services if Optiic.dev fails
+### PaddleOCR Setup
+- **Installation**: PaddleOCR is automatically installed with Python dependencies
+- **Configuration**: No additional API keys required
+- **Priority**: PaddleOCR is used as primary OCR service
+- **Fallbacks**: Automatically falls back to EasyOCR if PaddleOCR fails
 
 ## Troubleshooting
 

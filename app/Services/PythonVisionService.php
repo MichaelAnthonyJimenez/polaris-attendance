@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use App\Services\OptiicService;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process;
 
@@ -11,13 +9,11 @@ class PythonVisionService
 {
     private string $pythonPath;
     private string $scriptPath;
-    private OptiicService $optiicService;
 
-    public function __construct(OptiicService $optiicService)
+    public function __construct()
     {
         $this->pythonPath = 'python'; // Assumes python is in PATH
         $this->scriptPath = base_path('python');
-        $this->optiicService = $optiicService;
     }
 
     /**
@@ -26,20 +22,16 @@ class PythonVisionService
     public function extractTextFromImage(string $imageData): array
     {
         try {
-            // Try Optiic.dev service first (primary)
-            if ($this->optiicService->isConfigured()) {
-                $result = $this->optiicService->extractTextFromImage($imageData);
-                if ($result['success']) {
-                    Log::info('Optiic.dev OCR successful', [
-                        'confidence' => $result['avg_confidence'],
-                        'text_length' => strlen($result['text'])
-                    ]);
-                    return $result;
-                } else {
-                    Log::warning('Optiic.dev OCR failed', ['error' => $result['error']]);
-                }
-            } else {
-                Log::info('Optiic.dev not configured, falling back to Python services');
+            // Try Paddle OCR service first (primary)
+            $result = $this->runPythonScript('ocr_service.py', [$imageData]);
+            $parsed = json_decode($result, true);
+
+            if ($parsed && isset($parsed['success'])) {
+                Log::info('Paddle OCR successful', [
+                    'confidence' => $parsed['avg_confidence'],
+                    'text_length' => strlen($parsed['text'])
+                ]);
+                return $parsed;
             }
 
             // Fallback to simple OCR service
@@ -54,18 +46,6 @@ class PythonVisionService
                 return $parsed;
             }
 
-            // Final fallback to original OCR service
-            $result = $this->runPythonScript('ocr_service.py', [$imageData]);
-            $parsed = json_decode($result, true);
-
-            if ($parsed && isset($parsed['success'])) {
-                Log::info('Original OCR successful', [
-                    'confidence' => $parsed['avg_confidence'],
-                    'text_length' => strlen($parsed['text'])
-                ]);
-                return $parsed;
-            }
-
             Log::error('All OCR services failed');
             return [
                 'success' => false,
@@ -74,9 +54,8 @@ class PythonVisionService
                 'words' => [],
                 'avg_confidence' => 0
             ];
-
         } catch (\Exception $e) {
-            Log::error('OCR Service Error', ['error' => $e->getMessage()]);
+            Log::error('OCR extraction error: ' . $e->getMessage());
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -259,15 +238,16 @@ class PythonVisionService
         $command = array_merge([$this->pythonPath, $scriptPath], $args);
 
         // Run the process
-        $process = Process::run($command);
+        $process = new Process($command);
+        $process->run();
 
-        if (!$process->successful()) {
-            $errorOutput = $process->errorOutput();
-            $output = $process->output();
+        if (!$process->isSuccessful()) {
+            $errorOutput = $process->getErrorOutput();
+            $output = $process->getOutput();
             throw new \Exception("Python script failed: $errorOutput\nOutput: $output");
         }
 
-        return $process->output();
+        return $process->getOutput();
     }
 
     /**
@@ -276,9 +256,11 @@ class PythonVisionService
     public function isAvailable(): bool
     {
         try {
-            $process = Process::run([$this->pythonPath, '--version']);
-            return $process->successful();
+            $process = new Process([$this->pythonPath, '--version']);
+            $process->run();
+            return $process->isSuccessful();
         } catch (\Exception $e) {
+            Log::error('Python not available: ' . $e->getMessage());
             return false;
         }
     }
@@ -293,12 +275,13 @@ class PythonVisionService
 
         foreach ($packages as $package) {
             try {
-                $process = Process::run([
+                $process = new Process([
                     $this->pythonPath,
                     '-c',
                     "import {$package}; print('OK')"
                 ]);
-                $results[$package] = $process->successful() && str_contains($process->output(), 'OK');
+                $process->run();
+                $results[$package] = $process->isSuccessful() && str_contains($process->getOutput(), 'OK');
             } catch (\Exception $e) {
                 $results[$package] = false;
             }

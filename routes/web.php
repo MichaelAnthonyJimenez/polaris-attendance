@@ -63,6 +63,7 @@ Route::middleware('auth')->group(function () {
     Route::view('/selfie-with-id', 'selfie-with-id')->name('verification.selfie');
     Route::view('/upload-id-files', 'upload-id-files')->name('verification.upload');
     Route::view('/upload-id-simple', 'upload-id-simple')->name('verification.upload-simple');
+    Route::view('/verification/id-confirmation', 'id-confirmation')->name('verification.id-confirmation');
     Route::post('/driver-verification', [DriverVerificationSubmissionController::class, 'store'])->name('driver-verification.store');
     Route::post('/api/ocr-process', function (Request $request) {
         try {

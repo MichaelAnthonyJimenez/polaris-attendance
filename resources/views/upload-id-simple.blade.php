@@ -229,16 +229,22 @@
         }
     });
 
-    // Submit button event listener - show confirmation before actual submission
+    // Submit button event listener - redirect to confirmation page
     uploadSubmitBtn?.addEventListener('click', async (e) => {
         e.preventDefault(); // Prevent actual form submission
 
-        // Show confirmation dialog with OCR processing
-        confirmationSection.classList.remove('hidden');
-
         // Process OCR for uploaded file
         if (inputs.front.value) {
-            processOcrConfirmation(inputs.front.value);
+            const ocrResult = await processIdConfirmation(inputs.front.value);
+
+            // Redirect to confirmation page with data
+            const params = new URLSearchParams({
+                id_type: idTypeSelect?.options[idTypeSelect.selectedIndex]?.text || 'Unknown',
+                extracted_text: ocrResult.text || 'No text extracted',
+                front_image: inputs.front.value
+            });
+
+            window.location.href = '{{ route("verification.id-confirmation") }}?' + params.toString();
         }
     });
 

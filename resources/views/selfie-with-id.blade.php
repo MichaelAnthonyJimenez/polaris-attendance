@@ -7,7 +7,7 @@
     id="idvShell"
     class="fixed inset-0 z-[100] flex flex-col bg-black text-white"
 >
-    <form id="idVerificationForm" method="POST" action="{{ route('driver-verification.store') }}" class="flex flex-1 flex-col min-h-0">
+    <form id="selfieWithIdForm" method="POST" action="{{ route('selfie-with-id.store') }}" class="flex flex-1 flex-col min-h-0">
         @csrf
         <input type="hidden" name="verification_method" value="id_only">
         <input type="hidden" name="proof_mode" value="selfie_with_id">
@@ -402,6 +402,76 @@
             setHint('Camera not available.');
         }
     }
+
+    // Screen size capture function
+    window.polarisRequestCameraOnly = async function (videoEl, options) {
+        if (!videoEl) {
+            throw new Error('No video element');
+        }
+        var setHint =
+            options && typeof options.setHint === 'function'
+                ? options.setHint
+                : function () {};
+
+        var gum =
+            navigator.mediaDevices &&
+            typeof navigator.mediaDevices.getUserMedia === 'function'
+                ? navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices)
+                : null;
+
+        if (!gum && typeof navigator.webkitGetUserMedia === 'function') {
+            gum = function (constraints) {
+                return new Promise(function (resolve, reject) {
+                    navigator.webkitGetUserMedia(constraints, resolve, reject);
+                });
+            };
+        }
+
+        if (!gum) {
+            setHint('Camera is not supported in this browser.');
+            throw new Error('getUserMedia not available');
+        }
+
+        try {
+            setHint('Opening camera…');
+            var constraints = {
+                video: {
+                    facingMode: cameraFacingMode,
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            };
+
+            var stream = await gum(constraints);
+            videoEl.srcObject = stream;
+
+            // Hide permission gate when successful
+            const permissionGate = document.getElementById('idvPermissionGate');
+            if (permissionGate) {
+                permissionGate.classList.add('hidden');
+            }
+
+            return stream;
+        } catch (error) {
+            console.error('Camera error:', error);
+            captureBtn.disabled = true;
+
+            // Show permission gate when access is denied
+            const permissionGate = document.getElementById('idvPermissionGate');
+            if (permissionGate) {
+                permissionGate.classList.remove('hidden');
+            }
+
+            // Update permission text to match facial verification
+            const permissionText = document.getElementById('idvPermissionText');
+            if (permissionText) {
+                permissionText.innerHTML = 'We could not use the camera. Allow camera access in your browser settings, or tap below to try again.';
+            }
+
+            setHint('Camera not available.');
+            throw error;
+        }
+    };
 
     function stopCamera() {
         if (stream) {

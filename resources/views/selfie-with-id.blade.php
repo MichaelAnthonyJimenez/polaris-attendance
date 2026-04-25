@@ -153,7 +153,7 @@
         </div>
 
         <footer
-            class="shrink-0 flex flex-col items-center gap-4 px-4 pt-6 pb-[max(5rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black via-black/95 to-transparent"
+            class="shrink-0 flex flex-col items-center gap-4 px-4 pt-6 pb-[max(8rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black via-black/95 to-transparent"
             style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right));"
         >
             <div class="w-full max-w-md text-center">
@@ -639,6 +639,9 @@
     // Initialize
     syncStepUi();
     refreshSubmit();
+
+    // Start camera automatically when page loads
+    startCamera();
 })();
 </script>
 @endsection

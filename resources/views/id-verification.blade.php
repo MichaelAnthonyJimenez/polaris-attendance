@@ -765,34 +765,46 @@ if (selfieNoIdBtn) {
     });
 
     gateSelfieBtn?.addEventListener('click', () => {
-        try {
-            console.log('Selfie with ID button clicked');
+        console.log('Selfie with ID button clicked');
+        console.log('Current proofMode before:', proofMode);
+        console.log('setProofMode function exists:', typeof setProofMode);
+
+        if (typeof setProofMode === 'function') {
             setProofMode('selfie_with_id');
+            console.log('Proof mode set to:', proofMode);
+
             // Ensure camera starts after setting proof mode
             setTimeout(() => {
+                console.log('Timeout triggered, proofMode:', proofMode);
                 if (proofMode === 'selfie_with_id') {
+                    console.log('Starting camera...');
                     startCamera();
                 }
             }, 100);
-        } catch (error) {
-            console.error('Selfie with ID button error:', error);
-            alert('Error starting selfie verification. Please try again.');
+        } else {
+            console.error('setProofMode function not found');
         }
     });
     gateUploadBtn?.addEventListener('click', () => {
-        try {
-            console.log('Upload ID files button clicked');
+        console.log('Upload ID files button clicked');
+        console.log('Current proofMode before:', proofMode);
+        console.log('setProofMode function exists:', typeof setProofMode);
+
+        if (typeof setProofMode === 'function') {
             setProofMode('upload_file');
+            console.log('Proof mode set to:', proofMode);
+
             // Ensure upload interface is visible
             setTimeout(() => {
+                console.log('Upload timeout triggered, proofMode:', proofMode);
                 if (proofMode === 'upload_file') {
+                    console.log('Hiding permission and stopping camera...');
                     hidePermission();
                     stopCamera();
                 }
             }, 100);
-        } catch (error) {
-            console.error('Upload ID files button error:', error);
-            alert('Error opening upload interface. Please try again.');
+        } else {
+            console.error('setProofMode function not found');
         }
     });
 

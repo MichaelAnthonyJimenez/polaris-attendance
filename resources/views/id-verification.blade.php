@@ -8,7 +8,7 @@
     class="fixed inset-0 z-[2147483647] flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-white"
     style="position: fixed; top: 0; right: 0; bottom: 0; left: 0; width: 100vw; height: 100vh;"
 >
-    <form method="POST" action="{{ route('driver-verification.store') }}" id="idVerificationForm" class="relative flex flex-1 flex-col min-h-0">
+    <form method="POST" action="{{ route('driver-verification.store') }}" id="idVerificationForm" enctype="multipart/form-data" class="relative flex flex-1 flex-col min-h-0">
         @csrf
         <input type="hidden" name="verification_method" value="id_only">
         <input type="hidden" name="proof_mode" id="idv_proof_mode" value="">

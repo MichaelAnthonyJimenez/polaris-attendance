@@ -15,7 +15,10 @@ class DashboardController extends Controller
 {
     public function __invoke(): View
     {
-        $today = Carbon::today();
+        $appTz = (string) config('app.timezone', 'UTC');
+        $now = Carbon::now($appTz);
+        $today = $now->copy()->startOfDay();
+        $todayEnd = $now->copy()->endOfDay();
         $role = is_string(Auth::user()?->role) ? mb_strtolower(trim((string) Auth::user()?->role)) : '';
 
         $driverReminderClient = null;
@@ -37,12 +40,12 @@ class DashboardController extends Controller
 
         $driverCount = $driverFilterId ? 1 : User::where('role', 'driver')->count();
 
-        $todayCheckIns = Attendance::whereDate('captured_at', $today)
+        $todayCheckIns = Attendance::whereBetween('captured_at', [$today, $todayEnd])
             ->where('type', 'check_in')
             ->when($driverFilterId, fn ($q) => $q->where('driver_id', $driverFilterId))
             ->count();
 
-        $todayCheckOuts = Attendance::whereDate('captured_at', $today)
+        $todayCheckOuts = Attendance::whereBetween('captured_at', [$today, $todayEnd])
             ->where('type', 'check_out')
             ->when($driverFilterId, fn ($q) => $q->where('driver_id', $driverFilterId))
             ->count();
@@ -69,13 +72,13 @@ class DashboardController extends Controller
 
         if ($driverFilterId) {
             $todayCheckIn = Attendance::where('driver_id', $driverFilterId)
-                ->whereDate('captured_at', $today)
+                ->whereBetween('captured_at', [$today, $todayEnd])
                 ->where('type', 'check_in')
                 ->latest('captured_at')
                 ->first();
 
             $todayCheckOut = Attendance::where('driver_id', $driverFilterId)
-                ->whereDate('captured_at', $today)
+                ->whereBetween('captured_at', [$today, $todayEnd])
                 ->where('type', 'check_out')
                 ->latest('captured_at')
                 ->first();
@@ -101,8 +104,8 @@ class DashboardController extends Controller
                 ->limit(5)
                 ->get();
 
-            $monthStart = Carbon::today()->startOfMonth();
-            $monthEnd = Carbon::today()->endOfMonth();
+            $monthStart = $now->copy()->startOfMonth();
+            $monthEnd = $now->copy()->endOfMonth();
             $monthRows = Attendance::where('driver_id', $driverFilterId)
                 ->whereBetween('captured_at', [$monthStart, $monthEnd])
                 ->get();
@@ -135,16 +138,16 @@ class DashboardController extends Controller
                 'recentActivity' => $driverRecentActivity,
                 'history' => $historyRows->map(fn ($row) => [
                     'type' => $row->type,
-                    'captured_at' => $row->captured_at?->toIso8601String(),
-                    'captured_label' => $row->captured_at?->format('M d, Y h:i A'),
+                    'captured_at' => $row->captured_at?->copy()->timezone($appTz)->toIso8601String(),
+                    'captured_label' => $row->captured_at?->copy()->timezone($appTz)->format('M d, Y h:i A'),
                     'face_confidence' => $row->face_confidence,
                     'liveness_score' => $row->liveness_score,
                     'device_id' => $row->device_id,
                 ])->values()->all(),
                 'calendar' => [
-                    'monthName' => Carbon::today()->format('F Y'),
-                    'daysInMonth' => Carbon::today()->daysInMonth,
-                    'firstDayOfWeek' => Carbon::today()->startOfMonth()->dayOfWeek,
+                    'monthName' => $now->copy()->format('F Y'),
+                    'daysInMonth' => $now->copy()->daysInMonth,
+                    'firstDayOfWeek' => $now->copy()->startOfMonth()->dayOfWeek,
                     'days' => $calendarDays,
                 ],
             ];
@@ -174,7 +177,7 @@ class DashboardController extends Controller
             // Last 7 days attendance trends
             $last7Days = [];
             for ($i = 6; $i >= 0; $i--) {
-                $date = Carbon::today()->subDays($i);
+                $date = $now->copy()->subDays($i);
                 $last7Days[] = $date->format('Y-m-d');
             }
 
@@ -183,7 +186,7 @@ class DashboardController extends Controller
                     DB::raw('COUNT(CASE WHEN type = "check_in" THEN 1 END) as check_ins'),
                     DB::raw('COUNT(CASE WHEN type = "check_out" THEN 1 END) as check_outs')
                 )
-                ->whereBetween('captured_at', [Carbon::today()->subDays(6)->startOfDay(), Carbon::today()->endOfDay()])
+                ->whereBetween('captured_at', [$now->copy()->subDays(6)->startOfDay(), $now->copy()->endOfDay()])
                 ->groupBy(DB::raw('DATE(captured_at)'))
                 ->orderBy('date')
                 ->get()
@@ -207,7 +210,7 @@ class DashboardController extends Controller
                     DB::raw('COUNT(*) as attendance_count')
                 )
                 ->join('users', 'attendances.driver_id', '=', 'users.id')
-                ->where('captured_at', '>=', Carbon::today()->subDays(30))
+                ->where('captured_at', '>=', $now->copy()->subDays(30)->startOfDay())
                 ->groupBy('driver_id', 'users.name')
                 ->orderByDesc('attendance_count')
                 ->limit(5)
@@ -217,16 +220,16 @@ class DashboardController extends Controller
             $driverCounts = $topDrivers->pluck('attendance_count')->toArray();
 
             // This week vs last week comparison
-            $thisWeekStart = Carbon::today()->startOfWeek();
-            $thisWeekEnd = Carbon::today()->endOfWeek();
-            $lastWeekStart = Carbon::today()->subWeek()->startOfWeek();
-            $lastWeekEnd = Carbon::today()->subWeek()->endOfWeek();
+            $thisWeekStart = $now->copy()->startOfWeek();
+            $thisWeekEnd = $now->copy()->endOfWeek();
+            $lastWeekStart = $now->copy()->subWeek()->startOfWeek();
+            $lastWeekEnd = $now->copy()->subWeek()->endOfWeek();
 
             $thisWeekTotal = Attendance::whereBetween('captured_at', [$thisWeekStart, $thisWeekEnd])->count();
             $lastWeekTotal = Attendance::whereBetween('captured_at', [$lastWeekStart, $lastWeekEnd])->count();
 
             // Hourly distribution for today (process in PHP for database compatibility)
-            $todayAttendances = Attendance::whereDate('captured_at', $today)->get();
+            $todayAttendances = Attendance::whereBetween('captured_at', [$today, $todayEnd])->get();
 
             $hourlyCheckIns = array_fill(0, 24, 0);
             $hourlyCheckOuts = array_fill(0, 24, 0);
@@ -246,14 +249,14 @@ class DashboardController extends Controller
             }
 
             // Status counts: Present / Late / Absent for Today, This Week and This Month
-            $presentToday = Attendance::whereDate('captured_at', $today)
+            $presentToday = Attendance::whereBetween('captured_at', [$today, $todayEnd])
                 ->where('type', 'check_in')
                 ->when($driverFilterId, fn ($q) => $q->where('driver_id', $driverFilterId))
                 ->get()
                 ->filter(fn ($a) => $a->status === 'Present')
                 ->count();
 
-            $lateToday = Attendance::whereDate('captured_at', $today)
+            $lateToday = Attendance::whereBetween('captured_at', [$today, $todayEnd])
                 ->where('type', 'check_in')
                 ->when($driverFilterId, fn ($q) => $q->where('driver_id', $driverFilterId))
                 ->get()
@@ -263,7 +266,7 @@ class DashboardController extends Controller
             $absentToday = User::where('role', 'driver')->when($driverFilterId, fn ($q) => $q->where('id', $driverFilterId))
                 ->where('active', true)
                 ->where('created_at', '<', $today->copy()->startOfDay())
-                ->whereDoesntHave('attendances', fn ($q) => $q->whereDate('captured_at', $today)->where('type', 'check_in'))
+                ->whereDoesntHave('attendances', fn ($q) => $q->whereBetween('captured_at', [$today, $todayEnd])->where('type', 'check_in'))
                 ->count();
 
             $presentWeek = Attendance::whereBetween('captured_at', [$thisWeekStart, $thisWeekEnd])
@@ -286,8 +289,8 @@ class DashboardController extends Controller
                 ->whereDoesntHave('attendances', fn ($q) => $q->whereBetween('captured_at', [$thisWeekStart, $thisWeekEnd])->where('type', 'check_in'))
                 ->count();
 
-            $monthStart = Carbon::today()->startOfMonth();
-            $monthEnd = Carbon::today()->endOfMonth();
+            $monthStart = $now->copy()->startOfMonth();
+            $monthEnd = $now->copy()->endOfMonth();
 
             $presentMonth = Attendance::whereBetween('captured_at', [$monthStart, $monthEnd])
                 ->where('type', 'check_in')
@@ -358,7 +361,7 @@ class DashboardController extends Controller
                     ->where('active', true)
                     ->where('created_at', '<', $date->copy()->startOfDay())
                     ->count();
-                $dayCheckIns = Attendance::whereDate('captured_at', $date)
+                $dayCheckIns = Attendance::whereBetween('captured_at', [$date->copy()->startOfDay(), $date->copy()->endOfDay()])
                     ->where('type', 'check_in')
                     ->get();
                 $present = $dayCheckIns->filter(fn ($a) => $a->status === 'Present')->count();
@@ -405,6 +408,7 @@ class DashboardController extends Controller
             'driverDashboard' => $driverDashboard,
             'driverReminderClient' => $driverReminderClient,
             'driverLocationSharingEnabled' => (bool) (Auth::user()?->location_sharing_enabled ?? false),
+            'adminCalendarDate' => $now,
         ]);
     }
 }

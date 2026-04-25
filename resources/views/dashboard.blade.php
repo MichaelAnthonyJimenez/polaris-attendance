@@ -25,7 +25,7 @@
 
     @if($role === 'admin')
     @php
-        $calendarDate = now();
+        $calendarDate = $adminCalendarDate ?? now();
         $monthStart = $calendarDate->copy()->startOfMonth();
         $daysInMonth = (int) $monthStart->daysInMonth;
         $firstDayOfWeek = (int) $monthStart->dayOfWeek;

@@ -34,7 +34,7 @@
             </a>
             <div class="flex-1 min-w-0">
                 <p class="text-sm font-semibold text-white truncate">Selfie with ID</p>
-                <p id="idvHint" class="text-xs text-slate-400 truncate mt-0.5">Position your ID and face in the frame.</p>
+                <p id="idvHint" class="text-xs text-slate-400 truncate mt-0.5">Position your ID card in the frame.</p>
             </div>
         </header>
 
@@ -45,14 +45,14 @@
                     <video id="idvVideo" class="absolute inset-0 w-full h-full object-cover" autoplay muted playsinline></video>
                     <img id="idvPreviewImg" class="absolute inset-0 w-full h-full object-cover hidden" alt="Captured">
                     <canvas id="idvCanvas" class="hidden"></canvas>
-                    
+
                     {{-- Guide overlay --}}
                     <div id="idvGuide" class="absolute inset-0 pointer-events-none">
                         <svg class="absolute inset-0 w-full h-full" viewBox="0 0 100 75" preserveAspectRatio="none">
                             <!-- ID card frame -->
                             <rect x="10" y="5" width="35" height="22" fill="none" stroke="rgba(59, 130, 246, 0.5)" stroke-width="0.5" stroke-dasharray="2 1"/>
                             <text x="27.5" y="3" fill="rgba(59, 130, 246, 0.8)" font-size="2" text-anchor="middle" font-weight="600">ID CARD</text>
-                            
+
                             <!-- Face frame -->
                             <rect x="55" y="20" width="35" height="45" fill="none" stroke="rgba(34, 197, 94, 0.5)" stroke-width="0.5" stroke-dasharray="2 1"/>
                             <text x="72.5" y="18" fill="rgba(34, 197, 94, 0.8)" font-size="2" text-anchor="middle" font-weight="600">FACE</text>
@@ -68,11 +68,11 @@
                         </svg>
                         Capture
                     </button>
-                    
+
                     <button type="button" id="idvRetakeBtn" class="btn-secondary w-full py-3 text-sm hidden">
                         Retake
                     </button>
-                    
+
                     <button type="submit" id="idvSubmit" class="btn-primary w-full py-3 text-sm hidden">
                         Submit verification
                     </button>
@@ -149,7 +149,7 @@
     function refreshSubmit() {
         const hasFront = inputs.front.value && inputs.front.value.length > 0;
         const hasSelfie = inputs.selfie.value && inputs.selfie.value.length > 0;
-        
+
         if (hasFront && hasSelfie) {
             submitBtn.classList.remove('hidden');
             setHint('All photos captured. You can now submit.');
@@ -169,7 +169,7 @@
                     height: { ideal: 960 }
                 }
             };
-            
+
             stream = await navigator.mediaDevices.getUserMedia(constraints);
             video.srcObject = stream;
             setHint('Camera ready. Position your ID in the frame.');
@@ -191,19 +191,19 @@
             setHint('Start the camera first.');
             return;
         }
-        
+
         const ctx = canvas.getContext('2d');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-        
+
         const step = steps[stepIndex];
         if (!step) return;
 
         if (step.key === 'front') inputs.front.value = dataUrl;
         if (step.key === 'selfie') inputs.selfie.value = dataUrl;
-        
+
         refreshSubmit();
 
         if (stepIndex < steps.length - 1) {
@@ -220,7 +220,7 @@
 
     // Event listeners
     captureBtn?.addEventListener('click', () => captureFrame());
-    
+
     retakeBtn?.addEventListener('click', () => {
         previewImg.removeAttribute('src');
         stepIndex = 0;

@@ -237,7 +237,7 @@
                 <p class="mt-2 text-sm text-slate-300">Choose how you want to submit your ID.</p>
                 <div class="mt-6 grid grid-cols-1 gap-3">
                     <a href="{{ route('verification.selfie') }}" class="btn-primary w-full justify-center py-2.5 text-sm inline-flex items-center">Selfie with ID</a>
-                    <a href="{{ route('verification.upload') }}" class="btn-secondary w-full justify-center py-2.5 text-sm inline-flex items-center">Upload ID files</a>
+                    <a href="{{ route('verification.upload-simple') }}" class="btn-secondary w-full justify-center py-2.5 text-sm inline-flex items-center">Upload ID files</a>
                 </div>
             </div>
         </div>

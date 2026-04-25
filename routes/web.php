@@ -63,6 +63,26 @@ Route::middleware('auth')->group(function () {
     Route::view('/upload-id-files', 'upload-id-files')->name('verification.upload');
     Route::view('/upload-id-simple', 'upload-id-simple')->name('verification.upload-simple');
     Route::post('/driver-verification', [DriverVerificationSubmissionController::class, 'store'])->name('driver-verification.store');
+    Route::post('/api/ocr-process', function (Request $request) {
+        try {
+            $imageData = $request->input('image_data');
+
+            if (!$imageData) {
+                return response()->json(['success' => false, 'error' => 'No image data provided']);
+            }
+
+            // Use PythonVisionService for OCR processing
+            $visionService = app(\App\Services\PythonVisionService::class);
+            $result = $visionService->extractTextFromImage($imageData);
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ]);
+        }
+    })->name('api.ocr.process');
 });
 
 Route::middleware(['auth', 'driver.verified'])->group(function () {

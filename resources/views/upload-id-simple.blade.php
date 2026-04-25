@@ -139,11 +139,27 @@
                 confirmedTypeInput.value = idTypeSelect.options[idTypeSelect.selectedIndex]?.text || 'Unknown';
             }
 
-            // Simulate OCR processing (in real implementation, this would call backend)
-            setTimeout(() => {
-                extractedTextInput.value = 'OCR processing complete. Please review the extracted text and confirm.';
+            // Call backend OCR service
+            const formData = new FormData();
+            formData.append('image_data', imageData);
+
+            const response = await fetch('/api/ocr-process', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                extractedTextInput.value = result.text || 'No text extracted';
                 setHint('OCR processing complete. Please confirm ID information.');
-            }, 2000);
+            } else {
+                extractedTextInput.value = 'OCR processing failed: ' + result.error;
+                setHint('OCR processing failed. You can still submit manually.');
+            }
         } catch (error) {
             console.error('ID confirmation error:', error);
             extractedTextInput.value = 'OCR processing failed. Please verify manually.';

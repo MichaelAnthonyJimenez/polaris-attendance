@@ -263,6 +263,35 @@
     const modeGate = document.getElementById('idvModeGate');
     const proofModeInput = document.getElementById('idv_proof_mode');
     const idTypeSelect = document.getElementById('idv_id_type');
+
+// Add selfie buttons if they exist - with proper error handling
+const selfieWithIdBtn = document.getElementById('idvSelfieWithId');
+const selfieNoIdBtn = document.getElementById('idvSelfieNoId');
+
+// Add event listeners for selfie buttons with error handling
+if (selfieWithIdBtn) {
+    selfieWithIdBtn.addEventListener('click', () => {
+        try {
+            setProofMode('selfie_with_id');
+            startCamera();
+        } catch (error) {
+            console.error('Selfie with ID button error:', error);
+            alert('Error starting camera. Please try again.');
+        }
+    });
+}
+
+if (selfieNoIdBtn) {
+    selfieNoIdBtn.addEventListener('click', () => {
+        try {
+            setProofMode('selfie');
+            startCamera();
+        } catch (error) {
+            console.error('Selfie button error:', error);
+            alert('Error starting camera. Please try again.');
+        }
+    });
+}
     const uploadFrontInput = document.getElementById('idv_upload_front');
     const uploadBackInput = document.getElementById('idv_upload_back');
     const mainCameraBlock = document.getElementById('idvMainCameraBlock');
@@ -652,20 +681,28 @@
     }
 
     function applyLayoutForMode() {
+        console.log('Applying layout for mode:', proofMode);
+
         if (proofMode === 'upload_file') {
+            console.log('Setting up upload file mode');
             if (headerNotUpload) headerNotUpload.forEach((el) => el.classList.add('hidden'));
             headerUpload?.classList.remove('hidden');
             mainCameraBlock?.classList.add('hidden');
             uploadOnlyBlock?.classList.remove('hidden');
             selfieFooter?.classList.add('hidden');
+            console.log('Upload interface should be visible now');
             return;
         }
+
         headerUpload?.classList.add('hidden');
         if (headerNotUpload) headerNotUpload.forEach((el) => el.classList.remove('hidden'));
         uploadOnlyBlock?.classList.add('hidden');
+
         if (proofMode === 'selfie_with_id') {
+            console.log('Setting up selfie with ID mode');
             mainCameraBlock?.classList.remove('hidden');
             selfieFooter?.classList.remove('hidden');
+            console.log('Camera interface should be visible now');
         } else {
             mainCameraBlock?.classList.add('hidden');
             selfieFooter?.classList.add('hidden');
@@ -673,6 +710,7 @@
     }
 
     function setProofMode(nextMode) {
+        console.log('Setting proof mode to:', nextMode);
         proofMode = nextMode;
         if (proofModeInput) proofModeInput.value = proofMode;
         if (modeGate) modeGate.classList.add('hidden');
@@ -692,9 +730,11 @@
         refreshSubmit();
 
         if (proofMode === 'upload_file') {
+            console.log('Hiding permission and stopping camera for upload mode');
             hidePermission();
             stopCamera();
         } else if (proofMode === 'selfie_with_id') {
+            console.log('Setting up camera for selfie with ID mode');
             document.getElementById('idvGuide')?.classList.remove('hidden');
             setMode('live');
             showPermission('We need camera access for ID verification. Please allow camera to continue.');
@@ -725,10 +765,35 @@
     });
 
     gateSelfieBtn?.addEventListener('click', () => {
-        setProofMode('selfie_with_id');
+        try {
+            console.log('Selfie with ID button clicked');
+            setProofMode('selfie_with_id');
+            // Ensure camera starts after setting proof mode
+            setTimeout(() => {
+                if (proofMode === 'selfie_with_id') {
+                    startCamera();
+                }
+            }, 100);
+        } catch (error) {
+            console.error('Selfie with ID button error:', error);
+            alert('Error starting selfie verification. Please try again.');
+        }
     });
     gateUploadBtn?.addEventListener('click', () => {
-        setProofMode('upload_file');
+        try {
+            console.log('Upload ID files button clicked');
+            setProofMode('upload_file');
+            // Ensure upload interface is visible
+            setTimeout(() => {
+                if (proofMode === 'upload_file') {
+                    hidePermission();
+                    stopCamera();
+                }
+            }, 100);
+        } catch (error) {
+            console.error('Upload ID files button error:', error);
+            alert('Error opening upload interface. Please try again.');
+        }
     });
 
     // File upload event listeners

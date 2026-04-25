@@ -150,6 +150,35 @@
                 <input type="file" id="idv_upload_front" name="id_front_file" accept="image/*" class="form-input text-sm mb-4 w-full">
                 <label class="block text-xs text-slate-300 mb-1.5">ID back (optional)</label>
                 <input type="file" id="idv_upload_back" name="id_back_file" accept="image/*" class="form-input text-sm mb-6 w-full">
+
+                <!-- OCR Confirmation Section -->
+                <div id="idvOcrConfirmation" class="hidden mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h3 class="text-lg font-semibold text-blue-900 mb-3">Confirm ID Information</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Extracted Name:</label>
+                            <input type="text" id="idv_confirmed_name" class="form-input text-sm" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Extracted ID Number:</label>
+                            <input type="text" id="idv_confirmed_id_number" class="form-input text-sm" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Extracted Address:</label>
+                            <textarea id="idv_confirmed_address" class="form-input text-sm" rows="2" readonly></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Extracted Birth Date:</label>
+                            <input type="text" id="idv_confirmed_birth_date" class="form-input text-sm" readonly>
+                        </div>
+                    </div>
+                    <div class="flex gap-3 mt-4">
+                        <button type="button" id="idv_confirm_ocr" class="btn-primary flex-1 py-2.5 text-sm">Confirm & Submit</button>
+                        <button type="button" id="idv_retry_ocr" class="btn-secondary flex-1 py-2.5 text-sm">Retry OCR</button>
+                        <button type="button" id="idv_cancel_ocr" class="btn-danger flex-1 py-2.5 text-sm">Cancel</button>
+                    </div>
+                </div>
+
                 <button type="submit" id="idvUploadSubmit" class="btn-primary w-full py-3 text-sm" disabled>Submit verification</button>
             </div>
         </div>
@@ -215,6 +244,8 @@
     </form>
 </div>
 
+<!-- OCR Confirmation Script -->
+<script src="{{ asset('js/optiic-service.js') }}"></script>
 <script>
 (() => {
     const LS_AUTO = 'idv_auto_capture';
@@ -233,6 +264,7 @@
     const proofModeInput = document.getElementById('idv_proof_mode');
     const idTypeSelect = document.getElementById('idv_id_type');
     const uploadFrontInput = document.getElementById('idv_upload_front');
+    const uploadBackInput = document.getElementById('idv_upload_back');
     const mainCameraBlock = document.getElementById('idvMainCameraBlock');
     const uploadOnlyBlock = document.getElementById('idvUploadOnlyBlock');
     const selfieFooter = document.getElementById('idvSelfieFooter');
@@ -255,14 +287,6 @@
     const gridSvg = document.getElementById('idvGridSvg');
     const liveControls = document.getElementById('idvLiveControls');
     const previewControls = document.getElementById('idvPreviewControls');
-
-    const inputs = {
-        front: document.getElementById('id_front_base64'),
-        selfie: document.getElementById('face_selfie_base64'),
-    };
-
-    let stream = null;
-    let mode = 'live';
     let stepIndex = 0;
     let autoCapture = localStorage.getItem(LS_AUTO) === '1';
     let proofMode = '';
@@ -706,7 +730,53 @@
     gateUploadBtn?.addEventListener('click', () => {
         setProofMode('upload_file');
     });
-    uploadFrontInput?.addEventListener('change', refreshSubmit);
+
+    // File upload event listeners
+    uploadFrontInput?.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const imageData = await fileToBase64(file);
+            inputs.front.value = imageData;
+            refreshSubmit();
+
+            // Process OCR for uploaded file
+            if (imageData) {
+                processOcrConfirmation(imageData);
+            }
+        }
+    });
+
+    // Event listeners for OCR confirmation buttons
+    confirmOcrBtn?.addEventListener('click', () => {
+        const imageData = inputs.front.value;
+        if (imageData) {
+            processOcrConfirmation(imageData);
+        }
+    });
+
+    retryOcrBtn?.addEventListener('click', () => {
+        const imageData = inputs.front.value;
+        if (imageData) {
+            processOcrConfirmation(imageData);
+        }
+    });
+
+    cancelOcrBtn?.addEventListener('click', () => {
+        confirmationSection.classList.add('hidden');
+    });
+
+    // Helper function to convert file to base64
+    async function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                resolve(reader.result);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
     enableBtn?.addEventListener('click', () => {
         if (proofMode === 'upload_file') return;
         startCamera();

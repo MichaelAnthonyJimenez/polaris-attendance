@@ -150,7 +150,19 @@ class DriverVerificationSubmissionController extends Controller
             $meta['id_type'] = $proofMode === 'selfie_with_id'
                 ? 'ocr_auto_detect'
                 : (string) ($data['id_type'] ?? 'other');
-            $meta['ocr'] = $this->idOcrService->extractFromPublicPath($idFrontPath);
+
+            // Handle OCR confirmation data if present
+            if ($request->has('idv_confirmed_name')) {
+                $meta['ocr'] = [
+                    'name' => $request->input('idv_confirmed_name'),
+                    'id_number' => $request->input('idv_confirmed_id_number'),
+                    'address' => $request->input('idv_confirmed_address'),
+                    'birth_date' => $request->input('idv_confirmed_birth_date'),
+                    'confirmed' => true
+                ];
+            } else {
+                $meta['ocr'] = $this->idOcrService->extractFromPublicPath($idFrontPath);
+            }
         }
 
         if ($meta !== []) {

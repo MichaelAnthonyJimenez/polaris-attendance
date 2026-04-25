@@ -118,7 +118,8 @@ curl -Uri "http://localhost:8000/api/offline/attendance" `
 - **Driver enrollment** with face templates
 
 ### OCR Processing
-- **EasyOCR integration** for reliable text extraction
+- **Optiic.dev API** for high-performance OCR (primary)
+- **EasyOCR integration** for reliable text extraction (fallback)
 - **Multiple fallback services** for compatibility
 - **ID card information parsing**
 - **Support for multiple image formats** (JPEG, PNG, TIFF, BMP, WEBP)
@@ -172,11 +173,18 @@ Key settings in `.env`:
 - `FACE_RECOGNITION_ENABLED`: Enable/disable face recognition
 - `LIVENESS_DETECTION_ENABLED`: Enable/disable liveness detection
 - `MIN_FACE_CONFIDENCE`: Minimum confidence threshold
+- `OPTIIC_API_KEY`: Optiic.dev API key for high-performance OCR
 
 ### Face Recognition Settings
 - `MIN_FACE_CONFIDENCE`: Default 80%
 - `MIN_LIVENESS_SCORE`: Default 0.7
 - `REQUIRE_PHOTO_ATTENDANCE`: Require photo for attendance
+
+### Optiic.dev OCR Setup
+- **Get API Key**: Register at [Optiic.dev](https://optiic.dev) for API access
+- **Configure**: Add `OPTIIC_API_KEY` to your `.env` file
+- **Priority**: Optiic.dev is used as primary OCR service when configured
+- **Fallbacks**: Automatically falls back to EasyOCR and original OCR services if Optiic.dev fails
 
 ## Troubleshooting
 

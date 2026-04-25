@@ -58,4 +58,10 @@ return [
         'language' => env('OCR_SPACE_LANGUAGE', 'eng'),
     ],
 
+    'optiic' => [
+        'api_key' => env('OPTIIC_API_KEY'),
+        'endpoint' => env('OPTIIC_ENDPOINT', 'https://api.optiic.dev'),
+        'timeout' => env('OPTIIC_TIMEOUT', 30),
+    ],
+
 ];

@@ -25,7 +25,7 @@
                 @if(($user->role ?? null) === 'driver')
                     <p class="text-slate-400 mt-1">Phone: {{ $user->phone ?: 'Not set' }}</p>
                 @endif
-                <p class="mt-1 text-slate-400">Upload a square image for best results. Max 5MB.</p>
+                <p class="mt-1 text-slate-400">Upload a square image for best results. Max 10MB.</p>
             </div>
         </div>
         <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="space-y-5 max-w-2xl">
@@ -51,7 +51,7 @@
             <div>
                 <label class="form-label">Profile Photo</label>
                 <input type="file" name="profile_photo" accept="image/*" class="form-input">
-                <p class="text-xs text-slate-400 mt-1.5">JPG, PNG or GIF. Max 5MB.</p>
+                <p class="text-xs text-slate-400 mt-1.5">JPG, PNG or GIF. Max 10MB.</p>
             </div>
             <button type="submit" class="btn-primary">Update Profile</button>
         </form>

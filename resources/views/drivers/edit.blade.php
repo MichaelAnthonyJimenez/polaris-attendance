@@ -37,14 +37,14 @@
                     @endif
                     <div class="min-w-0 flex-1">
                         <input type="file" name="profile_photo" accept="image/*" class="form-input">
-                        <p class="text-xs text-slate-400 mt-1.5">Shown in driver details. Max 5MB.</p>
+                        <p class="text-xs text-slate-400 mt-1.5">Shown in driver details. Max 10MB.</p>
                     </div>
                 </div>
             </div>
             <div>
                 <label class="form-label">Face Photo (Optional)</label>
                 <input type="file" name="face_image" accept="image/*" class="form-input">
-                <p class="text-xs text-slate-400 mt-1.5">Upload to add another face template; max 5MB.</p>
+                <p class="text-xs text-slate-400 mt-1.5">Upload to add another face template; max 10MB.</p>
             </div>
             <div class="flex items-center">
                 <input type="checkbox" name="active" id="active" value="1" {{ old('active', $driver->active) ? 'checked' : '' }} class="w-4 h-4 rounded border-white/20 bg-white/5 text-blue-500 focus:ring-blue-500/50">

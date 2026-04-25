@@ -8,7 +8,7 @@
     class="fixed inset-0 z-[2147483647] flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-white"
     style="position: fixed; top: 0; right: 0; bottom: 0; left: 0; width: 100vw; height: 100vh;"
 >
-    <form method="POST" action="{{ route('driver-verification.store') }}" id="idVerificationForm" class="flex flex-1 flex-col min-h-0">
+    <form method="POST" action="{{ route('driver-verification.store') }}" id="idVerificationForm" class="relative flex flex-1 flex-col min-h-0">
         @csrf
         <input type="hidden" name="verification_method" value="id_only">
         <input type="hidden" name="proof_mode" id="idv_proof_mode" value="">
@@ -20,7 +20,7 @@
         <input type="hidden" name="geo_accuracy" id="idv_geo_accuracy">
 
         <header
-            class="idv-header-when-not-upload flex shrink-0 items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 bg-gradient-to-b from-slate-900/90 to-transparent border-b border-white/5"
+            class="idv-header-when-not-upload absolute inset-x-0 top-0 z-[30] flex items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 bg-gradient-to-b from-slate-900/90 to-transparent border-b border-white/5"
             style="padding-left: max(0.75rem, env(safe-area-inset-left)); padding-right: max(0.75rem, env(safe-area-inset-right));"
         >
             <a
@@ -150,35 +150,6 @@
                 <input type="file" id="idv_upload_front" name="id_front_file" accept="image/*" class="form-input text-sm mb-4 w-full">
                 <label class="block text-xs text-slate-300 mb-1.5">ID back (optional)</label>
                 <input type="file" id="idv_upload_back" name="id_back_file" accept="image/*" class="form-input text-sm mb-6 w-full">
-
-                <!-- OCR Confirmation Section -->
-                <div id="idvOcrConfirmation" class="hidden mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h3 class="text-lg font-semibold text-blue-900 mb-3">Confirm ID Information</h3>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Extracted Name:</label>
-                            <input type="text" id="idv_confirmed_name" class="form-input text-sm" readonly>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Extracted ID Number:</label>
-                            <input type="text" id="idv_confirmed_id_number" class="form-input text-sm" readonly>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Extracted Address:</label>
-                            <textarea id="idv_confirmed_address" class="form-input text-sm" rows="2" readonly></textarea>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Extracted Birth Date:</label>
-                            <input type="text" id="idv_confirmed_birth_date" class="form-input text-sm" readonly>
-                        </div>
-                    </div>
-                    <div class="flex gap-3 mt-4">
-                        <button type="button" id="idv_confirm_ocr" class="btn-primary flex-1 py-2.5 text-sm">Confirm & Submit</button>
-                        <button type="button" id="idv_retry_ocr" class="btn-secondary flex-1 py-2.5 text-sm">Retry OCR</button>
-                        <button type="button" id="idv_cancel_ocr" class="btn-danger flex-1 py-2.5 text-sm">Cancel</button>
-                    </div>
-                </div>
-
                 <button type="submit" id="idvUploadSubmit" class="btn-primary w-full py-3 text-sm" disabled>Submit verification</button>
             </div>
         </div>
@@ -186,7 +157,7 @@
         {{-- Selfie mode footer: steps + capture row (reverse beside circle) --}}
         <footer
             id="idvSelfieFooter"
-            class="hidden shrink-0 flex flex-col items-center gap-4 px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black via-black/95 to-transparent"
+            class="hidden absolute inset-x-0 bottom-0 z-[30] flex flex-col items-center gap-4 px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black via-black/95 to-transparent"
             style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right));"
         >
             <div class="w-full max-w-md text-center">
@@ -236,19 +207,18 @@
                 <h2 class="text-lg sm:text-xl font-semibold text-white">Select verification mode</h2>
                 <p class="mt-2 text-sm text-slate-300">Choose how you want to submit your ID.</p>
                 <div class="mt-6 grid grid-cols-1 gap-3">
-                    <a href="{{ route('verification.selfie') }}" class="btn-primary w-full justify-center py-2.5 text-sm inline-flex items-center">Selfie with ID</a>
-                    <a href="{{ route('verification.upload-simple') }}" class="btn-secondary w-full justify-center py-2.5 text-sm inline-flex items-center">Upload ID files</a>
+                    <button type="button" id="idvGateSelfie" class="btn-primary w-full justify-center py-2.5 text-sm">Selfie with ID</button>
+                    <button type="button" id="idvGateUpload" class="btn-secondary w-full justify-center py-2.5 text-sm">Upload ID files</button>
                 </div>
             </div>
         </div>
     </form>
 </div>
 
-<!-- OCR Confirmation Script -->
-<script src="{{ asset('js/optiic-service.js') }}"></script>
 <script>
 (() => {
     const LS_AUTO = 'idv_auto_capture';
+    const form = document.getElementById('idVerificationForm');
     const video = document.getElementById('idvVideo');
     const previewImg = document.getElementById('idvPreviewImg');
     const canvas = document.getElementById('idvCanvas');
@@ -258,40 +228,12 @@
     const cameraToggleBtn = document.getElementById('idvCameraToggle');
     const submitBtn = document.getElementById('idvSubmit');
     const uploadSubmitBtn = document.getElementById('idvUploadSubmit');
+    const gateSelfieBtn = document.getElementById('idvGateSelfie');
+    const gateUploadBtn = document.getElementById('idvGateUpload');
     const modeGate = document.getElementById('idvModeGate');
     const proofModeInput = document.getElementById('idv_proof_mode');
     const idTypeSelect = document.getElementById('idv_id_type');
-
-// Add selfie buttons if they exist - with proper error handling
-const selfieWithIdBtn = document.getElementById('idvSelfieWithId');
-const selfieNoIdBtn = document.getElementById('idvSelfieNoId');
-
-// Add event listeners for selfie buttons with error handling
-if (selfieWithIdBtn) {
-    selfieWithIdBtn.addEventListener('click', () => {
-        try {
-            setProofMode('selfie_with_id');
-            startCamera();
-        } catch (error) {
-            console.error('Selfie with ID button error:', error);
-            alert('Error starting camera. Please try again.');
-        }
-    });
-}
-
-if (selfieNoIdBtn) {
-    selfieNoIdBtn.addEventListener('click', () => {
-        try {
-            setProofMode('selfie');
-            startCamera();
-        } catch (error) {
-            console.error('Selfie button error:', error);
-            alert('Error starting camera. Please try again.');
-        }
-    });
-}
     const uploadFrontInput = document.getElementById('idv_upload_front');
-    const uploadBackInput = document.getElementById('idv_upload_back');
     const mainCameraBlock = document.getElementById('idvMainCameraBlock');
     const uploadOnlyBlock = document.getElementById('idvUploadOnlyBlock');
     const selfieFooter = document.getElementById('idvSelfieFooter');
@@ -314,6 +256,14 @@ if (selfieNoIdBtn) {
     const gridSvg = document.getElementById('idvGridSvg');
     const liveControls = document.getElementById('idvLiveControls');
     const previewControls = document.getElementById('idvPreviewControls');
+
+    const inputs = {
+        front: document.getElementById('id_front_base64'),
+        selfie: document.getElementById('face_selfie_base64'),
+    };
+
+    let stream = null;
+    let mode = 'live';
     let stepIndex = 0;
     let autoCapture = localStorage.getItem(LS_AUTO) === '1';
     let proofMode = '';
@@ -679,28 +629,20 @@ if (selfieNoIdBtn) {
     }
 
     function applyLayoutForMode() {
-        console.log('Applying layout for mode:', proofMode);
-
         if (proofMode === 'upload_file') {
-            console.log('Setting up upload file mode');
             if (headerNotUpload) headerNotUpload.forEach((el) => el.classList.add('hidden'));
             headerUpload?.classList.remove('hidden');
             mainCameraBlock?.classList.add('hidden');
             uploadOnlyBlock?.classList.remove('hidden');
             selfieFooter?.classList.add('hidden');
-            console.log('Upload interface should be visible now');
             return;
         }
-
         headerUpload?.classList.add('hidden');
         if (headerNotUpload) headerNotUpload.forEach((el) => el.classList.remove('hidden'));
         uploadOnlyBlock?.classList.add('hidden');
-
         if (proofMode === 'selfie_with_id') {
-            console.log('Setting up selfie with ID mode');
             mainCameraBlock?.classList.remove('hidden');
             selfieFooter?.classList.remove('hidden');
-            console.log('Camera interface should be visible now');
         } else {
             mainCameraBlock?.classList.add('hidden');
             selfieFooter?.classList.add('hidden');
@@ -708,7 +650,6 @@ if (selfieNoIdBtn) {
     }
 
     function setProofMode(nextMode) {
-        console.log('Setting proof mode to:', nextMode);
         proofMode = nextMode;
         if (proofModeInput) proofModeInput.value = proofMode;
         if (modeGate) modeGate.classList.add('hidden');
@@ -728,11 +669,9 @@ if (selfieNoIdBtn) {
         refreshSubmit();
 
         if (proofMode === 'upload_file') {
-            console.log('Hiding permission and stopping camera for upload mode');
             hidePermission();
             stopCamera();
         } else if (proofMode === 'selfie_with_id') {
-            console.log('Setting up camera for selfie with ID mode');
             document.getElementById('idvGuide')?.classList.remove('hidden');
             setMode('live');
             showPermission('We need camera access for ID verification. Please allow camera to continue.');
@@ -762,72 +701,23 @@ if (selfieNoIdBtn) {
         }
     });
 
-    // Gate buttons are now actual links, no JavaScript event listeners needed
-
-    // File upload event listeners
-    uploadFrontInput?.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const imageData = await fileToBase64(file);
-            inputs.front.value = imageData;
-            refreshSubmit();
-
-            // Show confirmation dialog with OCR processing
-            confirmationSection.classList.remove('hidden');
-            setHint('Processing OCR... Please wait.');
-
-            // Show loading state in confirmation inputs
-            confirmedNameInput.value = 'Processing...';
-            confirmedIdNumberInput.value = 'Please wait...';
-            confirmedAddressInput.value = 'Processing...';
-            confirmedBirthDateInput.value = 'Please wait...';
-
-            // Process OCR for uploaded file
-            if (imageData) {
-                processOcrConfirmation(imageData);
-            } else {
-                // If no image data, hide confirmation after a short delay
-                setTimeout(() => {
-                    confirmationSection.classList.add('hidden');
-                }, 2000);
-            }
-        }
+    gateSelfieBtn?.addEventListener('click', () => {
+        setProofMode('selfie_with_id');
     });
-
-    // Event listeners for OCR confirmation buttons
-    confirmOcrBtn?.addEventListener('click', () => {
-        const imageData = inputs.front.value;
-        if (imageData) {
-            processOcrConfirmation(imageData);
-        }
+    gateUploadBtn?.addEventListener('click', () => {
+        setProofMode('upload_file');
     });
-
-    retryOcrBtn?.addEventListener('click', () => {
-        const imageData = inputs.front.value;
-        if (imageData) {
-            processOcrConfirmation(imageData);
-        }
-    });
-
-    cancelOcrBtn?.addEventListener('click', () => {
-        confirmationSection.classList.add('hidden');
-    });
-
-    // Helper function to convert file to base64
-    async function fileToBase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-                resolve(reader.result);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-    }
-
+    uploadFrontInput?.addEventListener('change', refreshSubmit);
     enableBtn?.addEventListener('click', () => {
         if (proofMode === 'upload_file') return;
         startCamera();
+    });
+
+    form?.addEventListener('submit', (e) => {
+        const ok = window.confirm('Confirm information before submitting verification?');
+        if (!ok) {
+            e.preventDefault();
+        }
     });
 
     syncAutoUi();

@@ -288,19 +288,14 @@ class AttendanceController extends Controller
             }
         }
 
-        if ($faceRecognitionEnabled && $fullPath && $confidence === null) {
-            return back()->withErrors([
-                'face_image' => 'Unknown user, unable to ' . str_replace('_', ' ', (string) $data['type']) . '.',
-            ])->withInput();
-        }
-
         if ($fullPath && $livenessDetectionEnabled) {
             $liveness = $this->livenessService->score($fullPath);
         }
 
+        $strictFaceRejectThreshold = max(25.0, $effectiveMinFaceConfidence - 20.0);
         $isFaceScoreLow = $faceRecognitionEnabled
             && $confidence !== null
-            && $confidence < $effectiveMinFaceConfidence;
+            && $confidence < $strictFaceRejectThreshold;
 
         if ($livenessDetectionEnabled && $liveness !== null && $liveness < $minLivenessScore) {
             return back()->withErrors([
@@ -330,7 +325,7 @@ class AttendanceController extends Controller
             'longitude' => $isDriverSharingEnabled && isset($data['longitude']) ? (float) $data['longitude'] : null,
             'geo_accuracy' => $isDriverSharingEnabled && isset($data['geo_accuracy']) ? (float) $data['geo_accuracy'] : null,
             'face_score_low' => $isFaceScoreLow ? true : null,
-            'face_score_required' => $isFaceScoreLow ? $effectiveMinFaceConfidence : null,
+            'face_score_required' => $isFaceScoreLow ? $strictFaceRejectThreshold : null,
             'face_score_base_required' => $isFaceScoreLow ? $minFaceConfidence : null,
         ], static fn ($v) => $v !== null && $v !== '');
 

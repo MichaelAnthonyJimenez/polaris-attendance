@@ -63,30 +63,11 @@
                 <label class="block text-xs text-slate-300 mb-1.5">ID back (optional)</label>
                 <input type="file" id="idv_upload_back" name="id_back_file" accept="image/*" class="form-input text-sm mb-6 w-full">
 
-                <!-- ID Confirmation Section -->
-                <div id="idvIdConfirmation" class="hidden mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h3 class="text-lg font-semibold text-blue-900 mb-3">Confirm ID Information</h3>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">ID Type:</label>
-                            <input type="text" id="idv_confirmed_type" class="form-input text-sm" readonly>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Extracted Text:</label>
-                            <textarea id="idv_extracted_text" class="form-input text-sm" rows="4" readonly></textarea>
-                        </div>
-                    </div>
-                    <div class="flex gap-3 mt-4">
-                        <button type="button" id="idv_confirm_id" class="btn-primary flex-1 py-2.5 text-sm">Confirm & Continue</button>
-                        <button type="button" id="idv_retry_id" class="btn-secondary flex-1 py-2.5 text-sm">Retry OCR</button>
-                        <button type="button" id="idv_cancel_id" class="btn-danger flex-1 py-2.5 text-sm">Cancel</button>
-                    </div>
                 </div>
-            </div>
         </div>
 
         <footer
-            class="shrink-0 flex flex-col items-center gap-4 px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black via-black/95 to-transparent"
+            class="shrink-0 flex flex-col items-center gap-4 px-4 pt-4 pb-[max(4rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black via-black/95 to-transparent"
             style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right));"
         >
             <div class="w-full max-w-md text-center">
@@ -112,6 +93,26 @@
 
             <div class="w-full max-w-md space-y-3">
                 <button type="submit" id="idvUploadSubmit" class="btn-primary w-full py-3 text-sm" disabled>Submit verification</button>
+            </div>
+
+            <!-- ID Confirmation Section -->
+            <div id="idvIdConfirmation" class="hidden w-full max-w-md p-4 bg-white/5 border border-white/10 rounded-lg backdrop-blur-sm">
+                <h3 class="text-lg font-semibold text-white mb-3">Confirm ID Information</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">ID Type:</label>
+                        <input type="text" id="idv_confirmed_type" class="form-input text-sm bg-black/20 border-white/20 text-white" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Extracted Text:</label>
+                        <textarea id="idv_extracted_text" class="form-input text-sm bg-black/20 border-white/20 text-white" rows="4" readonly></textarea>
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-4">
+                    <button type="button" id="idv_confirm_id" class="btn-primary flex-1 py-2.5 text-sm">Confirm & Continue</button>
+                    <button type="button" id="idv_retry_id" class="btn-secondary flex-1 py-2.5 text-sm">Retry OCR</button>
+                    <button type="button" id="idv_cancel_id" class="btn-danger flex-1 py-2.5 text-sm">Cancel</button>
+                </div>
             </div>
         </footer>
     </form>

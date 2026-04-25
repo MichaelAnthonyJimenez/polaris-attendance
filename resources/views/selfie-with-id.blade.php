@@ -70,7 +70,7 @@
 
             <div
                 id="idvPreviewNav"
-                class="hidden absolute inset-0 z-[6] flex items-center justify-between px-1 sm:px-3 pointer-events-none"
+                class="hidden absolute inset-0 z-[6] flex items-center justify-between px-4 pointer-events-none"
                 aria-hidden="true"
             >
                 <button
@@ -96,37 +96,38 @@
             </div>
 
             {{-- Guideline grid: changes based on step --}}
-            <div id="idvGuide" class="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center p-4" style="z-index: 5;">
+            <div id="idvGuide" class="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center" style="z-index: 5;">
                 <div
-                    class="relative rounded-2xl border-2 overflow-hidden"
-                    style="width: 88%; max-width: 32rem; aspect-ratio: 3 / 4; border-color: rgba(255, 255, 255, 0.72); box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.42);"
+                    id="idvGuideFrame"
+                    class="relative border-4 overflow-hidden"
+                    style="width: 90%; max-width: 400px; height: 250px; border-color: rgba(255, 255, 255, 0.8); box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); background: rgba(0, 0, 0, 0.3);"
                 >
                     <svg
                         id="idvGridSvg"
                         class="absolute inset-0 h-full w-full"
-                        viewBox="0 0 300 400"
+                        viewBox="0 0 400 250"
                         preserveAspectRatio="none"
-                        style="color: rgba(255,255,255,0.52);"
+                        style="color: rgba(255,255,255,0.6);"
                         aria-hidden="true"
                     >
-                        <line x1="100" y1="0" x2="100" y2="400" stroke="currentColor" stroke-width="1.6" />
-                        <line x1="200" y1="0" x2="200" y2="400" stroke="currentColor" stroke-width="1.6" />
-                        <line x1="0" y1="133.3" x2="300" y2="133.3" stroke="currentColor" stroke-width="1.6" />
-                        <line x1="0" y1="266.6" x2="300" y2="266.6" stroke="currentColor" stroke-width="1.6" />
+                        <!-- Default grid lines -->
+                        <line x1="133" y1="0" x2="133" y2="250" stroke="currentColor" stroke-width="2" />
+                        <line x1="266" y1="0" x2="266" y2="250" stroke="currentColor" stroke-width="2" />
+                        <line x1="0" y1="83" x2="400" y2="83" stroke="currentColor" stroke-width="2" />
+                        <line x1="0" y1="166" x2="400" y2="166" stroke="currentColor" stroke-width="2" />
                     </svg>
-                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
-                        <div id="idvIdZone" class="rounded-full border-[3px] border-dashed" style="width: 62%; max-width: 220px; aspect-ratio: 1 / 1; border-color: rgba(255,255,255,0.86); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.32) inset;"></div>
-                    </div>
-                    <div id="idvGridTint" class="absolute inset-0 transition-opacity duration-200" style="opacity: 0; background: rgba(34, 197, 94, 0.22);"></div>
-                    <div class="absolute top-2 right-2 rounded-lg bg-black/45 px-2 py-1 text-[10px] sm:text-xs font-medium text-white/90">
-                        <span class="inline-flex items-center gap-1.5 mr-2">
-                            <span class="inline-block h-2.5 w-2.5 rounded-full bg-green-500"></span> Proper
+                    <div id="idvGridTint" class="absolute inset-0 transition-opacity duration-200" style="opacity: 0; background: rgba(34, 197, 94, 0.3);"></div>
+                    <div class="absolute top-3 right-3 rounded-lg bg-black/60 px-3 py-2 text-xs font-medium text-white/90">
+                        <span class="inline-flex items-center gap-2 mr-3">
+                            <span class="inline-block h-3 w-3 rounded-full bg-green-500"></span> Proper
                         </span>
-                        <span class="inline-flex items-center gap-1.5">
-                            <span class="inline-block h-2.5 w-2.5 rounded-full bg-red-500"></span> Improper
+                        <span class="inline-flex items-center gap-2">
+                            <span class="inline-block h-3 w-3 rounded-full bg-red-500"></span> Improper
                         </span>
                     </div>
-                    <div class="absolute bottom-2 left-0 right-0 text-center px-2"></div>
+                    <div class="absolute bottom-3 left-0 right-0 text-center px-3">
+                        <p id="idvGuideHint" class="text-xs text-white/80 font-medium">Position ID card in frame</p>
+                    </div>
                 </div>
             </div>
 
@@ -139,7 +140,7 @@
                 <div class="rounded-2xl border border-white/10 bg-white/5 p-6 max-w-sm">
                     <p class="text-base font-semibold text-white mb-2">Camera access</p>
                     <p id="idvPermissionText" class="text-sm text-slate-300 mb-5">
-                        We need your camera for verification. When your browser asks, choose <strong class="text-white">Allow</strong> for the camera.
+                        We need your camera for verification. When your browser asks, choose <strong class="text-white">Allow</strong> for camera.
                     </p>
                     <button type="button" id="idvRetryBtn" class="btn-primary w-full justify-center text-sm py-2.5">
                         Enable camera
@@ -174,12 +175,28 @@
             </div>
 
             <div id="idvLiveControls" class="flex flex-col items-center gap-3 w-full max-w-md">
-                <button
-                    type="button"
-                    id="idvCaptureBtn"
-                    class="h-16 w-16 rounded-full border-4 border-white bg-white/20 shadow-lg ring-4 ring-white/30 disabled:opacity-40 disabled:pointer-events-none"
-                    aria-label="Capture photo"
-                ></button>
+                <div class="flex items-center gap-6">
+                    <button
+                        type="button"
+                        id="idvCameraToggleBtn"
+                        class="h-12 w-12 rounded-full border-2 border-white/30 bg-black/50 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/70 disabled:opacity-40 disabled:pointer-events-none"
+                        aria-label="Switch camera"
+                        aria-pressed="true"
+                    >
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                    </button>
+
+                    <button
+                        type="button"
+                        id="idvCaptureBtn"
+                        class="h-20 w-20 rounded-full border-4 border-white bg-white/20 shadow-lg ring-4 ring-white/30 disabled:opacity-40 disabled:pointer-events-none"
+                        aria-label="Capture photo"
+                    ></button>
+
+                    <div class="h-12 w-12"></div>
+                </div>
                 <span class="text-xs text-slate-500">Tap to capture current step</span>
             </div>
 
@@ -212,9 +229,11 @@
     const countdownWrap = document.getElementById('idvCountdown');
     const countdownNumber = document.getElementById('idvCountdownNumber');
     const gridSvg = document.getElementById('idvGridSvg');
-    const idZone = document.getElementById('idvIdZone');
     const gridTint = document.getElementById('idvGridTint');
     const guide = document.getElementById('idvGuide');
+    const guideFrame = document.getElementById('idvGuideFrame');
+    const guideHint = document.getElementById('idvGuideHint');
+    const cameraToggleBtn = document.getElementById('idvCameraToggleBtn');
 
     const inputs = {
         front: document.getElementById('idv_id_front_base64'),
@@ -271,26 +290,30 @@
     }
 
     function updateGuideForStep(step) {
-        if (!guide || !gridSvg) return;
+        if (!guide || !gridSvg || !guideHint) return;
 
         if (step.guide === 'id') {
             // ID card guide - show ID card frame
             gridSvg.innerHTML = `
-                <rect x="50" y="100" width="200" height="120" fill="none" stroke="rgba(59, 130, 246, 0.8)" stroke-width="2" stroke-dasharray="5 3"/>
-                <text x="150" y="90" fill="rgba(59, 130, 246, 0.9)" font-size="16" text-anchor="middle" font-weight="600">ID CARD</text>
+                <rect x="50" y="40" width="300" height="170" fill="none" stroke="rgba(59, 130, 246, 0.8)" stroke-width="3" stroke-dasharray="8 4"/>
+                <text x="200" y="25" fill="rgba(59, 130, 246, 0.9)" font-size="18" text-anchor="middle" font-weight="600">ID CARD</text>
             `;
+            guideHint.textContent = 'Position ID card in frame';
+            if (guideFrame) {
+                guideFrame.style.borderColor = 'rgba(59, 130, 246, 0.8)';
+            }
         } else {
             // Selfie with ID guide - show face + ID
             gridSvg.innerHTML = `
-                <line x1="100" y1="0" x2="100" y2="400" stroke="currentColor" stroke-width="1.6" />
-                <line x1="200" y1="0" x2="200" y2="400" stroke="currentColor" stroke-width="1.6" />
-                <line x1="0" y1="133.3" x2="300" y2="133.3" stroke="currentColor" stroke-width="1.6" />
-                <line x1="0" y1="266.6" x2="300" y2="266.6" stroke="currentColor" stroke-width="1.6" />
-                <circle cx="150" cy="200" r="60" fill="none" stroke="rgba(34, 197, 94, 0.8)" stroke-width="2" stroke-dasharray="5 3"/>
-                <text x="150" y="130" fill="rgba(34, 197, 94, 0.9)" font-size="16" text-anchor="middle" font-weight="600">FACE</text>
-                <rect x="50" y="280" width="80" height="50" fill="none" stroke="rgba(59, 130, 246, 0.8)" stroke-width="2" stroke-dasharray="5 3"/>
-                <text x="90" y="340" fill="rgba(59, 130, 246, 0.9)" font-size="12" text-anchor="middle" font-weight="600">ID</text>
+                <circle cx="200" cy="125" r="50" fill="none" stroke="rgba(34, 197, 94, 0.8)" stroke-width="3" stroke-dasharray="8 4"/>
+                <text x="200" y="65" fill="rgba(34, 197, 94, 0.9)" font-size="18" text-anchor="middle" font-weight="600">FACE</text>
+                <rect x="80" y="180" width="120" height="50" fill="none" stroke="rgba(59, 130, 246, 0.8)" stroke-width="3" stroke-dasharray="8 4"/>
+                <text x="140" y="210" fill="rgba(59, 130, 246, 0.9)" font-size="14" text-anchor="middle" font-weight="600">ID</text>
             `;
+            guideHint.textContent = 'Hold ID card and face in frame';
+            if (guideFrame) {
+                guideFrame.style.borderColor = 'rgba(34, 197, 94, 0.8)';
+            }
         }
     }
 
@@ -503,9 +526,17 @@
         syncAutoUi();
     });
 
+    cameraToggleBtn?.addEventListener('click', async () => {
+        cameraFacingMode = cameraFacingMode === 'environment' ? 'user' : 'environment';
+        cameraToggleBtn.setAttribute('aria-pressed', cameraFacingMode === 'environment' ? 'true' : 'false');
+        if (mode === 'live') {
+            await startCamera();
+        }
+    });
+
     // Initialize
     syncStepUi();
     refreshSubmit();
-});
+})();
 </script>
 @endsection

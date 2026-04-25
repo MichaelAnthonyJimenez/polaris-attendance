@@ -87,7 +87,7 @@
                             }
                             $groupSlug = 'group-' . str_replace([' ', '_'], '-', strtolower($group));
                         @endphp
-                        <a href="#{{ $groupSlug }}"
+                        <a href="#{{ $groupSlug }}" 
                            class="settings-nav-link block px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-white/5 hover:text-white transition-colors"
                            data-group="{{ $groupSlug }}">
                             {{ $groupTitle }}
@@ -185,7 +185,7 @@
                             $groupTitle = ucwords($groupTitle);
                         }
                         $groupSlug = 'group-' . str_replace([' ', '_'], '-', strtolower($group));
-
+                        
                         // Icons for different groups
                         $groupIcons = [
                         'general' => 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
@@ -223,7 +223,7 @@
                             </div>
                             <h2 class="text-xl font-semibold text-white">{{ $groupTitle }}</h2>
                         </div>
-
+                        
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     @foreach($groupSettings as $setting)
                         <div class="space-y-2">
@@ -248,9 +248,9 @@
                                 <div class="flex items-center gap-3">
                                     <input type="hidden" name="settings[{{ $setting->key }}]" value="0">
                                     <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox"
-                                               name="settings[{{ $setting->key }}]"
-                                               value="1"
+                                        <input type="checkbox" 
+                                               name="settings[{{ $setting->key }}]" 
+                                               value="1" 
                                                {{ $setting->value == '1' ? 'checked' : '' }}
                                                class="sr-only peer toggle-checkbox"
                                                data-status-id="status-{{ $setting->key }}">
@@ -261,8 +261,8 @@
                                     </label>
                                 </div>
                             @elseif($setting->type === 'json')
-                                <textarea name="settings[{{ $setting->key }}]"
-                                          class="form-input"
+                                <textarea name="settings[{{ $setting->key }}]" 
+                                          class="form-input" 
                                           rows="3"
                                           placeholder="Enter JSON data">{{ $setting->value }}</textarea>
                             @elseif($setting->key === 'theme' || $setting->key === 'driver_theme')
@@ -382,23 +382,10 @@
                                 </select>
                             @elseif($setting->key === 'backup_frequency' && $setting->group === 'general')
                                 <select name="settings[{{ $setting->key }}]" class="form-select">
-                                    <option value="hourly" {{ $setting->value == 'hourly' ? 'selected' : '' }}>Hourly</option>
                                     <option value="daily" {{ $setting->value == 'daily' ? 'selected' : '' }}>Daily</option>
                                     <option value="weekly" {{ $setting->value == 'weekly' ? 'selected' : '' }}>Weekly</option>
                                     <option value="monthly" {{ $setting->value == 'monthly' ? 'selected' : '' }}>Monthly</option>
-                                    <option value="yearly" {{ $setting->value == 'yearly' ? 'selected' : '' }}>Yearly</option>
                                 </select>
-                            @elseif($setting->key === 'backup_time')
-                                <input type="time"
-                                       name="settings[{{ $setting->key }}]"
-                                       value="{{ strlen((string) $setting->value) >= 5 ? substr($setting->value, 0, 5) : $setting->value }}"
-                                       class="form-input"
-                                       placeholder="HH:MM">
-                            @elseif($setting->key === 'backup_start_date')
-                                <input type="date"
-                                       name="settings[{{ $setting->key }}]"
-                                       value="{{ $setting->value }}"
-                                       class="form-input">
                             @elseif($setting->key === 'date_format' && $setting->group === 'general')
                                 <select name="settings[{{ $setting->key }}]" class="form-select">
                                     <option value="Y-m-d" {{ $setting->value == 'Y-m-d' ? 'selected' : '' }}>YYYY-MM-DD</option>
@@ -414,15 +401,15 @@
                                     <option value="h:i a" {{ $setting->value == 'h:i a' ? 'selected' : '' }}>12-hour (HH:MM am/pm)</option>
                                 </select>
                             @elseif(in_array($setting->key, ['driver_checkin_reminder_time', 'driver_checkout_reminder_time'], true))
-                                <input type="time"
-                                       name="settings[{{ $setting->key }}]"
-                                       value="{{ strlen((string) $setting->value) >= 5 ? substr($setting->value, 0, 5) : $setting->value }}"
+                                <input type="time" 
+                                       name="settings[{{ $setting->key }}]" 
+                                       value="{{ strlen((string) $setting->value) >= 5 ? substr($setting->value, 0, 5) : $setting->value }}" 
                                        class="form-input"
                                        step="60">
                             @else
-                                <input type="{{ $setting->type === 'integer' ? 'number' : 'text' }}"
-                                       name="settings[{{ $setting->key }}]"
-                                       value="{{ $setting->value }}"
+                                <input type="{{ $setting->type === 'integer' ? 'number' : 'text' }}" 
+                                       name="settings[{{ $setting->key }}]" 
+                                       value="{{ $setting->value }}" 
                                        class="form-input"
                                        placeholder="{{ $setting->description }}">
                             @endif
@@ -455,20 +442,20 @@
         const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
         const settingsContent = document.getElementById('settingsContent');
         const gridContainer = sidebar?.parentElement;
-
+        
         // Check localStorage for sidebar state
         const sidebarCollapsed = localStorage.getItem('settingsSidebarCollapsed') === 'true';
-
+        
         // Initialize sidebar state
         function initSidebar() {
             if (sidebarCollapsed && window.innerWidth >= 1024) {
                 collapseSidebar();
             }
         }
-
+        
         function collapseSidebar() {
             if (!sidebar || !gridContainer) return;
-
+            
             sidebar.classList.add('hidden');
             if (settingsContent) {
                 settingsContent.classList.remove('lg:col-span-3');
@@ -479,10 +466,10 @@
             localStorage.setItem('settingsSidebarCollapsed', 'true');
             updateToggleIcon();
         }
-
+        
         function expandSidebar() {
             if (!sidebar || !gridContainer) return;
-
+            
             sidebar.classList.remove('hidden');
             if (settingsContent) {
                 settingsContent.classList.remove('lg:col-span-4');
@@ -493,7 +480,7 @@
             localStorage.setItem('settingsSidebarCollapsed', 'false');
             updateToggleIcon();
         }
-
+        
         function toggleSidebar() {
             if (sidebar?.classList.contains('hidden')) {
                 expandSidebar();
@@ -501,7 +488,7 @@
                 collapseSidebar();
             }
         }
-
+        
         // Mobile toggle button
         if (sidebarToggle) {
             sidebarToggle.addEventListener('click', function() {
@@ -515,7 +502,7 @@
                 }
             });
         }
-
+        
         // Close button (mobile)
         if (sidebarCloseBtn) {
             sidebarCloseBtn.addEventListener('click', function() {
@@ -525,7 +512,7 @@
                 }
             });
         }
-
+        
         // Update toggle button icon on sidebar state change
         function updateToggleIcon() {
             const sidebarToggleDesktop = document.getElementById('sidebarToggleDesktop');
@@ -544,7 +531,7 @@
                 }
             }
         }
-
+        
         // Desktop toggle button
         const sidebarToggleDesktop = document.getElementById('sidebarToggleDesktop');
         if (sidebarToggleDesktop) {
@@ -554,7 +541,7 @@
                 }
             });
         }
-
+        
         // Handle window resize
         window.addEventListener('resize', function() {
             const sidebarToggleDesktop = document.getElementById('sidebarToggleDesktop');
@@ -580,10 +567,10 @@
                 }
             }
         });
-
+        
         // Initialize on load
         initSidebar();
-
+        
         // Ensure toggle button is visible on desktop after a short delay (to ensure DOM is ready)
         setTimeout(function() {
             if (window.innerWidth >= 1024) {
@@ -595,7 +582,7 @@
             }
             updateToggleIcon();
         }, 100);
-
+        
         // Update toggle status text when changed
         document.querySelectorAll('.toggle-checkbox').forEach(function(checkbox) {
             checkbox.addEventListener('change', function() {
@@ -618,7 +605,7 @@
                     // Update active state
                     document.querySelectorAll('.settings-nav-link').forEach(l => l.classList.remove('bg-blue-500/20', 'text-blue-300'));
                     this.classList.add('bg-blue-500/20', 'text-blue-300');
-
+                    
                     // Close sidebar on mobile after clicking
                     if (window.innerWidth < 1024 && sidebar) {
                         sidebar.classList.add('hidden');

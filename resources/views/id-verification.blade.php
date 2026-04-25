@@ -73,54 +73,37 @@
             <canvas id="idvCanvas" class="hidden"></canvas>
 
             <div id="idvGuide" class="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center p-4" style="z-index: 5;">
-                <div class="relative rounded-2xl border-2 overflow-hidden" style="width: 90%; max-width: 36rem; aspect-ratio: 3 / 4; border-color: rgba(255, 255, 255, 0.85); box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);">
+                <div class="relative rounded-2xl border-2 overflow-hidden" style="width: 90%; max-width: 36rem; aspect-ratio: 3 / 4; border-color: rgba(255, 255, 255, 0.78); box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.42);">
                     <svg
                         id="idvGridSvg"
-                        class="absolute inset-0 h-full w-full transition-all duration-300"
+                        class="absolute inset-0 h-full w-full"
                         viewBox="0 0 300 400"
                         preserveAspectRatio="none"
-                        style="color: rgba(255,255,255,0.6);"
+                        style="color: rgba(255,255,255,0.52);"
                         aria-hidden="true"
                     >
-                        <!-- Enhanced grid with corner markers for better ID positioning -->
-                        <line x1="100" y1="0" x2="100" y2="400" stroke="currentColor" stroke-width="1.8" />
-                        <line x1="200" y1="0" x2="200" y2="400" stroke="currentColor" stroke-width="1.8" />
-                        <line x1="0" y1="133.3" x2="300" y2="133.3" stroke="currentColor" stroke-width="1.8" />
-                        <line x1="0" y1="266.6" x2="300" y2="266.6" stroke="currentColor" stroke-width="1.8" />
-                        <!-- Corner markers for ID frame alignment -->
-                        <path d="M 40 60 L 40 80 L 60 80" stroke="currentColor" stroke-width="2.5" fill="none" />
-                        <path d="M 260 60 L 240 60 L 240 80" stroke="currentColor" stroke-width="2.5" fill="none" />
-                        <path d="M 40 340 L 60 340 L 60 320" stroke="currentColor" stroke-width="2.5" fill="none" />
-                        <path d="M 260 340 L 260 320 L 240 320" stroke="currentColor" stroke-width="2.5" fill="none" />
+                        <line x1="100" y1="0" x2="100" y2="400" stroke="currentColor" stroke-width="1.6" />
+                        <line x1="200" y1="0" x2="200" y2="400" stroke="currentColor" stroke-width="1.6" />
+                        <line x1="0" y1="133.3" x2="300" y2="133.3" stroke="currentColor" stroke-width="1.6" />
+                        <line x1="0" y1="266.6" x2="300" y2="266.6" stroke="currentColor" stroke-width="1.6" />
                     </svg>
                     <div id="idvGuideIdFrame" class="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                        <div id="idvIdZone" class="rounded-xl border-[3px] border-dashed transition-all duration-300" style="width: 82%; max-width: 360px; aspect-ratio: 1.6 / 1; border-color: rgba(255,255,255,0.9); box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.4) inset, 0 0 20px rgba(255,255,255,0.1);">
-                            <!-- Inner guide lines for ID card edges -->
-                            <div class="absolute inset-2 border border-white/20 rounded-lg pointer-events-none"></div>
-                            <!-- Center crosshair for precise alignment -->
-                            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8">
-                                <div class="absolute top-1/2 left-0 w-full h-0.5 bg-white/30 -translate-y-1/2"></div>
-                                <div class="absolute top-0 left-1/2 w-0.5 h-full bg-white/30 -translate-x-1/2"></div>
-                            </div>
-                        </div>
+                        <div id="idvIdZone" class="rounded-xl border-[3px] border-dashed" style="width: 82%; max-width: 360px; aspect-ratio: 1.6 / 1; border-color: rgba(255,255,255,0.86); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.32) inset;"></div>
                     </div>
                     <div id="idvGuideFaceFrame" class="absolute inset-0 hidden items-center justify-center" aria-hidden="true">
-                        <div id="idvFaceZone" class="rounded-full border-[3px] border-dashed transition-all duration-300" style="width: 62%; max-width: 220px; aspect-ratio: 1 / 1; border-color: rgba(255,255,255,0.9); box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.4) inset, 0 0 20px rgba(255,255,255,0.1);">
-                            <!-- Face guide oval -->
-                            <div class="absolute inset-3 border-2 border-white/20 rounded-full pointer-events-none"></div>
-                        </div>
+                        <div id="idvFaceZone" class="rounded-full border-[3px] border-dashed" style="width: 62%; max-width: 220px; aspect-ratio: 1 / 1; border-color: rgba(255,255,255,0.86); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.32) inset;"></div>
                     </div>
-                    <div id="idvGridTint" class="absolute inset-0 transition-all duration-300" style="opacity: 0; background: rgba(34, 197, 94, 0.22);"></div>
-                    <div class="absolute top-2 right-2 rounded-lg bg-black/60 backdrop-blur-sm px-3 py-1.5 text-[10px] sm:text-xs font-medium text-white/90 border border-white/10">
-                        <span class="inline-flex items-center gap-1.5 mr-3">
-                            <span class="inline-block h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse"></span> Proper
+                    <div id="idvGridTint" class="absolute inset-0 transition-opacity duration-200" style="opacity: 0; background: rgba(34, 197, 94, 0.22);"></div>
+                    <div class="absolute top-2 right-2 rounded-lg bg-black/45 px-2 py-1 text-[10px] sm:text-xs font-medium text-white/90">
+                        <span class="inline-flex items-center gap-1.5 mr-2">
+                            <span class="inline-block h-2.5 w-2.5 rounded-full bg-green-500"></span> Proper
                         </span>
                         <span class="inline-flex items-center gap-1.5">
-                            <span class="inline-block h-2.5 w-2.5 rounded-full bg-red-500"></span> Adjust
+                            <span class="inline-block h-2.5 w-2.5 rounded-full bg-red-500"></span> Improper
                         </span>
                     </div>
                     <div class="absolute bottom-2 left-0 right-0 text-center px-2">
-                        <span id="idvGuideLabel" class="text-[10px] sm:text-xs font-semibold text-white/95 drop-shadow-lg transition-colors duration-300">Align ID front in the card frame</span>
+                        <span id="idvGuideLabel" class="text-[10px] sm:text-xs font-medium text-white/90 drop-shadow-md">Align ID front in the card frame</span>
                     </div>
                 </div>
             </div>
@@ -303,78 +286,19 @@
         if (!isDetected) {
             if (gridTint) gridTint.style.opacity = '0';
             if (gridSvg) gridSvg.style.color = 'rgba(255,255,255,0.52)';
-            if (zoneEl) {
-                zoneEl.style.borderColor = 'rgba(255,255,255,0.86)';
-                zoneEl.style.boxShadow = '0 0 0 1px rgba(0, 0, 0, 0.32) inset';
-                zoneEl.style.borderWidth = '3px';
-            }
-            // Reset hint to default positioning message
-            if (steps[stepIndex]?.guide === 'id') {
-                setHint('Position your ID card within the frame. Ensure all edges are visible.');
-            }
+            if (zoneEl) zoneEl.style.borderColor = 'rgba(255,255,255,0.86)';
             return;
         }
-
         const good = !!isGood;
-        const guideLabel = document.getElementById('idvGuideLabel');
-
         if (gridTint) {
-            if (good) {
-                gridTint.style.background = 'rgba(34, 197, 94, 0.25)';
-                gridTint.style.opacity = '1';
-            } else {
-                gridTint.style.background = 'rgba(239, 68, 68, 0.20)';
-                gridTint.style.opacity = '1';
-            }
+            gridTint.style.background = good ? 'rgba(34, 197, 94, 0.22)' : 'rgba(239, 68, 68, 0.22)';
+            gridTint.style.opacity = '1';
         }
-
         if (gridSvg) {
-            if (good) {
-                gridSvg.style.color = 'rgba(74, 222, 128, 1)';
-                gridSvg.style.filter = 'drop-shadow(0 0 8px rgba(74, 222, 128, 0.6))';
-                gridSvg.style.strokeWidth = '2';
-            } else {
-                gridSvg.style.color = 'rgba(248, 113, 113, 0.9)';
-                gridSvg.style.filter = 'none';
-                gridSvg.style.strokeWidth = '1.6';
-            }
+            gridSvg.style.color = good ? 'rgba(74, 222, 128, 0.92)' : 'rgba(248, 113, 113, 0.9)';
         }
-
         if (zoneEl) {
-            if (good) {
-                zoneEl.style.borderColor = 'rgba(34, 197, 92, 1)';
-                zoneEl.style.borderWidth = '4px';
-                zoneEl.style.boxShadow = '0 0 0 3px rgba(34, 197, 92, 0.3), 0 0 25px rgba(34, 197, 92, 0.5)';
-                zoneEl.style.transition = 'all 0.3s ease';
-                zoneEl.style.transform = 'scale(1.02)';
-
-                // Update hint for good positioning
-                if (steps[stepIndex]?.guide === 'id') {
-                    setHint('Perfect! ID is properly positioned. Hold steady or capture now.');
-                }
-            } else {
-                zoneEl.style.borderColor = 'rgba(239, 68, 68, 0.95)';
-                zoneEl.style.borderWidth = '3px';
-                zoneEl.style.boxShadow = '0 0 0 2px rgba(239, 68, 68, 0.4), 0 0 15px rgba(239, 68, 68, 0.3)';
-                zoneEl.style.transition = 'all 0.2s ease';
-                zoneEl.style.transform = 'scale(1)';
-
-                // Update hint for poor positioning
-                if (steps[stepIndex]?.guide === 'id') {
-                    setHint('Adjust ID position. Center the card and ensure edges are clearly visible.');
-                }
-            }
-        }
-
-        // Update guide label with specific feedback
-        if (guideLabel) {
-            if (good) {
-                guideLabel.textContent = '✓ ID properly positioned';
-                guideLabel.style.color = 'rgba(74, 222, 128, 1)';
-            } else {
-                guideLabel.textContent = 'Adjust positioning';
-                guideLabel.style.color = 'rgba(248, 113, 113, 1)';
-            }
+            zoneEl.style.borderColor = good ? 'rgba(34, 197, 92, 0.98)' : 'rgba(239, 68, 68, 0.95)';
         }
     }
 
@@ -389,99 +313,61 @@
             const ctx = canvas.getContext('2d', { willReadFrequently: true });
             ctx.drawImage(video, 0, 0, w, h);
             const image = ctx.getImageData(0, 0, w, h).data;
-
-            // Enhanced face detection heuristic for selfie with ID
-            let skinTonePixels = 0;
-            let totalPixels = 0;
-            let centerActivity = 0;
-            let edgeActivity = 0;
-            let facialFeatures = 0;
-
-            // Define optimal face region for selfie with ID (slightly larger for better detection)
-            const faceLeft = Math.floor(w * 0.25);
-            const faceRight = Math.floor(w * 0.75);
-            const faceTop = Math.floor(h * 0.15);
-            const faceBottom = Math.floor(h * 0.7);
-
-            // Define eye region (upper third of face area)
-            const eyeTop = faceTop + Math.floor((faceBottom - faceTop) * 0.2);
-            const eyeBottom = faceTop + Math.floor((faceBottom - faceTop) * 0.4);
-
-            for (let y = 0; y < h; y += 2) {
-                for (let x = 0; x < w; x += 2) {
+            let centerEnergy = 0;
+            let outerEnergy = 0;
+            let centerLum = 0;
+            let centerCount = 0;
+            let outerCount = 0;
+            for (let y = 1; y < h - 1; y += 2) {
+                for (let x = 1; x < w - 1; x += 2) {
                     const idx = (y * w + x) * 4;
-                    const r = image[idx];
-                    const g = image[idx + 1];
-                    const b = image[idx + 2];
-
-                    // Enhanced skin tone detection for various skin tones
-                    const isSkinTone = (
-                        (r > 95 && g > 40 && b > 20 && r > g && r > b && r - g > 15 && r - b > 15) || // Light skin
-                        (r > 80 && g > 30 && b > 20 && r > g && r > b && r - g > 10 && r - b > 10) || // Medium skin
-                        (r > 70 && g > 25 && b > 15 && r > g && r > b && r - g > 8 && r - b > 8) // Dark skin
-                    );
-
-                    if (isSkinTone) {
-                        skinTonePixels++;
-                    }
-
-                    totalPixels++;
-
-                    // Check for facial features in center region
-                    if (x >= faceLeft && x <= faceRight && y >= faceTop && y <= faceBottom) {
-                        const brightness = (r + g + b) / 3;
-
-                        // Eye region detection (darker areas)
-                        if (y >= eyeTop && y <= eyeBottom && brightness < 120 && brightness > 40) {
-                            facialFeatures++;
-                        }
-
-                        // General face area detection (medium brightness)
-                        if (brightness > 80 && brightness < 180) {
-                            centerActivity++;
-                        }
+                    const g = (image[idx] * 0.299) + (image[idx + 1] * 0.587) + (image[idx + 2] * 0.114);
+                    const right = (image[idx + 4] * 0.299) + (image[idx + 5] * 0.587) + (image[idx + 6] * 0.114);
+                    const downIdx = ((y + 1) * w + x) * 4;
+                    const down = (image[downIdx] * 0.299) + (image[downIdx + 1] * 0.587) + (image[downIdx + 2] * 0.114);
+                    const edge = Math.abs(g - right) + Math.abs(g - down);
+                    const inCenter = x > 42 && x < 118 && y > 26 && y < 94;
+                    if (inCenter) {
+                        centerEnergy += edge;
+                        centerLum += g;
+                        centerCount += 1;
                     } else {
-                        // Background should be different from face
-                        const brightness = (r + g + b) / 3;
-                        if (brightness > 60) {
-                            edgeActivity++;
-                        }
+                        outerEnergy += edge;
+                        outerCount += 1;
                     }
                 }
             }
-
-            const skinRatio = totalPixels > 0 ? skinTonePixels / totalPixels : 0;
-            const centerRatio = centerActivity > 0 ? centerActivity / ((faceRight - faceLeft) * (faceBottom - faceTop) / 4) : 0;
-            const edgeRatio = edgeActivity > 0 ? edgeActivity / (totalPixels / 4 - centerActivity) : 0;
-            const featureRatio = facialFeatures > 0 ? facialFeatures / ((faceRight - faceLeft) * (eyeBottom - eyeTop) / 4) : 0;
-
-            // Enhanced detection criteria for selfie with ID
-            const hasSkinTones = skinRatio > 0.12; // Slightly more lenient for various skin tones
-            const hasFaceCenter = centerRatio > 0.25;
-            const hasFacialFeatures = featureRatio > 0.15;
-            const goodFacePosition = centerRatio > edgeRatio * 0.7;
-
-            const detected = hasSkinTones && hasFaceCenter;
-            const good = detected && hasFacialFeatures && goodFacePosition && skinRatio > 0.15 && centerRatio > 0.35;
-
+            const centerAvg = centerCount ? centerEnergy / centerCount : 0;
+            const outerAvg = outerCount ? outerEnergy / outerCount : 0;
+            const lumAvg = centerCount ? centerLum / centerCount : 0;
+            const detected = (centerAvg > 6 || outerAvg > 6) && lumAvg > 35;
+            const edgeBalance = outerAvg > 0 ? (centerAvg / outerAvg) : 1;
+            const good = detected && edgeBalance > 0.82 && edgeBalance < 1.18 && lumAvg > 55 && lumAvg < 210;
             return { detected, good };
         };
 
-        if (detector) {
-            try {
-                const faces = await detector.detectFaces(video);
-                if (faces.length > 0) {
-                    const face = faces[0].boundingBox;
-                    const layout = { xRatio: face.x / video.videoWidth, yRatio: face.y / video.videoHeight, sizeRatio: (face.width * face.height) / (video.videoWidth * video.videoHeight) };
-                    // More lenient positioning for selfie with ID (allow slightly larger faces)
-                    const good = layout.xRatio > 0.25 && layout.xRatio < 0.75 && layout.yRatio > 0.20 && layout.yRatio < 0.70 && layout.sizeRatio > 0.15 && layout.sizeRatio < 0.55;
-                    return { detected: true, good };
-                }
-            } catch (_e) {
-                return heuristic();
-            }
+        if (!detector) return heuristic();
+        try {
+            const faces = await detector.detect(video);
+            if (!faces || !faces.length) return heuristic();
+            const box = faces[0].boundingBox;
+            const layout = (typeof window.polarisVideoFaceLayoutOnDisplay === 'function')
+                ? window.polarisVideoFaceLayoutOnDisplay(video, box)
+                : (function () {
+                    const cx = box.x + (box.width / 2);
+                    const cy = box.y + (box.height / 2);
+                    return {
+                        xRatio: cx / video.videoWidth,
+                        yRatio: cy / video.videoHeight,
+                        sizeRatio: box.width / video.videoWidth,
+                    };
+                })();
+            const { xRatio, yRatio, sizeRatio } = layout;
+            const good = xRatio > 0.33 && xRatio < 0.67 && yRatio > 0.28 && yRatio < 0.63 && sizeRatio > 0.20 && sizeRatio < 0.58;
+            return { detected: true, good };
+        } catch (_e) {
+            return heuristic();
         }
-        return heuristic();
     }
 
     function detectIdStateByHeuristic() {
@@ -493,77 +379,33 @@
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         ctx.drawImage(video, 0, 0, w, h);
         const image = ctx.getImageData(0, 0, w, h).data;
-
-        // Enhanced ID detection with more precise center region
-        // ID frame should be in the center with proper aspect ratio
-        const idFrameLeft = 32;  // ~20% from left
-        const idFrameRight = 128; // ~80% from left
-        const idFrameTop = 24;   // ~20% from top
-        const idFrameBottom = 96; // ~80% from top
-
         let centerEnergy = 0;
         let outerEnergy = 0;
         let centerCount = 0;
         let outerCount = 0;
-        let brightnessVariance = 0;
-        let edgeConsistency = 0;
-
         for (let y = 1; y < h - 1; y += 2) {
             for (let x = 1; x < w - 1; x += 2) {
                 const idx = (y * w + x) * 4;
-                const r = image[idx];
-                const g = image[idx + 1];
-                const b = image[idx + 2];
-                const gray = (r * 0.299) + (g * 0.587) + (b * 0.114);
-
-                const rightIdx = (y * w + x + 2) * 4;
-                const rightGray = (image[rightIdx] * 0.299) + (image[rightIdx + 1] * 0.587) + (image[rightIdx + 2] * 0.114);
-                const downIdx = ((y + 2) * w + x) * 4;
-                const downGray = (image[downIdx] * 0.299) + (image[downIdx + 1] * 0.587) + (image[downIdx + 2] * 0.114);
-
-                const edgeStrength = Math.abs(gray - rightGray) + Math.abs(gray - downGray);
-
-                // Check if pixel is in the ID frame region (more precise)
-                const inIdFrame = x >= idFrameLeft && x <= idFrameRight && y >= idFrameTop && y <= idFrameBottom;
-
-                // Additional check for proper ID card shape (rectangular with edges)
-                const inEdgeZone = (x >= idFrameLeft - 5 && x <= idFrameLeft + 5) ||
-                                  (x >= idFrameRight - 5 && x <= idFrameRight + 5) ||
-                                  (y >= idFrameTop - 5 && y <= idFrameTop + 5) ||
-                                  (y >= idFrameBottom - 5 && y <= idFrameBottom + 5);
-
-                if (inIdFrame) {
-                    centerEnergy += edgeStrength;
+                const g = (image[idx] * 0.299) + (image[idx + 1] * 0.587) + (image[idx + 2] * 0.114);
+                const right = (image[idx + 4] * 0.299) + (image[idx + 5] * 0.587) + (image[idx + 6] * 0.114);
+                const downIdx = ((y + 1) * w + x) * 4;
+                const down = (image[downIdx] * 0.299) + (image[downIdx + 1] * 0.587) + (image[downIdx + 2] * 0.114);
+                const edge = Math.abs(g - right) + Math.abs(g - down);
+                const inCenter = x > 35 && x < 125 && y > 28 && y < 92;
+                if (inCenter) {
+                    centerEnergy += edge;
                     centerCount += 1;
-                    // Check for consistent brightness (typical of ID cards)
-                    if (x > idFrameLeft + 10 && x < idFrameRight - 10 && y > idFrameTop + 10 && y < idFrameBottom - 10) {
-                        brightnessVariance += Math.abs(gray - 128); // Expect mid-range brightness
-                    }
                 } else {
-                    outerEnergy += edgeStrength;
+                    outerEnergy += edge;
                     outerCount += 1;
-                    // Check for strong edges at frame boundaries
-                    if (inEdgeZone && edgeStrength > 15) {
-                        edgeConsistency += 1;
-                    }
                 }
             }
         }
-
         const centerAvg = centerCount ? centerEnergy / centerCount : 0;
         const outerAvg = outerCount ? outerEnergy / outerCount : 0;
-        const brightnessScore = centerCount ? brightnessVariance / centerCount : 0;
-
-        // Enhanced detection criteria
-        const hasEdges = centerAvg > 8 || outerAvg > 8;
+        const detected = centerAvg > 6 || outerAvg > 6;
         const edgeBalance = outerAvg > 0 ? (centerAvg / outerAvg) : 1;
-        const properEdgeRatio = edgeBalance > 0.75 && edgeBalance < 1.4;
-        const goodBrightness = brightnessScore < 50; // Not too dark or too bright
-        const hasFrameEdges = edgeConsistency > 3; // Strong edges at expected frame boundaries
-
-        const detected = hasEdges && (centerAvg > 10 || outerAvg > 10);
-        const good = detected && properEdgeRatio && goodBrightness && hasFrameEdges;
-
+        const good = detected && edgeBalance > 0.84 && edgeBalance < 1.2;
         return { detected, good };
     }
 

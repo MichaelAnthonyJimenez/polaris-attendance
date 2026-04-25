@@ -57,7 +57,9 @@ class ReportsController extends Controller
             'dailyData' => $dailyData,
             'drivers' => User::where('role', 'driver')->where('active', true)->orderBy('name')->get(),
             'filters' => [
-                'driver_id' => $request->input('driver_id'),
+                'date_from' => $dateFrom,
+                'date_to' => $dateTo,
+                'driver_ids' => $driverIds,
                 'period' => $period,
             ],
         ]);
@@ -136,11 +138,9 @@ class ReportsController extends Controller
             default => [$today->copy()->startOfMonth()->format('Y-m-d'), $today->copy()->format('Y-m-d')],
         };
 
-        // Handle new single driver_id field
-        $driverIds = [];
-        if ($request->filled('driver_id')) {
-            $driverId = (int) $request->input('driver_id');
-            $driverIds = $driverId > 0 ? [$driverId] : [];
+        $driverIds = array_values(array_filter(array_map('intval', (array) $request->input('driver_ids', []))));
+        if ($driverIds === [] && $request->filled('driver_id')) {
+            $driverIds = [(int) $request->input('driver_id')];
         }
 
         return [

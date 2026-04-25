@@ -3,8 +3,6 @@
 namespace App\Providers;
 
 use App\Models\Setting;
-use App\Services\DeepFace\DeepFaceRecognitionClient;
-use App\Services\DeepFace\DeepFaceVerificationClient;
 use DateTimeZone;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
@@ -16,19 +14,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(DeepFaceRecognitionClient::class, function () {
-            return new DeepFaceRecognitionClient(
-                rtrim((string) config('services.deepface.base_url', ''), '/'),
-                (string) config('services.deepface.recognition_api_key', ''),
-            );
-        });
-
-        $this->app->singleton(DeepFaceVerificationClient::class, function () {
-            return new DeepFaceVerificationClient(
-                rtrim((string) config('services.deepface.base_url', ''), '/'),
-                (string) config('services.deepface.verification_api_key', ''),
-            );
-        });
+        // DeepFace API services removed - using local Python services instead
     }
 
     /**

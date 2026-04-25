@@ -4,17 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Helpers\AuditLogger;
 use App\Models\Attendance;
-use App\Models\DriverFace;
 use App\Models\User;
 use App\Notifications\AttendanceNotification;
 use App\Services\FaceRecognitionService;
 use App\Services\Location\RouteComplianceService;
 use App\Services\LivenessService;
-use App\Services\PythonVisionService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use App\Mail\DriverAttendanceMail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -31,7 +28,6 @@ class AttendanceController extends Controller
         private FaceRecognitionService $faceService,
         private LivenessService $livenessService,
         private RouteComplianceService $routeComplianceService,
-        private PythonVisionService $pythonVision,
     ) {
     }
 
@@ -284,68 +280,17 @@ class AttendanceController extends Controller
         $effectiveMinFaceConfidence = $this->adaptiveFaceConfidenceThreshold($minFaceConfidence, $fullPath);
 
         if ($fullPath && $faceRecognitionEnabled) {
-            // First, use Python DeepFace service for enhanced face detection and verification
-            $pythonFaceResult = null;
-            if ($this->pythonVision->isAvailable()) {
-                try {
-                    // Convert image to base64 for Python service
-                    $imageData = 'data:image/jpeg;base64,' . base64_encode(file_get_contents($fullPath));
-
-                    // Detect faces first
-                    $detectionResult = $this->pythonVision->detectFaces($imageData, true);
-
-                    if ($detectionResult['success'] && $detectionResult['total_faces'] > 0) {
-                        // Get the latest face template for this driver
-                        $latestFace = \App\Models\DriverFace::where('driver_id', $data['driver_id'])->latest()->first();
-
-                        if ($latestFace && $latestFace->face_image_path && file_exists(storage_path('app/public/' . $latestFace->face_image_path))) {
-                            // Compare with stored face using Python service
-                            $storedFaceData = 'data:image/jpeg;base64,' . base64_encode(file_get_contents(storage_path('app/public/' . $latestFace->face_image_path)));
-                            $verificationResult = $this->pythonVision->verifyFaces($imageData, $storedFaceData, 'VGG-Face');
-
-                            if ($verificationResult['success']) {
-                                $confidence = $verificationResult['confidence'];
-                                $rawConfidence = $verificationResult['confidence'];
-                            }
-                        }
-                    }
-                } catch (\Exception $e) {
-                    \Log::warning('Python face detection failed, falling back to original method', ['error' => $e->getMessage()]);
-                }
-            }
-
-            // Fallback to original method if Python service failed or not available
-            if ($confidence === null) {
-                $confidence = $this->faceService->matchLatestForDriver($data['driver_id'], $fullPath);
-                $rawConfidence = $confidence;
-                // DeepFace-style similarity may come as 0..1; normalize to 0..100 for configured thresholds/UI.
-                if ($confidence !== null && $confidence <= 1) {
-                    $confidence = round($confidence * 100, 2);
-                }
+            $confidence = $this->faceService->matchLatestForDriver($data['driver_id'], $fullPath);
+            $rawConfidence = $confidence;
+            // DeepFace-style similarity may come as 0..1; normalize to 0..100 for configured thresholds/UI.
+            if ($confidence !== null && $confidence <= 1) {
+                $confidence = round($confidence * 100, 2);
             }
         }
 
         if ($faceRecognitionEnabled && $fullPath && $confidence === null) {
-            // Check if driver has any enrolled face before showing unknown user error
-            $hasEnrolledFace = DriverFace::where('driver_id', $data['driver_id'])->exists();
-            if (!$hasEnrolledFace) {
-                \Log::warning('No enrolled face found for driver', ['driver_id' => $data['driver_id']]);
-                return back()->withErrors([
-                    'face_image' => 'No face enrolled. Please complete facial verification first.',
-                ])->withInput();
-            }
-
-            // Try to get the latest enrolled face for debugging
-            $latestFace = DriverFace::where('driver_id', $data['driver_id'])->latest()->first();
-            \Log::warning('Face recognition failed', [
-                'driver_id' => $data['driver_id'],
-                'has_enrolled_face' => $hasEnrolledFace,
-                'latest_face_path' => $latestFace?->face_image_path,
-                'face_template_exists' => !empty($latestFace?->face_template)
-            ]);
-
             return back()->withErrors([
-                'face_image' => 'Face not recognized. Please ensure proper lighting and try again.',
+                'face_image' => 'Unknown user, unable to ' . str_replace('_', ' ', (string) $data['type']) . '.',
             ])->withInput();
         }
 

@@ -26,7 +26,7 @@
                 $manualDataRaw = $verificationRequest->manual_form_data;
                 $manualData = is_array($manualDataRaw)
                     ? $manualDataRaw
-                    : (is_string($manualDataRaw) ? json_decode($manualDataRaw, true) : []);
+                    : (is_string($manualDataRaw) ? (json_decode($manualDataRaw, true) ?? []) : []);
                 $faceSequence = $manualData['face_sequence'] ?? [];
 
                 /**

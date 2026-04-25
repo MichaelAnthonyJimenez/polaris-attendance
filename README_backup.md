@@ -1,0 +1,260 @@
+# Polaris Attendance
+
+Polaris Attendance is a web-based attendance system for drivers/staff. It includes driver identity verification (ID + face), attendance capture (check-in / check-out), offline device uploads, and admin tooling such as reports, audit logs, settings, and live location updates.
+
+## Tech Stack (What runs where)
+- Backend + framework: Laravel (PHP 8.2+, Laravel 12)
+- Frontend: Blade templates + Vite (Tailwind CSS) + JavaScript (Axios, Chart.js)
+- Face recognition service: Python DeepFace server (in `python/deepface/`)
+- Database: configurable SQL database via Laravel Eloquent ORM (default in `.env` is `sqlite`)
+
+## Architecture Overview
+- Web UI routes live in `routes/web.php` and render Blade pages (login, driver verification UI, dashboard, reports, etc.).
+- JSON API routes live in `routes/api.php` and are used by hardware/software clients (offline devices).
+- Face recognition/verification logic can call the separate Python DeepFace service via Laravel services (see `app/Services/FaceRecognitionService.php`).
+
+## Main API (Offline Sync)
+- Endpoint: `POST /api/offline/attendance`
+- Authentication: use a bearer token (`Authorization: Bearer <device_api_token>`) or provide `device_token` in the request body.
+- Request body:
+  - `events` (required, array)
+    - each event:
+      - `driver_id` (required)
+      - `type` (required): `check_in` or `check_out`
+      - `captured_at` (optional date)
+      - `face_confidence` (optional numeric)
+      - `liveness_score` (optional numeric)
+      - `device_ref` (optional string; mapped to the device identifier)
+- Response: returns how many events were stored plus basic device info.
+
+PowerShell example:
+```powershell
+$body = @{
+  events = @(
+    @{
+      driver_id = 1
+      type = "check_in"
+      captured_at = "2026-04-16T10:00:00Z"
+      face_confidence = 0.85
+      liveness_score = 0.92
+      device_ref = "CAM-1"
+    }
+  )
+} | ConvertTo-Json -Depth 5
+
+curl -Uri "http://localhost:8000/api/offline/attendance" `
+  -Method Post `
+  -Headers @{ Authorization = "Bearer YOUR_DEVICE_API_TOKEN" } `
+  -ContentType "application/json" `
+  -Body $body
+```
+
+## How to Run Locally
+### Prerequisites
+- PHP 8.2+
+- Composer
+- Node.js + npm
+- Python 3.8+ (only if you want the DeepFace face recognition service)
+
+### Step-by-step
+1. Configure environment:
+   - Copy `.env.example` to `.env`
+2. Install backend deps:
+   - `composer install`
+   - `php artisan key:generate`
+   - `php artisan migrate --force`
+3. Install frontend deps and run assets:
+   - `npm install`
+   - `npm run dev`
+4. Start the Laravel server:
+   - `php artisan serve`
+5. Start DeepFace (only if needed for verification):
+   - See `python/deepface/README.md`
+   - Default base URL is `http://localhost:8225`
+   - Configure (in `.env`): `DEEPFACE_BASE_URL`, `DEEPFACE_RECOGNITION_API_KEY`, `DEEPFACE_VERIFICATION_API_KEY`
+
+### Handy Composer Scripts
+- `composer setup`: installs deps, generates key, migrates, and builds frontend assets
+- `composer dev`: starts Laravel + queue + Vite concurrently (as defined in `composer.json`)
+
+## Using the App
+- Open the app URL (`APP_URL` / your local `php artisan serve` URL).
+- Log in to access the web UI.
+- Driver access may require completing driver verification (ID + face) depending on your app configuration/middleware.
+
+## Tests
+- `php artisan test`
+
+# Polaris Attendance
+
+Polaris Attendance is a web-based attendance system for drivers/staff. It includes driver identity verification (ID + face), attendance capture (check-in / check-out), offline device uploads, and admin tooling such as reports, audit logs, settings, and live location updates.
+
+## Tech Stack (What runs where)
+- Backend + framework: Laravel (PHP 8.2+, Laravel 12)
+- Frontend: Blade templates + Vite (Tailwind CSS) + JavaScript (Axios, Chart.js)
+- Face recognition service: Python DeepFace server (in `python/deepface/`)
+- Database: configurable SQL database via Laravel Eloquent ORM (default in `.env` is `sqlite`)
+
+## Architecture Overview
+- Web UI routes live in `routes/web.php` and render Blade pages (login, driver verification UI, dashboard, reports, etc.).
+- JSON API routes live in `routes/api.php` and are used by hardware/software clients (offline devices).
+- The face recognition/verification logic can call a separate Python service using the `FaceRecognitionService` (DeepFace templates + similarity checks).
+
+## Main API (Offline Sync)
+- Endpoint: `POST /api/offline/attendance`
+- Authentication: use a bearer token (`Authorization: Bearer <device_api_token>`) or provide `device_token` in the request body.
+- Request body:
+  - `events` (required, array)
+    - each event:
+      - `driver_id` (required)
+      - `type` (required): `check_in` or `check_out`
+      - `captured_at` (optional date)
+      - `face_confidence` (optional numeric)
+      - `liveness_score` (optional numeric)
+      - `device_ref` (optional string; mapped to the device identifier)
+- Response: returns how many events were stored plus basic device info.
+
+Example `curl`:
+```bash
+curl -X POST "http://localhost:8000/api/offline/attendance" ^
+  -H "Authorization: Bearer YOUR_DEVICE_API_TOKEN" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"events\":[{\"driver_id\":1,\"type\":\"check_in\",\"captured_at\":\"2026-04-16T10:00:00Z\",\"face_confidence\":0.85,\"liveness_score\":0.92,\"device_ref\":\"CAM-1\"}]}"
+```
+
+## How to Run Locally
+### Prerequisites
+- PHP 8.2+
+- Composer
+- Node.js + npm
+- Python 3.8+ (only if you want the DeepFace face recognition service)
+
+### Step-by-step
+1. Configure environment:
+   - Copy `.env.example` to `.env`
+2. Install backend deps:
+   - `composer install`
+   - `php artisan key:generate`
+   - `php artisan migrate --force`
+3. Install frontend deps and run assets:
+   - `npm install`
+   - `npm run dev`
+4. Start the Laravel server:
+   - `php artisan serve`
+5. Start DeepFace (only if needed for verification):
+   - See `python/deepface/README.md`
+   - Default base URL is `http://localhost:8225`
+   - Configure (in `.env`): `DEEPFACE_BASE_URL`, `DEEPFACE_RECOGNITION_API_KEY`, `DEEPFACE_VERIFICATION_API_KEY`
+
+### Handy Composer Scripts
+- `composer setup`: installs deps, generates key, migrates, and builds frontend assets
+- `composer dev`: starts Laravel + queue + Vite concurrently (as defined in `composer.json`)
+
+## Using the App
+- Open the app URL (`APP_URL` / your local `php artisan serve` URL).
+- Log in to access the web UI.
+- Driver access may require completing driver verification (ID + face) depending on your app configuration/middleware.
+
+## Tests
+- `php artisan test`
+
+## License
+- The Laravel framework is open-sourced software licensed under the MIT license.
+
+<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+
+<p align="center">
+<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+</p>
+
+## Polaris Attendance
+
+Polaris Attendance is a web-based attendance system for staff/drivers that supports:
+- Driver identity verification (ID + facial verification) before access
+- Capturing attendance (check-in / check-out)
+- Offline device uploads via a JSON API endpoint
+- Admin tooling like reports, audit logs, settings, and live location updates
+
+### Tech Stack
+- Backend + API: [Laravel](https://laravel.com) (PHP 8.2+, Laravel 12)
+- Frontend: Blade templates + Vite (Tailwind CSS) + JavaScript (Axios + Chart.js)
+- Face recognition service: Python DeepFace server (in `python/deepface/`)
+- Database: Laravel Eloquent ORM with a configurable SQL database (default in `.env` is `sqlite`)
+
+### Main API / Integrations
+- Offline sync (devices -> server): `POST /api/offline/attendance`
+  - Authentication: bearer token (`Authorization: Bearer <device_api_token>`) or `device_token` in the request body
+  - Payload: `events[]` with `driver_id`, `type` (`check_in` / `check_out`), and optional `captured_at`, `face_confidence`, `liveness_score`, `device_ref`
+
+### How to Run (Local Development)
+1. Configure environment:
+   - Copy `.env.example` to `.env`
+   - Set `VERIFICATION_API_KEY` and DeepFace vars if you're using face/verification (`DEEPFACE_BASE_URL`, `DEEPFACE_RECOGNITION_API_KEY`, `DEEPFACE_VERIFICATION_API_KEY`)
+2. Install and migrate:
+   - `composer install`
+   - `php artisan key:generate`
+   - `php artisan migrate --force`
+3. Start the web app:
+   - `npm install`
+   - `npm run dev`
+   - `php artisan serve`
+4. Start the DeepFace server (if needed):
+   - See `python/deepface/README.md`
+   - Default base URL is `http://localhost:8225`
+
+## About Laravel
+
+Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+
+- [Simple, fast routing engine](https://laravel.com/docs/routing).
+- [Powerful dependency injection container](https://laravel.com/docs/container).
+- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
+- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
+- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
+- [Robust background job processing](https://laravel.com/docs/queues).
+- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+
+Laravel is accessible, powerful, and provides tools required for large, robust applications.
+
+## Learning Laravel
+
+Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+
+If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+
+## Laravel Sponsors
+
+We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+
+### Premium Partners
+
+- **[Vehikl](https://vehikl.com)**
+- **[Tighten Co.](https://tighten.co)**
+- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
+- **[64 Robots](https://64robots.com)**
+- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
+- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
+- **[Redberry](https://redberry.international/laravel-development)**
+- **[Active Logic](https://activelogic.com)**
+
+## Contributing
+
+Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+
+## Code of Conduct
+
+In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+
+## Security Vulnerabilities
+
+If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+
+## License
+
+The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+#   p o l a r i s - a t t e n d a n c e 
+ 
+ 

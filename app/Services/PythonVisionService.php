@@ -23,6 +23,15 @@ class PythonVisionService
     public function extractTextFromImage(string $imageData): array
     {
         try {
+            // Try simple OCR service first
+            $result = $this->runPythonScript('simple_ocr_service.py', [$imageData]);
+            $parsed = json_decode($result, true);
+
+            if ($parsed && isset($parsed['success'])) {
+                return $parsed;
+            }
+
+            // Fallback to original OCR service if simple one fails
             $result = $this->runPythonScript('ocr_service.py', [$imageData]);
             return json_decode($result, true) ?: [
                 'success' => false,

@@ -153,12 +153,11 @@ class SettingsSeeder extends Seeder
             ['key' => 'driver_announcement_email', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_notifications', 'description' => 'Receive announcement emails'],
 
             ['key' => 'require_photo_attendance', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_attendance', 'description' => 'Require photo for attendance'],
+            ['key' => 'show_attendance_history', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_attendance', 'description' => 'Show attendance history'],
 
             // Admin Settings - Backup & Data
             ['key' => 'auto_backup_enabled', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_backup', 'description' => 'Enable automatic backups'],
-            ['key' => 'backup_frequency', 'value' => 'daily', 'type' => 'string', 'group' => 'admin_backup', 'description' => 'Backup frequency (hourly/daily/weekly/monthly/yearly)'],
-            ['key' => 'backup_time', 'value' => '02:00', 'type' => 'string', 'group' => 'admin_backup', 'description' => 'Backup time (HH:MM format)'],
-            ['key' => 'backup_start_date', 'value' => '', 'type' => 'date', 'group' => 'admin_backup', 'description' => 'Start backup from specific date (optional)'],
+            ['key' => 'backup_frequency', 'value' => 'daily', 'type' => 'string', 'group' => 'admin_backup', 'description' => 'Backup frequency (daily/weekly/monthly)'],
             ['key' => 'backup_retention_days', 'value' => '30', 'type' => 'integer', 'group' => 'admin_backup', 'description' => 'Backup retention period (days)'],
             ['key' => 'backup_location', 'value' => 'local', 'type' => 'string', 'group' => 'admin_backup', 'description' => 'Backup storage location'],
             ['key' => 'backup_include_files', 'value' => '1', 'type' => 'boolean', 'group' => 'admin_backup', 'description' => 'Include uploaded files in backup'],
@@ -223,6 +222,8 @@ class SettingsSeeder extends Seeder
             ['key' => 'driver_share_location', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_privacy', 'description' => 'Share location with system'],
             ['key' => 'driver_share_photo', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_privacy', 'description' => 'Allow photo sharing'],
             ['key' => 'driver_profile_visible', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_privacy', 'description' => 'Make profile visible to admins'],
+            ['key' => 'driver_data_export', 'value' => '1', 'type' => 'boolean', 'group' => 'driver_privacy', 'description' => 'Allow data export'],
+            ['key' => 'driver_analytics_opt_in', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_privacy', 'description' => 'Opt-in to analytics'],
 
             // Driver Settings - Accessibility
             ['key' => 'driver_font_size', 'value' => 'medium', 'type' => 'string', 'group' => 'driver_accessibility', 'description' => 'Font size preference'],
@@ -261,7 +262,6 @@ class SettingsSeeder extends Seeder
 
             // Driver Settings - Security
             ['key' => 'driver_require_pin', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_security', 'description' => 'Require PIN for attendance'],
-            ['key' => 'driver_two_factor_enabled', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_security', 'description' => 'Enable two-factor authentication (OTP)'],
             ['key' => 'driver_auto_lockout', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_security', 'description' => 'Auto-lock after inactivity'],
             ['key' => 'driver_lockout_minutes', 'value' => '15', 'type' => 'integer', 'group' => 'driver_security', 'description' => 'Auto-lock timeout (minutes)'],
             ['key' => 'driver_biometric_auth', 'value' => '0', 'type' => 'boolean', 'group' => 'driver_security', 'description' => 'Enable biometric authentication'],

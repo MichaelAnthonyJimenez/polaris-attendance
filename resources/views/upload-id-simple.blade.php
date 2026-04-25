@@ -5,8 +5,7 @@
 
 <div
     id="idvShell"
-    class="fixed inset-0 z-[2147483647] flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-white"
-    style="position: fixed; top: 0; right: 0; bottom: 0; left: 0; width: 100vw; height: 100vh;"
+    class="fixed inset-0 z-[100] flex flex-col bg-black text-white"
 >
     <form method="POST" action="{{ route('driver-verification.store') }}" id="idVerificationForm" class="flex flex-1 flex-col min-h-0" enctype="multipart/form-data">
         @csrf
@@ -19,7 +18,7 @@
         <input type="hidden" name="geo_accuracy" id="idv_geo_accuracy">
 
         <header
-            class="flex shrink-0 items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 bg-slate-900/50 border-b border-white/5"
+            class="flex shrink-0 items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 bg-gradient-to-b from-black/80 to-transparent"
             style="padding-left: max(0.75rem, env(safe-area-inset-left)); padding-right: max(0.75rem, env(safe-area-inset-right));"
         >
             <a
@@ -37,9 +36,9 @@
             </div>
         </header>
 
-        {{-- Upload only block --}}
-        <div id="idvUploadOnlyBlock" class="flex-1 min-h-0 flex flex-col overflow-y-auto px-4 py-6" style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right));">
-            <div class="w-full max-w-md mx-auto glass p-5 sm:p-6 rounded-2xl border border-white/10">
+        <div class="flex-1 relative min-h-0 bg-black">
+            <div class="w-full max-w-md mx-auto p-6">
+                <div class="glass rounded-2xl border border-white/10 p-6">
                 <label class="block text-xs text-slate-300 mb-1.5">ID type (Philippines)</label>
                 <select id="idv_id_type" name="id_type" class="form-select text-sm py-2.5 mb-4 w-full">
                     <option value="philsys_national_id">PhilSys National ID</option>
@@ -87,6 +86,20 @@
                 <button type="submit" id="idvUploadSubmit" class="btn-primary w-full py-3 text-sm" disabled>Submit verification</button>
             </div>
         </div>
+
+        <footer
+            class="shrink-0 flex flex-col items-center gap-4 px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black via-black/95 to-transparent"
+            style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right));"
+        >
+            <div class="w-full max-w-md text-center">
+                <p class="text-xs text-slate-400 mb-1">Upload ID verification process</p>
+                <p class="text-sm font-semibold text-white">Upload your ID documents</p>
+            </div>
+
+            <div class="w-full max-w-md space-y-3">
+                <button type="submit" id="idvUploadSubmit" class="btn-primary w-full py-3 text-sm" disabled>Submit verification</button>
+            </div>
+        </footer>
     </form>
 </div>
 

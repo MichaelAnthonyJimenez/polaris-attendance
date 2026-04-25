@@ -5,8 +5,7 @@
 
 <div
     id="idvShell"
-    class="fixed inset-0 z-[2147483647] flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-white"
-    style="position: fixed; top: 0; right: 0; bottom: 0; left: 0; width: 100vw; height: 100vh;"
+    class="fixed inset-0 z-[100] flex flex-col bg-black text-white"
 >
     <form method="POST" action="{{ route('driver-verification.store') }}" id="idVerificationForm" class="flex flex-1 flex-col min-h-0">
         @csrf
@@ -20,7 +19,7 @@
         <input type="hidden" name="geo_accuracy" id="idv_geo_accuracy">
 
         <header
-            class="flex shrink-0 items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 bg-gradient-to-b from-slate-900/90 to-transparent border-b border-white/5"
+            class="flex shrink-0 items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 bg-gradient-to-b from-black/80 to-transparent"
             style="padding-left: max(0.75rem, env(safe-area-inset-left)); padding-right: max(0.75rem, env(safe-area-inset-right));"
         >
             <a
@@ -38,54 +37,104 @@
             </div>
         </header>
 
-        {{-- Main camera block --}}
-        <div id="idvMainCameraBlock" class="flex-1 min-h-0 flex flex-col overflow-y-auto px-4 py-6" style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right));">
-            <div class="w-full max-w-md mx-auto glass p-5 sm:p-6 rounded-2xl border border-white/10">
-                <div class="relative aspect-[4/3] bg-black rounded-xl overflow-hidden mb-4">
-                    <video id="idvVideo" class="absolute inset-0 w-full h-full object-cover" autoplay muted playsinline></video>
-                    <img id="idvPreviewImg" class="absolute inset-0 w-full h-full object-cover hidden" alt="Captured">
-                    <canvas id="idvCanvas" class="hidden"></canvas>
+        <div class="flex-1 relative min-h-0 bg-black">
+            <video
+                id="idvVideo"
+                class="absolute inset-0 h-full w-full object-cover"
+                autoplay
+                playsinline
+                muted
+            ></video>
+            <img
+                id="idvPreviewImg"
+                src=""
+                alt="Captured preview"
+                class="absolute inset-0 hidden h-full w-full object-cover"
+                width="1"
+                height="1"
+            />
 
-                    {{-- Guide overlay --}}
-                    <div id="idvGuide" class="absolute inset-0 pointer-events-none">
-                        <svg class="absolute inset-0 w-full h-full" viewBox="0 0 100 75" preserveAspectRatio="none">
-                            <!-- ID card frame -->
-                            <rect x="10" y="5" width="35" height="22" fill="none" stroke="rgba(59, 130, 246, 0.5)" stroke-width="0.5" stroke-dasharray="2 1"/>
-                            <text x="27.5" y="3" fill="rgba(59, 130, 246, 0.8)" font-size="2" text-anchor="middle" font-weight="600">ID CARD</text>
+            <div
+                id="idvPreviewControls"
+                class="hidden absolute inset-0 z-[6] flex items-center justify-between px-1 sm:px-3 pointer-events-none"
+                aria-hidden="true"
+            >
+                <button
+                    type="button"
+                    id="idvPreviewPrev"
+                    class="pointer-events-auto flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/65 disabled:opacity-25 disabled:pointer-events-none"
+                    aria-label="Previous photo"
+                >
+                    <svg class="h-7 w-7 sm:h-8 sm:w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <button
+                    type="button"
+                    id="idvPreviewNext"
+                    class="pointer-events-auto flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/65 disabled:opacity-25 disabled:pointer-events-none"
+                    aria-label="Next photo"
+                >
+                    <svg class="h-7 w-7 sm:h-8 sm:w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7"></path>
+                    </svg>
+                </button>
+            </div>
 
-                            <!-- Face frame -->
-                            <rect x="55" y="20" width="35" height="45" fill="none" stroke="rgba(34, 197, 94, 0.5)" stroke-width="0.5" stroke-dasharray="2 1"/>
-                            <text x="72.5" y="18" fill="rgba(34, 197, 94, 0.8)" font-size="2" text-anchor="middle" font-weight="600">FACE</text>
-                        </svg>
+            {{-- Guideline grid: ID card + face --}}
+            <div id="idvGuide" class="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center p-4" style="z-index: 5;">
+                <div
+                    class="relative rounded-2xl border-2 overflow-hidden"
+                    style="width: 88%; max-width: 32rem; aspect-ratio: 4 / 3; border-color: rgba(255, 255, 255, 0.72); box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.42);"
+                >
+                    <svg
+                        id="idvGridSvg"
+                        class="absolute inset-0 h-full w-full"
+                        viewBox="0 0 100 75"
+                        preserveAspectRatio="none"
+                        style="color: rgba(255,255,255,0.52);"
+                        aria-hidden="true"
+                    >
+                        <!-- ID card frame -->
+                        <rect x="10" y="5" width="35" height="22" fill="none" stroke="rgba(59, 130, 246, 0.5)" stroke-width="0.5" stroke-dasharray="2 1"/>
+                        <text x="27.5" y="3" fill="rgba(59, 130, 246, 0.8)" font-size="2" text-anchor="middle" font-weight="600">ID CARD</text>
+
+                        <!-- Face frame -->
+                        <rect x="55" y="20" width="35" height="45" fill="none" stroke="rgba(34, 197, 94, 0.5)" stroke-width="0.5" stroke-dasharray="2 1"/>
+                        <text x="72.5" y="18" fill="rgba(34, 197, 94, 0.8)" font-size="2" text-anchor="middle" font-weight="600">FACE</text>
+                    </svg>
+                    <div class="absolute top-2 right-2 rounded-lg bg-black/45 px-2 py-1 text-[10px] sm:text-xs font-medium text-white/90">
+                        <span class="inline-flex items-center gap-1.5 mr-2">
+                            <span class="inline-block h-2.5 w-2.5 rounded-full bg-green-500"></span> Proper
+                        </span>
+                        <span class="inline-flex items-center gap-1.5">
+                            <span class="inline-block h-2.5 w-2.5 rounded-full bg-red-500"></span> Improper
+                        </span>
                     </div>
+                    <div class="absolute bottom-2 left-0 right-0 text-center px-2"></div>
                 </div>
+            </div>
 
-                <div class="space-y-3">
-                    <div id="idvLiveControls" class="flex flex-row items-center justify-center gap-3 w-full">
-                        <button type="button" id="idvCameraToggle" class="btn-secondary text-[10px] sm:text-xs px-2.5 py-2 min-w-[4.5rem] h-12 rounded-xl" aria-pressed="true">Rear</button>
-                        <button type="button" id="idvAutoCaptureToggle" class="btn-secondary text-[10px] sm:text-xs px-2.5 py-2 min-w-[4.5rem] h-12 rounded-xl" aria-pressed="false">Auto: off</button>
-                        <button type="button" id="idvCapture" class="btn-primary flex-1 py-2.5 text-sm flex items-center justify-center gap-2">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            </svg>
-                            Capture
-                        </button>
-                    </div>
+            <canvas id="idvCanvas" class="hidden" width="2" height="2"></canvas>
 
-                    <div id="idvPreviewControls" class="hidden absolute inset-0 z-[6] flex items-center justify-between px-1 sm:px-3 pointer-events-none" aria-hidden="true">
-                        <button type="button" id="idvPreviewPrev" class="pointer-events-auto flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/65 disabled:opacity-25 disabled:pointer-events-none" aria-label="Previous photo">
-                            <svg class="h-7 w-7 sm:h-8 sm:w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                            </svg>
-                        </button>
-
-                        <button type="button" id="idvPreviewNext" class="pointer-events-auto flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/65 disabled:opacity-25 disabled:pointer-events-none" aria-label="Next photo">
-                            <svg class="h-7 w-7 sm:h-8 sm:w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7"></path>
-                            </svg>
-                        </button>
-                    </div>
+            <div
+                id="idvPermissionGate"
+                class="hidden absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-black/90 px-6 text-center"
+            >
+                <div class="rounded-2xl border border-white/10 bg-white/5 p-6 max-w-sm">
+                    <p class="text-base font-semibold text-white mb-2">Camera access</p>
+                    <p id="idvPermissionText" class="text-sm text-slate-300 mb-5">
+                        We need your camera for verification. When your browser asks, choose <strong class="text-white">Allow</strong> for camera.
+                    </p>
+                    <button type="button" id="idvRetryBtn" class="btn-primary w-full justify-center text-sm py-2.5">
+                        Enable camera
+                    </button>
+                </div>
+            </div>
+            <div id="idvCountdown" class="hidden absolute inset-0 z-[11] items-center justify-center pointer-events-none">
+                <div id="idvCountdownNumber" class="h-20 w-20 rounded-full border-2 border-white/60 bg-black/45 text-3xl font-bold flex items-center justify-center">3</div>
+            </div>
+        </div>
 
                     <div class="hidden space-y-3">
                         <button type="button" id="idvRetakeBtn" class="btn-secondary w-full py-3 text-sm">
@@ -99,8 +148,8 @@
                 </div>
 
                 <!-- Countdown overlay -->
-                <div id="idvCountdown" class="hidden absolute inset-0 flex items-center justify-center bg-black/50 rounded-xl">
-                    <div class="text-white text-6xl font-bold" id="idvCountdownNumber">3</div>
+                <div id="idvCountdown" class="hidden absolute inset-0 z-[11] items-center justify-center pointer-events-none">
+                    <div id="idvCountdownNumber" class="h-20 w-20 rounded-full border-2 border-white/60 bg-black/45 text-3xl font-bold flex items-center justify-center">3</div>
                 </div>
             </div>
         </div>

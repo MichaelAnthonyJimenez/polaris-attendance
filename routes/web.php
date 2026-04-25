@@ -20,6 +20,7 @@ use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\CameraController;
 use App\Http\Controllers\ContactMessageController;
 use App\Http\Controllers\UserController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');

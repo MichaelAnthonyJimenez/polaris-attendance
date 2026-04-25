@@ -18,9 +18,9 @@ class IdOcrService
             return ['status' => 'skipped', 'reason' => 'file_not_found'];
         }
 
-        $apiKey = (string) config('services.ocr_space.api_key', '');
+        $apiKey = trim((string) config('services.ocr_space.api_key', ''));
         if ($apiKey === '') {
-            return ['status' => 'skipped', 'reason' => 'ocr_not_configured'];
+            $apiKey = 'helloworld';
         }
 
         try {
@@ -44,6 +44,12 @@ class IdOcrService
         }
 
         $payload = $response->json();
+        if ((bool) data_get($payload, 'IsErroredOnProcessing', false) === true) {
+            $errorMessage = (string) data_get($payload, 'ErrorMessage.0', data_get($payload, 'ErrorMessage', 'processing_error'));
+
+            return ['status' => 'error', 'reason' => 'ocr_processing_error', 'message' => $errorMessage];
+        }
+
         $parsed = data_get($payload, 'ParsedResults.0.ParsedText', '');
         $rawText = trim((string) $parsed);
 

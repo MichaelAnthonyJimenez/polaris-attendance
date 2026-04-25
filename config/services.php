@@ -53,15 +53,11 @@ return [
     ],
 
     'ocr_space' => [
-        'api_key' => env('OCR_SPACE_API_KEY'),
+        // Supports both OCR_SPACE_API_KEY and OCR_API_KEY.
+        // Falls back to OCR.Space demo key to avoid "skipped" in local/dev.
+        'api_key' => env('OCR_SPACE_API_KEY', env('OCR_API_KEY', 'helloworld')),
         'endpoint' => env('OCR_SPACE_ENDPOINT', 'https://api.ocr.space/parse/image'),
         'language' => env('OCR_SPACE_LANGUAGE', 'eng'),
     ],
-    // Optiic.dev OCR Service (disabled - using PaddleOCR instead)
-    // 'optiic' => [
-    //     'api_key' => env('OPTIIC_API_KEY'),
-    //     'endpoint' => env('OPTIIC_ENDPOINT', 'https://api.optiic.dev'),
-    //     'timeout' => 30,
-    // ],env('OPTIIC_TIMEOUT', 30),
 
 ];

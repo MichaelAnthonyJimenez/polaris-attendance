@@ -736,7 +736,12 @@
             const ocr = payload.ocr || {};
             const status = String(ocr.status || 'unknown');
             if (status !== 'ok') {
-                if (confirmOcrStatus) confirmOcrStatus.textContent = 'OCR status: ' + status;
+                const reason = String(ocr.reason || 'unknown');
+                const message = String(ocr.message || '');
+                let statusText = 'OCR status: ' + status;
+                if (reason) statusText += ' (' + reason.replace(/_/g, ' ') + ')';
+                if (message) statusText += '. ' + message;
+                if (confirmOcrStatus) confirmOcrStatus.textContent = statusText;
                 return;
             }
             const fields = (ocr.fields && typeof ocr.fields === 'object') ? ocr.fields : {};

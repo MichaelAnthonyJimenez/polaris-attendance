@@ -48,7 +48,7 @@
                 <span class="py-2 rounded bg-white/0"></span>
             @endfor
             @for($day = 1; $day <= $daysInMonth; $day++)
-                @php $isToday = $calendarDate->isSameDay($monthStart->copy()->day($day)); @endphp
+                @php $isToday = now()->isSameDay($monthStart->copy()->day($day)); @endphp
                 <span class="py-2 rounded {{ $isToday ? 'bg-blue-500/30 text-blue-100 border border-blue-400/30' : 'bg-white/5 text-slate-200' }}">{{ $day }}</span>
             @endfor
         </div>
@@ -84,7 +84,7 @@
             <h2 class="text-lg font-semibold text-white">Camera</h2>
             <p class="text-sm text-slate-300 mt-1.5">Use camera to check in/out.</p>
             <p id="driverLiveLocationStatus" class="text-xs text-slate-400 mt-2">
-                
+
             </p>
             <div class="mt-4">
                 <a href="{{ route('camera.index') }}" class="btn-primary text-sm px-4 py-2.5">Camera Check-in</a>

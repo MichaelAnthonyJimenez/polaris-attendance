@@ -212,6 +212,17 @@
                 </div>
             </div>
         </div>
+
+        <div id="idvConfirmModal" class="hidden absolute inset-0 z-[280] items-center justify-center bg-black/70 p-4">
+            <div class="w-full max-w-sm glass rounded-2xl border border-white/10 p-5 sm:p-6">
+                <h3 class="text-base sm:text-lg font-semibold text-white">Confirm information</h3>
+                <p class="mt-2 text-sm text-slate-300">Please confirm your verification information is correct before submitting.</p>
+                <div class="mt-5 flex gap-3">
+                    <button type="button" id="idvConfirmCancel" class="btn-secondary flex-1 py-2.5 text-sm">Cancel</button>
+                    <button type="button" id="idvConfirmProceed" class="btn-primary flex-1 py-2.5 text-sm">Submit</button>
+                </div>
+            </div>
+        </div>
     </form>
 </div>
 
@@ -230,6 +241,9 @@
     const uploadSubmitBtn = document.getElementById('idvUploadSubmit');
     const gateSelfieBtn = document.getElementById('idvGateSelfie');
     const gateUploadBtn = document.getElementById('idvGateUpload');
+    const confirmModal = document.getElementById('idvConfirmModal');
+    const confirmCancelBtn = document.getElementById('idvConfirmCancel');
+    const confirmProceedBtn = document.getElementById('idvConfirmProceed');
     const modeGate = document.getElementById('idvModeGate');
     const proofModeInput = document.getElementById('idv_proof_mode');
     const idTypeSelect = document.getElementById('idv_id_type');
@@ -714,10 +728,26 @@
     });
 
     form?.addEventListener('submit', (e) => {
-        const ok = window.confirm('Confirm information before submitting verification?');
-        if (!ok) {
-            e.preventDefault();
+        if (form.dataset.confirmed === 'true') {
+            form.dataset.confirmed = 'false';
+            return;
         }
+        e.preventDefault();
+        confirmModal?.classList.remove('hidden');
+        confirmModal?.classList.add('flex');
+    });
+
+    confirmCancelBtn?.addEventListener('click', () => {
+        confirmModal?.classList.add('hidden');
+        confirmModal?.classList.remove('flex');
+    });
+
+    confirmProceedBtn?.addEventListener('click', () => {
+        confirmModal?.classList.add('hidden');
+        confirmModal?.classList.remove('flex');
+        if (!form) return;
+        form.dataset.confirmed = 'true';
+        form.requestSubmit();
     });
 
     syncAutoUi();

@@ -236,8 +236,8 @@
                 <h2 class="text-lg sm:text-xl font-semibold text-white">Select verification mode</h2>
                 <p class="mt-2 text-sm text-slate-300">Choose how you want to submit your ID.</p>
                 <div class="mt-6 grid grid-cols-1 gap-3">
-                    <button type="button" id="idvGateSelfie" class="btn-primary w-full justify-center py-2.5 text-sm">Selfie with ID</button>
-                    <button type="button" id="idvGateUpload" class="btn-secondary w-full justify-center py-2.5 text-sm">Upload ID files</button>
+                    <a href="{{ route('verification.selfie') }}" class="btn-primary w-full justify-center py-2.5 text-sm inline-flex items-center">Selfie with ID</a>
+                    <a href="{{ route('verification.upload') }}" class="btn-secondary w-full justify-center py-2.5 text-sm inline-flex items-center">Upload ID files</a>
                 </div>
             </div>
         </div>
@@ -258,8 +258,6 @@
     const cameraToggleBtn = document.getElementById('idvCameraToggle');
     const submitBtn = document.getElementById('idvSubmit');
     const uploadSubmitBtn = document.getElementById('idvUploadSubmit');
-    const gateSelfieBtn = document.getElementById('idvGateSelfie');
-    const gateUploadBtn = document.getElementById('idvGateUpload');
     const modeGate = document.getElementById('idvModeGate');
     const proofModeInput = document.getElementById('idv_proof_mode');
     const idTypeSelect = document.getElementById('idv_id_type');
@@ -764,49 +762,7 @@ if (selfieNoIdBtn) {
         }
     });
 
-    gateSelfieBtn?.addEventListener('click', () => {
-        console.log('Selfie with ID button clicked');
-        console.log('Current proofMode before:', proofMode);
-        console.log('setProofMode function exists:', typeof setProofMode);
-
-        if (typeof setProofMode === 'function') {
-            setProofMode('selfie_with_id');
-            console.log('Proof mode set to:', proofMode);
-
-            // Ensure camera starts after setting proof mode
-            setTimeout(() => {
-                console.log('Timeout triggered, proofMode:', proofMode);
-                if (proofMode === 'selfie_with_id') {
-                    console.log('Starting camera...');
-                    startCamera();
-                }
-            }, 100);
-        } else {
-            console.error('setProofMode function not found');
-        }
-    });
-    gateUploadBtn?.addEventListener('click', () => {
-        console.log('Upload ID files button clicked');
-        console.log('Current proofMode before:', proofMode);
-        console.log('setProofMode function exists:', typeof setProofMode);
-
-        if (typeof setProofMode === 'function') {
-            setProofMode('upload_file');
-            console.log('Proof mode set to:', proofMode);
-
-            // Ensure upload interface is visible
-            setTimeout(() => {
-                console.log('Upload timeout triggered, proofMode:', proofMode);
-                if (proofMode === 'upload_file') {
-                    console.log('Hiding permission and stopping camera...');
-                    hidePermission();
-                    stopCamera();
-                }
-            }, 100);
-        } else {
-            console.error('setProofMode function not found');
-        }
-    });
+    // Gate buttons are now actual links, no JavaScript event listeners needed
 
     // File upload event listeners
     uploadFrontInput?.addEventListener('change', async (e) => {

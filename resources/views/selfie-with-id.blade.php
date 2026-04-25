@@ -51,7 +51,7 @@
             </button>
         </header>
 
-        <div class="flex-1 relative bg-black overflow-hidden">
+        <div class="flex-1 relative bg-black overflow-hidden" style="padding-bottom: env(safe-area-inset-bottom);">
             <video
                 id="idvVideo"
                 class="absolute inset-0 h-full w-full object-cover"
@@ -153,7 +153,7 @@
         </div>
 
         <footer
-            class="shrink-0 flex flex-col items-center gap-4 px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black via-black/95 to-transparent"
+            class="shrink-0 flex flex-col items-center gap-4 px-4 pt-6 pb-[max(2.5rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black via-black/95 to-transparent"
             style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right));"
         >
             <div class="w-full max-w-md text-center">
@@ -184,7 +184,9 @@
                         aria-pressed="true"
                     >
                         <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-2 2m0 0l-2-2m2 2v-2a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"></path>
                         </svg>
                     </button>
 
@@ -377,7 +379,16 @@
             startAlignmentLoop();
         } catch (error) {
             console.error('Camera error:', error);
-            setHint('Camera access denied or unavailable');
+            if (error.name === 'NotAllowedError') {
+                // Show permission gate when access is denied
+                const permissionGate = document.getElementById('idvPermissionGate');
+                if (permissionGate) {
+                    permissionGate.classList.remove('hidden');
+                }
+                setHint('Camera permission required');
+            } else {
+                setHint('Camera access denied or unavailable');
+            }
         }
     }
 
@@ -532,6 +543,16 @@
         if (mode === 'live') {
             await startCamera();
         }
+    });
+
+    // Permission gate retry button
+    const retryBtn = document.getElementById('idvRetryBtn');
+    retryBtn?.addEventListener('click', async () => {
+        const permissionGate = document.getElementById('idvPermissionGate');
+        if (permissionGate) {
+            permissionGate.classList.add('hidden');
+        }
+        await startCamera();
     });
 
     // Initialize

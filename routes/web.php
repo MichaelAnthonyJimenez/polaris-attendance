@@ -61,6 +61,7 @@ Route::middleware('auth')->group(function () {
     Route::view('/verification/facial', 'facial-verification')->name('verification.facial');
     Route::view('/id-verification', 'id-verification')->name('verification.id');
     Route::view('/selfie-with-id', 'selfie-with-id')->name('verification.selfie');
+    Route::post('/selfie-with-id', [DriverVerificationSubmissionController::class, 'store'])->name('selfie-with-id.store');
     Route::view('/upload-id-files', 'upload-id-files')->name('verification.upload');
     Route::view('/upload-id-simple', 'upload-id-simple')->name('verification.upload-simple');
     Route::view('/verification/id-confirmation', 'id-confirmation')->name('verification.id-confirmation');

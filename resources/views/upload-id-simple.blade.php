@@ -170,31 +170,53 @@
                 confirmedTypeInput.value = idTypeSelect.options[idTypeSelect.selectedIndex]?.text || 'Unknown';
             }
 
-            // Call backend OCR service
+            // Call backend OCR service with timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
             const formData = new FormData();
             formData.append('image_data', imageData);
 
-            const response = await fetch('/api/ocr-process', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            try {
+                const response = await fetch('/api/ocr-process', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                    },
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+                const result = await response.json();
+
+                if (result.success && result.text && result.text.trim()) {
+                    extractedTextInput.value = result.text;
+                    setHint('OCR processing complete. Please confirm ID information.');
+                    return { success: true, text: result.text };
+                } else {
+                    // OCR failed but we got a response
+                    extractedTextInput.value = 'OCR processing could not extract text from the image.';
+                    setHint('OCR processing could not extract text. You can still submit manually.');
+                    return { success: false, text: '', error: 'No text extracted' };
                 }
-            });
+            } catch (fetchError) {
+                clearTimeout(timeoutId);
 
-            const result = await response.json();
-
-            if (result.success) {
-                extractedTextInput.value = result.text || 'No text extracted';
-                setHint('OCR processing complete. Please confirm ID information.');
-            } else {
-                extractedTextInput.value = 'OCR processing failed: ' + result.error;
-                setHint('OCR processing failed. You can still submit manually.');
+                if (fetchError.name === 'AbortError') {
+                    extractedTextInput.value = 'OCR processing timed out. Please verify manually.';
+                    setHint('OCR processing timed out. You can still submit manually.');
+                } else {
+                    extractedTextInput.value = 'OCR service unavailable. Please verify manually.';
+                    setHint('OCR service unavailable. You can still submit manually.');
+                }
+                return { success: false, text: '', error: fetchError.message };
             }
         } catch (error) {
             console.error('ID confirmation error:', error);
             extractedTextInput.value = 'OCR processing failed. Please verify manually.';
-            setHint('OCR processing failed. Please try again or submit manually.');
+            setHint('OCR processing failed. You can still submit manually.');
+            return { success: false, text: '', error: error.message };
         }
     }
 

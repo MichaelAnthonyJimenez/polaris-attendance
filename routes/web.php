@@ -74,15 +74,47 @@ Route::middleware('auth')->group(function () {
                 return response()->json(['success' => false, 'error' => 'No image data provided']);
             }
 
-            // Use PythonVisionService for OCR processing
+            // Check if PythonVisionService is available
             $visionService = app(\App\Services\PythonVisionService::class);
+
+            if (!$visionService->isAvailable()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'OCR service not available - Python not installed',
+                    'text' => '',
+                    'words' => [],
+                    'avg_confidence' => 0
+                ]);
+            }
+
+            // Check OCR dependencies
+            $dependencies = $visionService->checkDependencies();
+            if (!$dependencies['paddleocr'] && !$dependencies['opencv-python']) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'OCR libraries not installed',
+                    'text' => '',
+                    'words' => [],
+                    'avg_confidence' => 0
+                ]);
+            }
+
+            // Use PythonVisionService for OCR processing
             $result = $visionService->extractTextFromImage($imageData);
 
             return response()->json($result);
         } catch (\Exception $e) {
+            // Log the error for debugging
+            \Log::error('OCR API Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => 'OCR processing failed',
+                'text' => '',
+                'words' => [],
+                'avg_confidence' => 0
             ]);
         }
     })->name('api.ocr.process');

@@ -3,16 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attendance;
+use App\Models\Setting;
 use App\Models\User;
+use App\Notifications\LocationSafetyAlertNotification;
+use App\Services\Email\TransactionalEmailService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\View\View;
 
 class LocationController extends Controller
 {
     private const LIVE_LOCATION_CACHE_KEY_PREFIX = 'driver_live_location:';
+    private const LOCATION_ALERT_THROTTLE_SECONDS = 600;
 
     public function index(Request $request): View
     {
@@ -92,9 +97,15 @@ class LocationController extends Controller
         $points = array_slice($points, -50);
         Cache::put($cacheKey, ['points' => $points], now()->addHours(6));
 
+        $risk = $this->assessLocationRisk($validated);
+        if ($risk !== null) {
+            $this->notifyAdminsForLocationRisk($user, $validated, $risk);
+        }
+
         return response()->json([
             'ok' => true,
             'location_sharing_enabled' => true,
+            'location_risk' => $risk,
         ]);
     }
 
@@ -195,6 +206,123 @@ class LocationController extends Controller
                 'latest_heading' => isset($latestPoint['heading']) ? (float) $latestPoint['heading'] : null,
             ];
         })->values()->all();
+    }
+
+    /**
+     * @param array{latitude:float|int|string,longitude:float|int|string,geo_accuracy?:float|int|string|null,speed?:float|int|string|null,heading?:float|int|string|null} $validated
+     * @return array{code:string,title:string,message:string,severity:string}|null
+     */
+    private function assessLocationRisk(array $validated): ?array
+    {
+        $accuracy = isset($validated['geo_accuracy']) ? (float) $validated['geo_accuracy'] : null;
+        $speedMps = isset($validated['speed']) ? (float) $validated['speed'] : null;
+        $speedKph = $speedMps !== null ? ($speedMps * 3.6) : null;
+
+        if ($speedKph !== null && $speedKph >= 50) {
+            return [
+                'code' => 'dangerous_area',
+                'title' => 'Dangerous area movement',
+                'severity' => 'high',
+                'message' => 'Driver appears to be moving fast on a road/highway segment. Remind the driver to stop in a safe area before check in/check out.',
+            ];
+        }
+
+        if ($accuracy !== null && $accuracy >= 800) {
+            return [
+                'code' => 'unoperational_area',
+                'title' => 'Unoperational area signal',
+                'severity' => 'high',
+                'message' => 'GPS accuracy is very poor and may indicate an unoperational area. Attendance location reliability is low.',
+            ];
+        }
+
+        if ($accuracy !== null && $accuracy >= 500) {
+            return [
+                'code' => 'unreachable_area',
+                'title' => 'Unreachable area signal',
+                'severity' => 'medium',
+                'message' => 'GPS accuracy is poor and may indicate an unreachable/weak-coverage area.',
+            ];
+        }
+
+        if ($accuracy !== null && $accuracy >= 150) {
+            return [
+                'code' => 'limited_data_area',
+                'title' => 'Limited data area',
+                'severity' => 'medium',
+                'message' => 'GPS accuracy is degraded, likely due to limited data/signal conditions.',
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array{latitude:float|int|string,longitude:float|int|string,geo_accuracy?:float|int|string|null,speed?:float|int|string|null,heading?:float|int|string|null} $validated
+     * @param array{code:string,title:string,message:string,severity:string} $risk
+     */
+    private function notifyAdminsForLocationRisk(User $driver, array $validated, array $risk): void
+    {
+        $throttleKey = 'location_risk_alert:' . $driver->id . ':' . $risk['code'];
+        if (Cache::has($throttleKey)) {
+            return;
+        }
+        Cache::put($throttleKey, true, now()->addSeconds(self::LOCATION_ALERT_THROTTLE_SECONDS));
+
+        $channel = (string) Setting::get('attendance_notification_channel', 'both');
+        $sendApp = in_array($channel, ['app', 'both'], true);
+        $sendEmail = in_array($channel, ['email', 'both'], true);
+
+        $admins = User::query()
+            ->where('role', 'admin')
+            ->where('active', true)
+            ->get();
+
+        if ($admins->isEmpty()) {
+            return;
+        }
+
+        $latitude = (float) $validated['latitude'];
+        $longitude = (float) $validated['longitude'];
+        $accuracy = isset($validated['geo_accuracy']) ? (float) $validated['geo_accuracy'] : null;
+        $speedMps = isset($validated['speed']) ? (float) $validated['speed'] : null;
+        $speedKph = $speedMps !== null ? round($speedMps * 3.6, 1) : null;
+
+        if ($sendApp) {
+            Notification::send($admins, new LocationSafetyAlertNotification(
+                $driver,
+                $risk,
+                $latitude,
+                $longitude,
+                $accuracy,
+                $speedKph
+            ));
+        }
+
+        if ($sendEmail) {
+            $emails = $admins
+                ->filter(fn (User $admin) => is_string($admin->email) && trim($admin->email) !== '')
+                ->map(fn (User $admin) => ['email' => $admin->email, 'name' => $admin->name])
+                ->values()
+                ->all();
+            if ($emails !== []) {
+                $subject = 'Driver location risk alert: ' . ($driver->name ?? 'Driver');
+                $html = '<h2>Driver Location Risk Alert</h2>'
+                    . '<p><strong>Driver:</strong> ' . e((string) ($driver->name ?? 'Unknown')) . '</p>'
+                    . '<p><strong>Alert:</strong> ' . e($risk['title']) . '</p>'
+                    . '<p>' . e($risk['message']) . '</p>'
+                    . '<p><strong>Coordinates:</strong> ' . e((string) $latitude) . ', ' . e((string) $longitude) . '</p>'
+                    . '<p><strong>GPS accuracy:</strong> ' . e($accuracy !== null ? (string) round($accuracy, 1) . ' m' : 'N/A') . '</p>'
+                    . '<p><strong>Speed:</strong> ' . e($speedKph !== null ? (string) $speedKph . ' km/h' : 'N/A') . '</p>'
+                    . '<p><strong>Time:</strong> ' . e(now()->format('Y-m-d H:i:s')) . '</p>';
+
+                try {
+                    app(TransactionalEmailService::class)->send($emails, $subject, $html);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+        }
     }
 }
 

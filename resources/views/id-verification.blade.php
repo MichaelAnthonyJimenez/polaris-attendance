@@ -760,21 +760,16 @@
         if (!confirmOcrFields) return;
         confirmOcrFields.innerHTML = '';
         const priority = [
-            'id_type_profile',
+            'id_type',
             'detected_language',
             'id_number',
-            'full_name',
-            'surname',
-            'given_names',
+            'last_name_surname',
+            'given_name',
             'middle_name',
-            'birth_date',
-            'sex',
-            'blood_type',
-            'civil_status',
+            'date_of_birth',
             'address',
-            'place_of_birth',
-            'issue_date',
-            'important_lines',
+            'date_of_issuance',
+            'expiry_date',
         ];
         const shown = new Set();
         priority.forEach((key) => {
@@ -785,20 +780,13 @@
         });
 
         Object.entries(fields).forEach(([key, value]) => {
-            if (shown.has(key) || ['all_text_lines', 'raw_text', 'key_values', 'date_values'].includes(key)) {
+            if (shown.has(key) || ['all_text_lines', 'raw_text', 'key_values', 'date_values', 'important_lines', 'name_line', 'full_name'].includes(key)) {
                 return;
             }
             appendOcrField(key, value);
         });
 
-        if (fields.key_values && typeof fields.key_values === 'object') {
-            appendOcrField('other_detected_fields', fields.key_values);
-        }
-
-        const raw = fields.raw_text || ocrRawText;
-        if (raw) {
-            appendOcrField('raw_text', raw);
-        }
+        // Keep UI concise: avoid dumping full noisy OCR text by default.
     }
 
     function renderConfirmStaticDetails() {

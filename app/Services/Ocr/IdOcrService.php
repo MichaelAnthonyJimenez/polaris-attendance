@@ -229,125 +229,93 @@ class IdOcrService
 
     private function extractFields(string $rawText, ?string $idType = null): array
     {
-        $fields = [];
         $normalized = preg_replace('/\r\n?/', "\n", trim($rawText)) ?? '';
         $lines = array_values(array_filter(array_map(
             static fn (string $line): string => trim(preg_replace('/\s+/', ' ', $line) ?? ''),
             explode("\n", $normalized)
         )));
-
-        if ($lines !== []) {
-            $fields['all_text_lines'] = array_slice($lines, 0, 40);
-        }
-
         $profile = $this->idTypeProfile($idType);
-        if ($profile) {
-            $fields['id_type_profile'] = [
-                'key' => (string) ($profile['key'] ?? ''),
-                'label' => (string) ($profile['label'] ?? ''),
-            ];
-        }
 
-        $fields['detected_language'] = $this->detectLanguage($normalized);
-
-        $keyValues = [];
-        foreach ($lines as $line) {
-            if (preg_match('/^\s*([A-Z][A-Z0-9 .\/_-]{1,45})\s*[:#]\s*(.{1,140})\s*$/i', $line, $m)) {
-                $label = strtolower(trim((string) $m[1]));
-                $label = preg_replace('/[^a-z0-9]+/', '_', $label) ?? $label;
-                $label = trim($label, '_');
-                if ($label !== '' && ! isset($keyValues[$label])) {
-                    $keyValues[$label] = trim((string) $m[2]);
-                }
-            }
-        }
-        if ($keyValues !== []) {
-            $fields['key_values'] = $keyValues;
-        }
-
-        $labelPatterns = [
-            'surname' => '/(?:apelido|last\s*name|surname)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
-            'given_names' => '/(?:mga\s*pangalan|given\s*names?)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
-            'middle_name' => '/(?:gitnang\s*apelyido|middle\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
-            'birth_date' => '/(?:petsa\s*ng\s*kapanganakan|date\s*of\s*birth|birthdate)\s*[:#]?\s*([A-Z0-9,\-\/ ]{6,})/i',
-            'address' => '/(?:tirahan|address)\s*[:#]?\s*([A-Z0-9,\-\/ .]{6,})/i',
-            'sex' => '/(?:kasarian|sex)\s*[:#]?\s*([A-Z]{3,10})/i',
-            'blood_type' => '/(?:uri\s*ng\s*dugo|blood\s*type)\s*[:#]?\s*([ABO][+-]?)/i',
-            'civil_status' => '/(?:kalagayang\s*sibil|marital\s*status)\s*[:#]?\s*([A-Z ]{4,20})/i',
-            'place_of_birth' => '/(?:lugar\s*ng\s*kapanganakan|place\s*of\s*birth)\s*[:#]?\s*([A-Z ,.-]{4,})/i',
-            'issue_date' => '/(?:araw\s*ng\s*pagkakaloob|date\s*of\s*issue)\s*[:#]?\s*([A-Z0-9,\-\/ ]{5,})/i',
+        $result = [
+            'id_type' => (string) ($profile['label'] ?? ($idType ?: 'Unknown ID')),
+            'detected_language' => $this->detectLanguage($normalized),
+            'id_number' => null,
+            'last_name_surname' => null,
+            'given_name' => null,
+            'middle_name' => null,
+            'date_of_birth' => null,
+            'address' => null,
+            'date_of_issuance' => null,
+            'expiry_date' => null,
         ];
-        foreach ($labelPatterns as $field => $pattern) {
-            if (preg_match($pattern, $normalized, $m)) {
-                $fields[$field] = trim((string) $m[1]);
-            }
-        }
 
         $idPatterns = [];
         if (is_array($profile) && isset($profile['id_number_patterns']) && is_array($profile['id_number_patterns'])) {
             $idPatterns = $profile['id_number_patterns'];
         }
-        $idPatterns[] = '/(?:id|license|lic|no|number)\s*[:#]?\s*([A-Z0-9-]{5,})/i';
-        $idPatterns[] = '/\b(\d{4}-\d{4}-\d{4}-\d{4})\b/';
+        $idPatterns[] = '/(?:id|license|lic|no|number|student\s*no|control\s*no)\s*[:#]?\s*([A-Z0-9-]{5,})/i';
         foreach ($idPatterns as $pattern) {
             if (preg_match($pattern, $normalized, $m)) {
-                $fields['id_number'] = trim((string) $m[1]);
+                $result['id_number'] = $this->normalizeIdValue((string) $m[1]);
                 break;
             }
         }
 
-        $namePatterns = [];
-        if (is_array($profile) && isset($profile['name_patterns']) && is_array($profile['name_patterns'])) {
-            $namePatterns = $profile['name_patterns'];
-        }
-        $namePatterns[] = '/(?:name|full\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i';
-        foreach ($namePatterns as $pattern) {
-            if (preg_match($pattern, $normalized, $m)) {
-                $fields['name_line'] = trim((string) $m[1]);
-                break;
-            }
-        }
+        $result['last_name_surname'] = $this->extractLabeledValue($normalized, [
+            '/(?:apelido|last\s*name|surname)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
+        ], 'name');
+        $result['given_name'] = $this->extractLabeledValue($normalized, [
+            '/(?:mga\s*pangalan|given\s*name(?:s)?)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
+            '/(?:first\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
+        ], 'name');
+        $result['middle_name'] = $this->extractLabeledValue($normalized, [
+            '/(?:gitnang\s*apelyido|middle\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
+        ], 'name');
 
-        if (! isset($fields['name_line'])) {
-            foreach ($lines as $line) {
-                if (
-                    preg_match('/^[A-Z][A-Z .,\']{6,}$/', strtoupper($line))
-                    && ! preg_match('/\b(?:republic|philippines|address|city|college|office|department|rules|id)\b/i', $line)
-                ) {
-                    $fields['name_line'] = trim($line);
-                    break;
+        if (! $result['last_name_surname'] || ! $result['given_name']) {
+            foreach ($lines as $idx => $line) {
+                if (preg_match('/(?:apelido|last\s*name|surname)/i', $line)) {
+                    $result['last_name_surname'] = $result['last_name_surname'] ?: $this->normalizeNameValue($lines[$idx + 1] ?? '');
+                }
+                if (preg_match('/(?:mga\s*pangalan|given\s*name(?:s)?|first\s*name)/i', $line)) {
+                    $result['given_name'] = $result['given_name'] ?: $this->normalizeNameValue($lines[$idx + 1] ?? '');
+                }
+                if (preg_match('/(?:gitnang\s*apelyido|middle\s*name)/i', $line)) {
+                    $result['middle_name'] = $result['middle_name'] ?: $this->normalizeNameValue($lines[$idx + 1] ?? '');
                 }
             }
         }
 
-        if (! isset($fields['full_name'])) {
-            if (isset($fields['surname'], $fields['given_names'])) {
-                $fields['full_name'] = trim($fields['surname'].', '.$fields['given_names'].(isset($fields['middle_name']) ? ' '.$fields['middle_name'] : ''));
-            } elseif (isset($fields['name_line'])) {
-                $fields['full_name'] = $fields['name_line'];
+        $result['date_of_birth'] = $this->extractLabeledValue($normalized, [
+            '/(?:petsa\s*ng\s*kapanganakan|date\s*of\s*birth|birthdate)\s*[:#]?\s*([A-Z0-9,\-\/ ]{6,})/i',
+        ], 'date');
+        $result['address'] = $this->extractLabeledValue($normalized, [
+            '/(?:tirahan|address)\s*[:#]?\s*([A-Z0-9,\-\/ .]{6,})/i',
+        ], 'address');
+        $result['date_of_issuance'] = $this->extractLabeledValue($normalized, [
+            '/(?:araw\s*ng\s*pagkakaloob|date\s*of\s*issue|date\s*issued)\s*[:#]?\s*([A-Z0-9,\-\/ ]{5,})/i',
+        ], 'date');
+        $result['expiry_date'] = $this->extractLabeledValue($normalized, [
+            '/(?:expiry\s*date|date\s*of\s*expiry|expires\s*on|valid\s*until)\s*[:#]?\s*([A-Z0-9,\-\/ ]{5,})/i',
+        ], 'date');
+
+        // fallback date extraction: first likely DOB, second likely issuance/expiry.
+        if (! $result['date_of_birth'] || ! $result['date_of_issuance']) {
+            if (preg_match_all('/\b(?:\d{4}[-\/]\d{2}[-\/]\d{2}|\d{2}[-\/]\d{2}[-\/]\d{4}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})\b/', $normalized, $m) && ! empty($m[0])) {
+                $dates = array_values(array_unique(array_map(fn ($d) => $this->normalizeDateValue($d), $m[0])));
+                if (! $result['date_of_birth'] && isset($dates[0])) {
+                    $result['date_of_birth'] = $dates[0];
+                }
+                if (! $result['date_of_issuance'] && isset($dates[1])) {
+                    $result['date_of_issuance'] = $dates[1];
+                }
+                if (! $result['expiry_date'] && isset($dates[2])) {
+                    $result['expiry_date'] = $dates[2];
+                }
             }
         }
 
-        if (preg_match_all('/\b(?:\d{4}[-\/]\d{2}[-\/]\d{2}|\d{2}[-\/]\d{2}[-\/]\d{4}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})\b/', $normalized, $m) && ! empty($m[0])) {
-            $fields['date_values'] = array_values(array_unique(array_map('trim', $m[0])));
-        }
-
-        $importantLines = [];
-        foreach ($lines as $line) {
-            if (
-                preg_match('/\b(?:name|apelido|pangalan|birth|kapanganakan|address|tirahan|sex|kasarian|id|license|passport|student|date)\b/i', $line)
-                || preg_match('/\b\d{4}-\d{4}-\d{4}-\d{4}\b/', $line)
-            ) {
-                $importantLines[] = $line;
-            }
-        }
-        if ($importantLines !== []) {
-            $fields['important_lines'] = array_slice(array_values(array_unique($importantLines)), 0, 20);
-        }
-
-        $fields['raw_text'] = $rawText;
-
-        return $fields;
+        return array_filter($result, static fn ($v) => $v !== null && $v !== '');
     }
 
     private function detectLanguage(string $text): array
@@ -378,6 +346,62 @@ class IdOcrService
         }
 
         return ['code' => 'unknown', 'label' => 'Unknown'];
+    }
+
+    private function extractLabeledValue(string $text, array $patterns, string $type): ?string
+    {
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $text, $m)) {
+                $value = trim((string) ($m[1] ?? ''));
+                if ($value === '') {
+                    continue;
+                }
+                return match ($type) {
+                    'id' => $this->normalizeIdValue($value),
+                    'date' => $this->normalizeDateValue($value),
+                    'address' => $this->normalizeAddressValue($value),
+                    default => $this->normalizeNameValue($value),
+                };
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeIdValue(string $value): string
+    {
+        $value = strtoupper(trim($value));
+        $value = preg_replace('/[^A-Z0-9-]/', '', $value) ?? $value;
+        // Conservative OCR correction for mostly numeric IDs.
+        if (preg_match('/^[0-9OILS\-]{6,}$/', $value)) {
+            $value = strtr($value, ['O' => '0', 'I' => '1', 'L' => '1', 'S' => '5']);
+        }
+
+        return $value;
+    }
+
+    private function normalizeNameValue(string $value): string
+    {
+        $value = strtoupper(trim($value));
+        $value = preg_replace('/[^A-Z .,\']/', '', $value) ?? $value;
+        $value = preg_replace('/\s+/', ' ', $value) ?? $value;
+        return trim($value, " \t\n\r\0\x0B,");
+    }
+
+    private function normalizeAddressValue(string $value): string
+    {
+        $value = strtoupper(trim($value));
+        $value = preg_replace('/[^A-Z0-9 ,.\-\/]/', '', $value) ?? $value;
+        $value = preg_replace('/\s+/', ' ', $value) ?? $value;
+        return trim($value, " \t\n\r\0\x0B,");
+    }
+
+    private function normalizeDateValue(string $value): string
+    {
+        $value = strtoupper(trim($value));
+        $value = preg_replace('/[^A-Z0-9,\-\/ ]/', '', $value) ?? $value;
+        $value = preg_replace('/\s+/', ' ', $value) ?? $value;
+        return trim($value);
     }
 
     private function mergeIdContext(array $ocrResult, ?string $idType): array

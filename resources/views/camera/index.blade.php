@@ -94,23 +94,25 @@
                 height="1"
             />
 
-            {{-- User detection frame overlay --}}
-            <div id="userDetectionFrame" class="absolute top-4 left-4 right-4 pointer-events-none hidden">
-                <div class="inline-flex items-center gap-2 bg-green-600/80 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
+            {{-- Live face detection overlay --}}
+            <div id="faceDetectionOverlay" class="absolute top-4 left-4 right-4 pointer-events-none">
+                <div id="noFaceDetected" class="inline-flex items-center gap-2 bg-red-600/80 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-white text-sm font-medium">No face detected</span>
+                </div>
+                <div id="faceDetected" class="hidden inline-flex items-center gap-2 bg-green-600/80 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
                     <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v5a2 2 0 002 2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                     <span class="text-white text-sm font-medium">User Detected: {{ Auth::user()->name }}</span>
                 </div>
-            </div>
-
-            {{-- Driver name frame overlay --}}
-            <div class="absolute top-4 left-4 right-4 pointer-events-none">
-                <div class="inline-flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
-                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div id="unknownFace" class="hidden inline-flex items-center gap-2 bg-amber-600/80 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                     </svg>
-                    <span class="text-white text-sm font-medium">{{ Auth::user()->name }}</span>
+                    <span class="text-white text-sm font-medium">Unknown user - Please position yourself properly</span>
                 </div>
             </div>
 
@@ -226,6 +228,9 @@
         const typeButtons = document.querySelectorAll('.cam-type-btn');
         const coverageGuide = document.getElementById('coverageGuide');
         const coverageGuideOkBtn = document.getElementById('coverageGuideOkBtn');
+        const noFaceDetected = document.getElementById('noFaceDetected');
+        const faceDetected = document.getElementById('faceDetected');
+        const unknownFace = document.getElementById('unknownFace');
 
         const autoCapture = shell?.dataset.autoCapture === '1';
         const autoSubmit = shell?.dataset.autoSubmit === '1';
@@ -239,6 +244,8 @@
         let autoCaptureScheduled = false;
         let submitting = false;
         let geoWatcherId = null;
+        let faceDetectionTimer = null;
+        const detector = ('FaceDetector' in window) ? new window.FaceDetector({ fastMode: true, maxDetectedFaces: 1 }) : null;
 
         function setHint(text) {
             if (hint) hint.textContent = text;
@@ -252,11 +259,16 @@
                 previewImg.classList.add('hidden');
                 liveControls.classList.remove('hidden');
                 previewControls.classList.add('hidden');
+                startFaceDetection();
             } else {
                 video.classList.add('hidden');
                 previewImg.classList.remove('hidden');
                 liveControls.classList.add('hidden');
                 previewControls.classList.remove('hidden');
+                if (faceDetectionTimer) {
+                    clearInterval(faceDetectionTimer);
+                    faceDetectionTimer = null;
+                }
             }
         }
 
@@ -269,6 +281,10 @@
             if (geoWatcherId !== null && navigator.geolocation) {
                 navigator.geolocation.clearWatch(geoWatcherId);
                 geoWatcherId = null;
+            }
+            if (faceDetectionTimer) {
+                clearInterval(faceDetectionTimer);
+                faceDetectionTimer = null;
             }
         }
 
@@ -300,6 +316,103 @@
                 btn.classList.toggle('text-slate-300', !on);
                 btn.classList.toggle('hover:text-white', !on);
             });
+        }
+
+        function updateFaceDetectionState(detected, isKnown = true) {
+            if (!noFaceDetected || !faceDetected || !unknownFace) return;
+
+            // Hide all states first
+            noFaceDetected.classList.add('hidden');
+            faceDetected.classList.add('hidden');
+            unknownFace.classList.add('hidden');
+
+            // Show appropriate state
+            if (!detected) {
+                noFaceDetected.classList.remove('hidden');
+            } else if (isKnown) {
+                faceDetected.classList.remove('hidden');
+            } else {
+                unknownFace.classList.remove('hidden');
+            }
+        }
+
+        async function detectFace() {
+            if (!video.videoWidth) return { detected: false, isKnown: false };
+
+            const heuristic = () => {
+                const w = 160;
+                const h = 120;
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                ctx.drawImage(video, 0, 0, w, h);
+                const image = ctx.getImageData(0, 0, w, h).data;
+                let centerEnergy = 0;
+                let outerEnergy = 0;
+                let centerLum = 0;
+                let centerCount = 0;
+                let outerCount = 0;
+                for (let y = 1; y < h - 1; y += 2) {
+                    for (let x = 1; x < w - 1; x += 2) {
+                        const idx = (y * w + x) * 4;
+                        const g = (image[idx] * 0.299) + (image[idx + 1] * 0.587) + (image[idx + 2] * 0.114);
+                        const right = (image[idx + 4] * 0.299) + (image[idx + 5] * 0.587) + (image[idx + 6] * 0.114);
+                        const downIdx = ((y + 1) * w + x) * 4;
+                        const down = (image[downIdx] * 0.299) + (image[downIdx + 1] * 0.587) + (image[downIdx + 2] * 0.114);
+                        const edge = Math.abs(g - right) + Math.abs(g - down);
+                        const inCenter = x > 42 && x < 118 && y > 26 && y < 94;
+                        if (inCenter) {
+                            centerEnergy += edge;
+                            centerLum += g;
+                            centerCount += 1;
+                        } else {
+                            outerEnergy += edge;
+                            outerCount += 1;
+                        }
+                    }
+                }
+                const centerAvg = centerCount ? centerEnergy / centerCount : 0;
+                const outerAvg = outerCount ? outerEnergy / outerCount : 0;
+                const lumAvg = centerCount ? centerLum / centerCount : 0;
+                const detected = (centerAvg > 6 || outerAvg > 6) && lumAvg > 35;
+                const edgeBalance = outerAvg > 0 ? (centerAvg / outerAvg) : 1;
+                const good = detected && edgeBalance > 0.82 && edgeBalance < 1.18 && lumAvg > 55 && lumAvg < 210;
+                return { detected: detected && good, isKnown: detected && good };
+            };
+
+            if (!detector) {
+                return heuristic();
+            }
+            try {
+                const faces = await detector.detect(video);
+                if (!faces || !faces.length) return heuristic();
+                const box = faces[0].boundingBox;
+                const layout = (typeof window.polarisVideoFaceLayoutOnDisplay === 'function')
+                    ? window.polarisVideoFaceLayoutOnDisplay(video, box)
+                    : (function () {
+                        const cx = box.x + (box.width / 2);
+                        const cy = box.y + (box.height / 2);
+                        return {
+                            xRatio: cx / video.videoWidth,
+                            yRatio: cy / video.videoHeight,
+                            sizeRatio: box.width / video.videoWidth,
+                        };
+                    })();
+                const { xRatio, yRatio, sizeRatio } = layout;
+                const good = xRatio > 0.33 && xRatio < 0.67 && yRatio > 0.28 && yRatio < 0.63 && sizeRatio > 0.22 && sizeRatio < 0.56;
+                return { detected: true, isKnown: good };
+            } catch (_e) {
+                return heuristic();
+            }
+        }
+
+        function startFaceDetection() {
+            if (faceDetectionTimer) return;
+            faceDetectionTimer = setInterval(async () => {
+                if (mode !== 'live' || !stream) return;
+                const state = await detectFace();
+                updateFaceDetectionState(state.detected, state.isKnown);
+            }, 500);
         }
 
         function beginLiveLocationWatch() {
@@ -400,6 +513,8 @@
             stopCamera();
             autoCaptureScheduled = false;
             setMode('live');
+            // Initialize face detection state
+            updateFaceDetectionState(false, false);
             try {
                 setHint('Opening camera…');
                 stream = await window.polarisRequestCameraOnly(video, { setHint });
@@ -460,25 +575,12 @@
             setMode('preview');
             setHint(isAuto ? 'Photo captured automatically. Submit or retake.' : 'Review your photo, then submit.');
 
-            // Show user detection frame when photo is captured
-            showUserDetection();
-
             if (autoSubmit && !submitting) {
                 submitting = true;
                 form.requestSubmit();
             }
         }
 
-        function showUserDetection() {
-            const userDetectionFrame = document.getElementById('userDetectionFrame');
-            if (userDetectionFrame) {
-                userDetectionFrame.classList.remove('hidden');
-                // Auto-hide after 3 seconds
-                setTimeout(() => {
-                    userDetectionFrame.classList.add('hidden');
-                }, 3000);
-            }
-        }
 
         async function retake() {
             faceInput.value = '';

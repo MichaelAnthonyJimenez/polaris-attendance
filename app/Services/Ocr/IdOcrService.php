@@ -237,12 +237,22 @@ class IdOcrService
         )));
 
         if ($lines !== []) {
-            $fields['all_text_lines'] = $lines;
+            $fields['all_text_lines'] = array_slice($lines, 0, 40);
         }
+
+        $profile = $this->idTypeProfile($idType);
+        if ($profile) {
+            $fields['id_type_profile'] = [
+                'key' => (string) ($profile['key'] ?? ''),
+                'label' => (string) ($profile['label'] ?? ''),
+            ];
+        }
+
+        $fields['detected_language'] = $this->detectLanguage($normalized);
 
         $keyValues = [];
         foreach ($lines as $line) {
-            if (preg_match('/^\s*([A-Z][A-Z0-9 .\/_-]{1,40})\s*[:#]\s*(.{1,120})\s*$/i', $line, $m)) {
+            if (preg_match('/^\s*([A-Z][A-Z0-9 .\/_-]{1,45})\s*[:#]\s*(.{1,140})\s*$/i', $line, $m)) {
                 $label = strtolower(trim((string) $m[1]));
                 $label = preg_replace('/[^a-z0-9]+/', '_', $label) ?? $label;
                 $label = trim($label, '_');
@@ -255,12 +265,22 @@ class IdOcrService
             $fields['key_values'] = $keyValues;
         }
 
-        $profile = $this->idTypeProfile($idType);
-        if ($profile) {
-            $fields['id_type_profile'] = [
-                'key' => (string) ($profile['key'] ?? ''),
-                'label' => (string) ($profile['label'] ?? ''),
-            ];
+        $labelPatterns = [
+            'surname' => '/(?:apelido|last\s*name|surname)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
+            'given_names' => '/(?:mga\s*pangalan|given\s*names?)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
+            'middle_name' => '/(?:gitnang\s*apelyido|middle\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
+            'birth_date' => '/(?:petsa\s*ng\s*kapanganakan|date\s*of\s*birth|birthdate)\s*[:#]?\s*([A-Z0-9,\-\/ ]{6,})/i',
+            'address' => '/(?:tirahan|address)\s*[:#]?\s*([A-Z0-9,\-\/ .]{6,})/i',
+            'sex' => '/(?:kasarian|sex)\s*[:#]?\s*([A-Z]{3,10})/i',
+            'blood_type' => '/(?:uri\s*ng\s*dugo|blood\s*type)\s*[:#]?\s*([ABO][+-]?)/i',
+            'civil_status' => '/(?:kalagayang\s*sibil|marital\s*status)\s*[:#]?\s*([A-Z ]{4,20})/i',
+            'place_of_birth' => '/(?:lugar\s*ng\s*kapanganakan|place\s*of\s*birth)\s*[:#]?\s*([A-Z ,.-]{4,})/i',
+            'issue_date' => '/(?:araw\s*ng\s*pagkakaloob|date\s*of\s*issue)\s*[:#]?\s*([A-Z0-9,\-\/ ]{5,})/i',
+        ];
+        foreach ($labelPatterns as $field => $pattern) {
+            if (preg_match($pattern, $normalized, $m)) {
+                $fields[$field] = trim((string) $m[1]);
+            }
         }
 
         $idPatterns = [];
@@ -268,6 +288,7 @@ class IdOcrService
             $idPatterns = $profile['id_number_patterns'];
         }
         $idPatterns[] = '/(?:id|license|lic|no|number)\s*[:#]?\s*([A-Z0-9-]{5,})/i';
+        $idPatterns[] = '/\b(\d{4}-\d{4}-\d{4}-\d{4})\b/';
         foreach ($idPatterns as $pattern) {
             if (preg_match($pattern, $normalized, $m)) {
                 $fields['id_number'] = trim((string) $m[1]);
@@ -279,7 +300,7 @@ class IdOcrService
         if (is_array($profile) && isset($profile['name_patterns']) && is_array($profile['name_patterns'])) {
             $namePatterns = $profile['name_patterns'];
         }
-        $namePatterns[] = '/(?:name|full\s*name|given\s*name|surname|last\s*name|first\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i';
+        $namePatterns[] = '/(?:name|full\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i';
         foreach ($namePatterns as $pattern) {
             if (preg_match($pattern, $normalized, $m)) {
                 $fields['name_line'] = trim((string) $m[1]);
@@ -287,73 +308,76 @@ class IdOcrService
             }
         }
 
+        if (! isset($fields['name_line'])) {
+            foreach ($lines as $line) {
+                if (
+                    preg_match('/^[A-Z][A-Z .,\']{6,}$/', strtoupper($line))
+                    && ! preg_match('/\b(?:republic|philippines|address|city|college|office|department|rules|id)\b/i', $line)
+                ) {
+                    $fields['name_line'] = trim($line);
+                    break;
+                }
+            }
+        }
+
+        if (! isset($fields['full_name'])) {
+            if (isset($fields['surname'], $fields['given_names'])) {
+                $fields['full_name'] = trim($fields['surname'].', '.$fields['given_names'].(isset($fields['middle_name']) ? ' '.$fields['middle_name'] : ''));
+            } elseif (isset($fields['name_line'])) {
+                $fields['full_name'] = $fields['name_line'];
+            }
+        }
+
         if (preg_match_all('/\b(?:\d{4}[-\/]\d{2}[-\/]\d{2}|\d{2}[-\/]\d{2}[-\/]\d{4}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})\b/', $normalized, $m) && ! empty($m[0])) {
             $fields['date_values'] = array_values(array_unique(array_map('trim', $m[0])));
         }
 
-        if (preg_match_all('/\b[A-Z0-9]{6,20}\b/', strtoupper($normalized), $m) && ! empty($m[0])) {
-            $tokens = array_values(array_unique($m[0]));
-            if ($tokens !== []) {
-                $fields['alphanumeric_tokens'] = array_slice($tokens, 0, 25);
-            }
-        }
-
-        $nameCandidates = [];
-        // Pattern 1: Look for "LASTNAME, FIRSTNAME MIDDLEINITIAL" pattern
-        foreach ($lines as $line) {
-            $upperLine = strtoupper($line);
-            if (
-                preg_match('/^[A-Z][A-Z .,\']{4,}$/', $upperLine)
-                && ! preg_match('/\b(?:republic|philippines|address|birth|sex|nationality|id|license|number|college|university|center|school|campus|city|municipality|province|region|government|office|department)\b/i', $line)
-                && preg_match('/\b[A-Z]{2,}\s*,\s*[A-Z]{2,}(?:\s+[A-Z]\.?)?\b/', $upperLine) // Look for "LASTNAME, FIRSTNAME" or "LASTNAME, FIRSTNAME M."
-            ) {
-                $nameCandidates[] = trim($line);
-            }
-        }
-        // Pattern 2: Extract names from lines with comma-separated names
+        $importantLines = [];
         foreach ($lines as $line) {
             if (
-                preg_match('/([A-Z][A-Z .,\']{2,})\s*,\s*([A-Z][A-Z .,\']{2,})(?:\s+([A-Z]\.))?/', $line, $matches)
-                && ! preg_match('/\b(?:college|university|center|school|campus|city|municipality|province|region|government|office|department)\b/i', $line)
+                preg_match('/\b(?:name|apelido|pangalan|birth|kapanganakan|address|tirahan|sex|kasarian|id|license|passport|student|date)\b/i', $line)
+                || preg_match('/\b\d{4}-\d{4}-\d{4}-\d{4}\b/', $line)
             ) {
-                $fullName = trim($matches[1] . ', ' . $matches[2] . (isset($matches[3]) ? ' ' . $matches[3] : ''));
-                if (! in_array($fullName, $nameCandidates)) {
-                    $nameCandidates[] = $fullName;
-                }
+                $importantLines[] = $line;
             }
         }
-        // Pattern 3: Look for lines that start with common name indicators
-        foreach ($lines as $line) {
-            if (
-                preg_match('/^(?:name|full\s*name|given\s*name|surname|last\s*name|first\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i', $line, $matches)
-                && ! preg_match('/\b(?:college|university|center|school|campus|city|municipality|province|region|government|office|department)\b/i', $matches[1])
-            ) {
-                $nameCandidates[] = trim($matches[1]);
-            }
-        }
-        // Pattern 4: Look for lines that contain name-like patterns (all caps with proper name structure)
-        foreach ($lines as $line) {
-            $upperLine = strtoupper($line);
-            if (
-                preg_match('/^[A-Z][A-Z ]{4,}$/', $upperLine) // All caps line
-                && ! preg_match('/\b(?:republic|philippines|address|birth|sex|nationality|id|license|number|college|university|center|school|campus|city|municipality|province|region|government|office|department|street|road|barangay|district)\b/i', $line)
-                && preg_match('/\b[A-Z]{2,}\s+[A-Z]{2,}\b/', $upperLine) // At least two words
-                && strlen($line) >= 8 // Minimum length for a name
-            ) {
-                // Check if it looks like a person's name (not too long, reasonable word count)
-                $words = array_filter(explode(' ', $line));
-                if (count($words) >= 2 && count($words) <= 4) {
-                    $nameCandidates[] = trim($line);
-                }
-            }
-        }
-        if ($nameCandidates !== []) {
-            $fields['name_candidates'] = array_values(array_unique($nameCandidates));
+        if ($importantLines !== []) {
+            $fields['important_lines'] = array_slice(array_values(array_unique($importantLines)), 0, 20);
         }
 
         $fields['raw_text'] = $rawText;
 
         return $fields;
+    }
+
+    private function detectLanguage(string $text): array
+    {
+        $t = strtolower($text);
+        $filipinoHits = 0;
+        $englishHits = 0;
+
+        foreach (['apelido', 'mga pangalan', 'gitnang apelyido', 'petsa ng kapanganakan', 'tirahan', 'kasarian', 'uri ng dugo', 'kalagayang sibil', 'lugar ng kapanganakan'] as $kw) {
+            if (str_contains($t, $kw)) {
+                $filipinoHits++;
+            }
+        }
+        foreach (['republic', 'last name', 'given name', 'middle name', 'date of birth', 'address', 'sex', 'blood type', 'marital status', 'place of birth'] as $kw) {
+            if (str_contains($t, $kw)) {
+                $englishHits++;
+            }
+        }
+
+        if ($filipinoHits > 0 && $englishHits > 0) {
+            return ['code' => 'tl-en', 'label' => 'Filipino/English'];
+        }
+        if ($filipinoHits > 0) {
+            return ['code' => 'tl', 'label' => 'Filipino'];
+        }
+        if ($englishHits > 0) {
+            return ['code' => 'en', 'label' => 'English'];
+        }
+
+        return ['code' => 'unknown', 'label' => 'Unknown'];
     }
 
     private function mergeIdContext(array $ocrResult, ?string $idType): array

@@ -738,10 +738,12 @@
     function formatFieldValue(value) {
         if (value === null || value === undefined) return '';
         if (Array.isArray(value)) {
-            return value.map((entry) => String(entry ?? '')).join(', ');
+            return value.map((entry) => String(entry ?? '')).join('<br>');
         }
         if (typeof value === 'object') {
-            return JSON.stringify(value);
+            return Object.entries(value)
+                .map(([k, v]) => String(k).replace(/_/g, ' ') + ': ' + String(v ?? ''))
+                .join('<br>');
         }
         return String(value);
     }
@@ -749,8 +751,54 @@
     function appendOcrField(key, value) {
         if (!confirmOcrFields) return;
         const p = document.createElement('p');
-        p.innerHTML = '<span class="text-slate-400">' + key.replace(/_/g, ' ') + ':</span> ' + formatFieldValue(value);
+        p.className = 'mt-1';
+        p.innerHTML = '<span class="text-slate-400">' + key.replace(/_/g, ' ') + ':</span><br><span class="text-slate-100">' + formatFieldValue(value) + '</span>';
         confirmOcrFields.appendChild(p);
+    }
+
+    function renderPriorityFields(fields, ocrRawText) {
+        if (!confirmOcrFields) return;
+        confirmOcrFields.innerHTML = '';
+        const priority = [
+            'id_type_profile',
+            'detected_language',
+            'id_number',
+            'full_name',
+            'surname',
+            'given_names',
+            'middle_name',
+            'birth_date',
+            'sex',
+            'blood_type',
+            'civil_status',
+            'address',
+            'place_of_birth',
+            'issue_date',
+            'important_lines',
+        ];
+        const shown = new Set();
+        priority.forEach((key) => {
+            if (Object.prototype.hasOwnProperty.call(fields, key) && fields[key]) {
+                appendOcrField(key, fields[key]);
+                shown.add(key);
+            }
+        });
+
+        Object.entries(fields).forEach(([key, value]) => {
+            if (shown.has(key) || ['all_text_lines', 'raw_text', 'key_values', 'date_values'].includes(key)) {
+                return;
+            }
+            appendOcrField(key, value);
+        });
+
+        if (fields.key_values && typeof fields.key_values === 'object') {
+            appendOcrField('other_detected_fields', fields.key_values);
+        }
+
+        const raw = fields.raw_text || ocrRawText;
+        if (raw) {
+            appendOcrField('raw_text', raw);
+        }
     }
 
     function renderConfirmStaticDetails() {
@@ -822,14 +870,8 @@
                 }
                 return;
             }
-            if (confirmOcrStatus) confirmOcrStatus.textContent = 'OCR worked. Please review extracted fields:';
-            if (confirmOcrFields) {
-                confirmOcrFields.innerHTML = '';
-                entries.forEach(([key, value]) => appendOcrField(key, value));
-                if (!Object.prototype.hasOwnProperty.call(fields, 'raw_text') && ocr.raw_text) {
-                    appendOcrField('raw_text', ocr.raw_text);
-                }
-            }
+            if (confirmOcrStatus) confirmOcrStatus.textContent = 'OCR worked. Please review important extracted fields:';
+            renderPriorityFields(fields, ocr.raw_text || '');
         } catch (_err) {
             if (confirmOcrStatus) confirmOcrStatus.textContent = 'OCR failed or unavailable.';
         }

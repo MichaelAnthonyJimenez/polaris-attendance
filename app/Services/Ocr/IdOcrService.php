@@ -8,7 +8,7 @@ use Symfony\Component\Process\Process;
 
 class IdOcrService
 {
-    public function extractFromPublicPath(?string $publicDiskPath): array
+    public function extractFromPublicPath(?string $publicDiskPath, ?string $idType = null): array
     {
         if (! $publicDiskPath) {
             return ['status' => 'skipped', 'reason' => 'missing_image'];
@@ -37,14 +37,14 @@ class IdOcrService
             foreach ($localProviders as $localProvider) {
                 $local = $this->extractWithLocalEngine($absolute, $localProvider);
                 if (($local['status'] ?? null) === 'ok') {
-                    return $local;
+                    return $this->mergeIdContext($local, $idType);
                 }
             }
 
             $compressedPath = $this->createOcrSpaceSizedImage($absolute, $maxOcrSpaceSize);
             if ($compressedPath) {
                 try {
-                    return $this->extractWithOcrSpace($compressedPath);
+                    return $this->mergeIdContext($this->extractWithOcrSpace($compressedPath), $idType);
                 } finally {
                     @unlink($compressedPath);
                 }
@@ -56,12 +56,12 @@ class IdOcrService
         if (in_array($provider, ['easyocr', 'paddleocr'], true)) {
             $local = $this->extractWithLocalEngine($absolute, $provider);
             if (($local['status'] ?? null) === 'ok') {
-                return $local;
+                return $this->mergeIdContext($local, $idType);
             }
             // Fall back to OCR.Space when local OCR is unavailable.
         }
 
-        return $this->extractWithOcrSpace($absolute);
+        return $this->mergeIdContext($this->extractWithOcrSpace($absolute), $idType);
     }
 
     private function extractWithLocalEngine(string $absolutePath, string $engine): array
@@ -227,7 +227,7 @@ class IdOcrService
         return null;
     }
 
-    private function extractFields(string $rawText): array
+    private function extractFields(string $rawText, ?string $idType = null): array
     {
         $fields = [];
         $normalized = preg_replace('/\r\n?/', "\n", trim($rawText)) ?? '';
@@ -255,12 +255,36 @@ class IdOcrService
             $fields['key_values'] = $keyValues;
         }
 
-        if (preg_match('/(?:id|license|lic|no|number)\s*[:#]?\s*([A-Z0-9-]{5,})/i', $normalized, $m)) {
-            $fields['id_number'] = trim((string) $m[1]);
+        $profile = $this->idTypeProfile($idType);
+        if ($profile) {
+            $fields['id_type_profile'] = [
+                'key' => (string) ($profile['key'] ?? ''),
+                'label' => (string) ($profile['label'] ?? ''),
+            ];
         }
 
-        if (preg_match('/(?:name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i', $normalized, $m)) {
-            $fields['name_line'] = trim((string) $m[1]);
+        $idPatterns = [];
+        if (is_array($profile) && isset($profile['id_number_patterns']) && is_array($profile['id_number_patterns'])) {
+            $idPatterns = $profile['id_number_patterns'];
+        }
+        $idPatterns[] = '/(?:id|license|lic|no|number)\s*[:#]?\s*([A-Z0-9-]{5,})/i';
+        foreach ($idPatterns as $pattern) {
+            if (preg_match($pattern, $normalized, $m)) {
+                $fields['id_number'] = trim((string) $m[1]);
+                break;
+            }
+        }
+
+        $namePatterns = [];
+        if (is_array($profile) && isset($profile['name_patterns']) && is_array($profile['name_patterns'])) {
+            $namePatterns = $profile['name_patterns'];
+        }
+        $namePatterns[] = '/(?:name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i';
+        foreach ($namePatterns as $pattern) {
+            if (preg_match($pattern, $normalized, $m)) {
+                $fields['name_line'] = trim((string) $m[1]);
+                break;
+            }
         }
 
         if (preg_match_all('/\b(?:\d{4}[-\/]\d{2}[-\/]\d{2}|\d{2}[-\/]\d{2}[-\/]\d{4}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})\b/', $normalized, $m) && ! empty($m[0])) {
@@ -290,6 +314,98 @@ class IdOcrService
         $fields['raw_text'] = $rawText;
 
         return $fields;
+    }
+
+    private function mergeIdContext(array $ocrResult, ?string $idType): array
+    {
+        if (($ocrResult['status'] ?? null) !== 'ok') {
+            return $ocrResult;
+        }
+
+        $rawText = trim((string) ($ocrResult['raw_text'] ?? ''));
+        $fields = $this->extractFields($rawText, $idType);
+        $ocrResult['fields'] = $fields;
+        if ($idType) {
+            $ocrResult['id_type'] = $idType;
+        }
+
+        return $ocrResult;
+    }
+
+    private function idTypeProfile(?string $idType): ?array
+    {
+        $key = strtolower(trim((string) $idType));
+        if ($key === '' || $key === 'other' || $key === 'ocr_auto_detect') {
+            return null;
+        }
+
+        $profiles = [
+            'philsys_national_id' => [
+                'label' => 'PhilSys National ID',
+                'id_number_patterns' => [
+                    '/(?:pcn|philippine\s*identification\s*number|philsys\s*number)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                ],
+            ],
+            'drivers_license' => [
+                'label' => "Driver's License",
+                'id_number_patterns' => [
+                    '/(?:license\s*no\.?|lic\.?\s*no\.?)\s*[:#]?\s*([A-Z0-9-]{5,})/i',
+                ],
+            ],
+            'passport' => [
+                'label' => 'Passport',
+                'id_number_patterns' => [
+                    '/(?:passport\s*no\.?)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                ],
+            ],
+            'student_id' => ['label' => 'Student ID'],
+            'umid' => [
+                'label' => 'UMID',
+                'id_number_patterns' => [
+                    '/(?:crn|umid|sss)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                ],
+            ],
+            'prc_id' => [
+                'label' => 'PRC ID',
+                'id_number_patterns' => [
+                    '/(?:registration\s*no\.?|prc\s*no\.?)\s*[:#]?\s*([A-Z0-9-]{5,})/i',
+                ],
+            ],
+            'postal_id' => ['label' => 'Postal ID'],
+            'voters_id' => [
+                'label' => "Voter's ID",
+                'id_number_patterns' => [
+                    '/(?:voter|vin)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                ],
+            ],
+            'philhealth_id' => [
+                'label' => 'PhilHealth ID',
+                'id_number_patterns' => [
+                    '/(?:philhealth|pin)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                ],
+            ],
+            'sss_id' => [
+                'label' => 'SSS ID',
+                'id_number_patterns' => [
+                    '/(?:sss\s*no\.?)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                ],
+            ],
+            'pagibig_loyalty_card' => [
+                'label' => 'Pag-IBIG Loyalty Card',
+                'id_number_patterns' => [
+                    '/(?:pag-?ibig|hdlmf)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                ],
+            ],
+            'senior_citizen_id' => ['label' => 'Senior Citizen ID'],
+            'ofw_id' => ['label' => 'OFW ID'],
+            'barangay_id' => ['label' => 'Barangay ID'],
+        ];
+
+        if (! isset($profiles[$key])) {
+            return null;
+        }
+
+        return array_merge(['key' => $key], $profiles[$key]);
     }
 }
 

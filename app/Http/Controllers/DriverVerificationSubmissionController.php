@@ -152,11 +152,12 @@ class DriverVerificationSubmissionController extends Controller
             $verification->id_image_back_path = $idBackPath;
 
             $meta['proof_mode'] = $proofMode;
-            $meta['id_type'] = $proofMode === 'selfie_with_id'
+            $selectedIdType = $proofMode === 'selfie_with_id'
                 ? 'ocr_auto_detect'
                 : (string) ($data['id_type'] ?? 'other');
+            $meta['id_type'] = $selectedIdType;
             $ocrSourcePath = $idFrontPath ?: $selfieWithIdPath;
-            $meta['ocr'] = $this->idOcrService->extractFromPublicPath($ocrSourcePath);
+            $meta['ocr'] = $this->idOcrService->extractFromPublicPath($ocrSourcePath, $selectedIdType);
         }
 
         if ($meta !== []) {
@@ -181,6 +182,7 @@ class DriverVerificationSubmissionController extends Controller
 
         $data = $request->validate([
             'proof_mode' => ['required', 'in:selfie_with_id,upload_file'],
+            'id_type' => ['nullable', 'string', 'max:50'],
             'id_front_base64' => ['nullable', 'string'],
             'id_front_file' => ['nullable', 'file', 'max:10240'],
         ]);
@@ -196,7 +198,8 @@ class DriverVerificationSubmissionController extends Controller
             return response()->json(['status' => 'error', 'reason' => 'missing_id_front'], 422);
         }
 
-        $ocr = $this->idOcrService->extractFromPublicPath($ocrPath);
+        $selectedIdType = (string) ($data['id_type'] ?? 'other');
+        $ocr = $this->idOcrService->extractFromPublicPath($ocrPath, $selectedIdType);
 
         return response()->json([
             'status' => 'ok',

@@ -776,6 +776,7 @@
         resetConfirmOcrView('Checking OCR…');
         const formData = new FormData();
         formData.append('proof_mode', proofMode || 'upload_file');
+        formData.append('id_type', proofMode === 'selfie_with_id' ? 'ocr_auto_detect' : (idTypeSelect?.value || 'other'));
         if (proofMode === 'upload_file') {
             if (inputs.front.value) {
                 formData.append('id_front_base64', inputs.front.value);

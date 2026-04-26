@@ -30,7 +30,8 @@ class IdOcrService
 
         $provider = strtolower(trim((string) config('services.ocr_space.provider', 'ocr_space')));
 
-        // If file is larger than OCR.space limit, force local OCR
+        // If file is larger than OCR.space limit, try local OCR first.
+        // If local OCR is unavailable, compress image and retry OCR.space.
         if ($fileSize > $maxOcrSpaceSize) {
             $localProviders = ['easyocr', 'paddleocr'];
             foreach ($localProviders as $localProvider) {
@@ -39,7 +40,17 @@ class IdOcrService
                     return $local;
                 }
             }
-            return ['status' => 'error', 'reason' => 'file_too_large_for_ocr_space', 'message' => 'File too large for OCR.space (1MB limit) and local OCR unavailable'];
+
+            $compressedPath = $this->createOcrSpaceSizedImage($absolute, $maxOcrSpaceSize);
+            if ($compressedPath) {
+                try {
+                    return $this->extractWithOcrSpace($compressedPath);
+                } finally {
+                    @unlink($compressedPath);
+                }
+            }
+
+            return ['status' => 'error', 'reason' => 'file_too_large_for_ocr_space', 'message' => 'File too large for OCR.space (1MB limit), and fallback compression/local OCR unavailable'];
         }
 
         if (in_array($provider, ['easyocr', 'paddleocr'], true)) {
@@ -50,51 +61,7 @@ class IdOcrService
             // Fall back to OCR.Space when local OCR is unavailable.
         }
 
-        $apiKey = trim((string) config('services.ocr_space.api_key', ''));
-        if ($apiKey === '') {
-            $apiKey = 'helloworld';
-        }
-
-        try {
-            $response = Http::asMultipart()
-                ->timeout(20)
-                ->attach('file', file_get_contents($absolute), basename($absolute))
-                ->post((string) config('services.ocr_space.endpoint', 'https://api.ocr.space/parse/image'), [
-                    'apikey' => $apiKey,
-                    'language' => (string) config('services.ocr_space.language', 'eng'),
-                    'isOverlayRequired' => 'false',
-                    'scale' => 'true',
-                ]);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return ['status' => 'error', 'reason' => 'request_failed'];
-        }
-
-        if (! $response->ok()) {
-            return ['status' => 'error', 'reason' => 'http_' . $response->status()];
-        }
-
-        $payload = $response->json();
-        if ((bool) data_get($payload, 'IsErroredOnProcessing', false) === true) {
-            $errorMessage = (string) data_get($payload, 'ErrorMessage.0', data_get($payload, 'ErrorMessage', 'processing_error'));
-
-            return ['status' => 'error', 'reason' => 'ocr_processing_error', 'message' => $errorMessage];
-        }
-
-        $parsed = data_get($payload, 'ParsedResults.0.ParsedText', '');
-        $rawText = trim((string) $parsed);
-
-        if ($rawText === '') {
-            return ['status' => 'ok', 'raw_text' => '', 'fields' => []];
-        }
-
-        return [
-            'status' => 'ok',
-            'raw_text' => $rawText,
-            'fields' => $this->extractFields($rawText),
-            'provider' => 'ocr_space',
-        ];
+        return $this->extractWithOcrSpace($absolute);
     }
 
     private function extractWithLocalEngine(string $absolutePath, string $engine): array
@@ -139,6 +106,125 @@ class IdOcrService
             'fields' => $this->extractFields($rawText),
             'provider' => $engine,
         ];
+    }
+
+    private function extractWithOcrSpace(string $absolutePath): array
+    {
+        $apiKey = trim((string) config('services.ocr_space.api_key', ''));
+        if ($apiKey === '') {
+            $apiKey = 'helloworld';
+        }
+
+        try {
+            $response = Http::asMultipart()
+                ->timeout(20)
+                ->attach('file', file_get_contents($absolutePath), basename($absolutePath))
+                ->post((string) config('services.ocr_space.endpoint', 'https://api.ocr.space/parse/image'), [
+                    'apikey' => $apiKey,
+                    'language' => (string) config('services.ocr_space.language', 'eng'),
+                    'isOverlayRequired' => 'false',
+                    'scale' => 'true',
+                ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return ['status' => 'error', 'reason' => 'request_failed'];
+        }
+
+        if (! $response->ok()) {
+            return ['status' => 'error', 'reason' => 'http_' . $response->status()];
+        }
+
+        $payload = $response->json();
+        if ((bool) data_get($payload, 'IsErroredOnProcessing', false) === true) {
+            $errorMessage = (string) data_get($payload, 'ErrorMessage.0', data_get($payload, 'ErrorMessage', 'processing_error'));
+
+            return ['status' => 'error', 'reason' => 'ocr_processing_error', 'message' => $errorMessage];
+        }
+
+        $parsed = data_get($payload, 'ParsedResults.0.ParsedText', '');
+        $rawText = trim((string) $parsed);
+
+        if ($rawText === '') {
+            return ['status' => 'ok', 'raw_text' => '', 'fields' => []];
+        }
+
+        return [
+            'status' => 'ok',
+            'raw_text' => $rawText,
+            'fields' => $this->extractFields($rawText),
+            'provider' => 'ocr_space',
+        ];
+    }
+
+    private function createOcrSpaceSizedImage(string $absolutePath, int $maxBytes): ?string
+    {
+        if (! function_exists('imagecreatetruecolor')) {
+            return null;
+        }
+
+        $imageInfo = @getimagesize($absolutePath);
+        if (! is_array($imageInfo)) {
+            return null;
+        }
+
+        $mime = strtolower((string) ($imageInfo['mime'] ?? ''));
+        $src = match ($mime) {
+            'image/jpeg', 'image/jpg' => @imagecreatefromjpeg($absolutePath),
+            'image/png' => @imagecreatefrompng($absolutePath),
+            'image/webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($absolutePath) : false,
+            default => false,
+        };
+
+        if (! $src) {
+            return null;
+        }
+
+        $srcWidth = imagesx($src);
+        $srcHeight = imagesy($src);
+        if ($srcWidth <= 0 || $srcHeight <= 0) {
+            imagedestroy($src);
+
+            return null;
+        }
+
+        $tmpPath = tempnam(sys_get_temp_dir(), 'ocr_');
+        if ($tmpPath === false) {
+            imagedestroy($src);
+
+            return null;
+        }
+
+        $targetPath = $tmpPath . '.jpg';
+        @unlink($tmpPath);
+
+        $scales = [1.0, 0.9, 0.8, 0.7, 0.6];
+        foreach ($scales as $scale) {
+            $dstWidth = max(1, (int) round($srcWidth * $scale));
+            $dstHeight = max(1, (int) round($srcHeight * $scale));
+            $dst = imagecreatetruecolor($dstWidth, $dstHeight);
+            if (! $dst) {
+                continue;
+            }
+
+            imagecopyresampled($dst, $src, 0, 0, 0, 0, $dstWidth, $dstHeight, $srcWidth, $srcHeight);
+
+            foreach ([80, 70, 60, 50, 40, 30] as $quality) {
+                if (@imagejpeg($dst, $targetPath, $quality) && @filesize($targetPath) <= $maxBytes) {
+                    imagedestroy($dst);
+                    imagedestroy($src);
+
+                    return $targetPath;
+                }
+            }
+
+            imagedestroy($dst);
+        }
+
+        imagedestroy($src);
+        @unlink($targetPath);
+
+        return null;
     }
 
     private function extractFields(string $rawText): array

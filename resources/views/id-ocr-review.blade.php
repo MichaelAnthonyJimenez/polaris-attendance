@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="fixed inset-0 z-[2147483647] bg-slate-950 text-white overflow-y-auto">
-    <div class="min-h-full px-4 py-4" style="padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: max(1rem, env(safe-area-inset-bottom));">
+    <div class="min-h-screen px-4 py-4" style="padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: max(5rem, env(safe-area-inset-bottom));">
         <div class="mx-auto w-full max-w-md">
             <div class="glass rounded-2xl border border-white/10 p-4 sm:p-5">
                 <div class="flex items-center justify-between gap-3">

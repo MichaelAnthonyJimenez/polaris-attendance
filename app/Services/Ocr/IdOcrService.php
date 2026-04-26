@@ -300,13 +300,29 @@ class IdOcrService
 
         $nameCandidates = [];
         foreach ($lines as $line) {
+            $upperLine = strtoupper($line);
             if (
-                preg_match('/^[A-Z][A-Z .,\']{4,}$/', strtoupper($line))
-                && ! preg_match('/\b(?:republic|philippines|address|birth|sex|nationality|id|license|number)\b/i', $line)
+                preg_match('/^[A-Z][A-Z .,\']{4,}$/', $upperLine)
+                && ! preg_match('/\b(?:republic|philippines|address|birth|sex|nationality|id|license|number|college|university|center|school|campus|city|municipality|province|region)\b/i', $line)
+                && preg_match('/\b[A-Z]{2,}\s*,\s*[A-Z]{2,}/', $upperLine) // Look for "LASTNAME, FIRSTNAME" pattern
             ) {
                 $nameCandidates[] = trim($line);
             }
         }
+
+        // Also try to extract names from lines that contain comma-separated names
+        foreach ($lines as $line) {
+            if (
+                preg_match('/([A-Z][A-Z .,\']{2,})\s*,\s*([A-Z][A-Z .,\']{2,})/', $line, $matches)
+                && ! preg_match('/\b(?:college|university|center|school|campus|city|municipality|province|region)\b/i', $line)
+            ) {
+                $fullName = trim($matches[1] . ', ' . $matches[2]);
+                if (! in_array($fullName, $nameCandidates)) {
+                    $nameCandidates[] = $fullName;
+                }
+            }
+        }
+
         if ($nameCandidates !== []) {
             $fields['name_candidates'] = array_values(array_unique($nameCandidates));
         }
@@ -358,7 +374,16 @@ class IdOcrService
                     '/(?:passport\s*no\.?)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
                 ],
             ],
-            'student_id' => ['label' => 'Student ID'],
+            'student_id' => [
+                'label' => 'Student ID',
+                'id_number_patterns' => [
+                    '/(?:student\s*id|id\s*no\.?|student\s*no\.?)\s*[:#]?\s*([A-Z0-9-]{5,})/i',
+                    '/\b(\d{6,12})\b/',
+                ],
+                'name_patterns' => [
+                    '/(?:name|student\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
+                ],
+            ],
             'umid' => [
                 'label' => 'UMID',
                 'id_number_patterns' => [

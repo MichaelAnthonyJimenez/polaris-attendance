@@ -68,10 +68,87 @@
                 height="1"
             />
 
-            <div
-                id="idvPreviewNav"
+            <!-- Camera guides and overlays -->
+            <div class="absolute inset-0 pointer-events-none">
+                <svg id="idvGridSvg" class="absolute inset-0 w-full h-full" viewBox="0 0 400 300" style="color: rgba(255,255,255,0.3);">
+                    <!-- Grid lines will be dynamically added -->
+                </svg>
+                <div id="idvGuide" class="absolute inset-0 flex items-center justify-center">
+                    <div id="idvGuideFrame" class="w-64 h-40 border-2 border-dashed rounded-lg transition-colors duration-200" style="border-color: rgba(255,255,255,0.6);"></div>
+                </div>
+                <div id="idvGuideHint" class="absolute top-4 left-0 right-0 text-center text-xs text-white/80"></div>
+                <div id="idvGridTint" class="absolute inset-0 transition-opacity duration-200" style="opacity: 0; background: rgba(34, 197, 94, 0.2);"></div>
+            </div>
+
+            <!-- Permission gate -->
+            <div id="idvPermissionGate" class="hidden absolute inset-0 z-[200] flex items-center justify-center bg-black/90">
+                <div class="text-center px-6 py-8 max-w-sm">
+                    <p class="text-white text-lg font-semibold mb-2">Camera Access Required</p>
+                    <p id="idvPermissionText" class="text-white/80 text-sm mb-4">Please allow camera access to continue with verification.</p>
+                    <button id="idvRetryBtn" type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
+                        Allow Camera
+                    </button>
+                </div>
+            </div>
+
+            <!-- Countdown overlay -->
+            <div id="idvCountdown" class="hidden absolute inset-0 z-[150] flex items-center justify-center bg-black/50">
+                <div id="idvCountdownNumber" class="w-16 h-16 rounded-full border-2 border-white bg-black/60 text-white text-2xl font-bold flex items-center justify-center">
+                    3
+                </div>
+            </div>
+
+            <!-- Live camera controls -->
+            <div id="idvLiveControls" class="absolute bottom-20 left-0 right-0 flex flex-col items-center gap-4 px-4" style="padding-bottom: max(2rem, env(safe-area-inset-bottom));">
+                <div class="text-center mb-2">
+                    <p id="idvStepTitle" class="text-white text-sm font-semibold">Step 1 of 2: Capture ID card</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button id="idvCameraToggleBtn" type="button" class="bg-white/20 hover:bg-white/30 text-white p-3 rounded-full transition-colors" aria-label="Switch camera">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                    </button>
+                    <button id="idvCaptureBtn" type="button" class="bg-white hover:bg-white/90 text-black w-16 h-16 rounded-full flex items-center justify-center transition-all transform hover:scale-105 active:scale-95">
+                        <div class="w-14 h-14 rounded-full border-4 border-black/20"></div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Preview controls -->
+            <div id="idvPreviewControls" class="hidden absolute bottom-20 left-0 right-0 flex flex-col items-center gap-4 px-4" style="padding-bottom: max(2rem, env(safe-area-inset-bottom));">
+                <div class="text-center mb-2">
+                    <p class="text-white text-sm font-semibold">Review Capture</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button id="idvRetakeBtn" type="button" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        Retake
+                    </button>
+                    <button id="idvSubmitBtn" type="submit" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
+                        Submit
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step thumbnails -->
+            <div id="idvStepThumbsRow" class="hidden absolute top-4 right-4 flex gap-2">
+                <div class="relative">
+                    <img id="idvStepPreviewFront" class="hidden w-12 h-12 rounded border-2 border-white/50 object-cover" alt="ID card">
+                    <div id="idvStepPlaceholderFront" class="w-12 h-12 rounded border-2 border-dashed border-white/30 flex items-center justify-center">
+                        <span class="text-white/60 text-xs">ID</span>
+                    </div>
+                </div>
+                <div class="relative">
+                    <img id="idvStepPreviewSelfie" class="hidden w-12 h-12 rounded border-2 border-white/50 object-cover" alt="Selfie with ID">
+                    <div id="idvStepPlaceholderSelfie" class="w-12 h-12 rounded border-2 border-dashed border-white/30 flex items-center justify-center">
+                        <span class="text-white/60 text-xs">📸</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas for capture -->
+            <canvas id="idvCanvas" class="hidden"></canvas>
         </div>
-    </div>
 </div>
 
 <script>

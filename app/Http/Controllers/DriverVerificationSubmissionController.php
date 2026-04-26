@@ -114,10 +114,14 @@ class DriverVerificationSubmissionController extends Controller
             $selfieWithIdPath = null;
 
             if ($proofMode === 'upload_file') {
-                if ($request->hasFile('id_front_file')) {
+                if (! empty($data['id_front_base64'])) {
+                    $idFrontPath = $this->storeBase64Image($data['id_front_base64'], 'verification/id/'.$driver->id);
+                } elseif ($request->hasFile('id_front_file')) {
                     $idFrontPath = $request->file('id_front_file')->store('verification/id/'.$driver->id, 'public');
                 }
-                if ($request->hasFile('id_back_file')) {
+                if (! empty($data['id_back_base64'])) {
+                    $idBackPath = $this->storeBase64Image($data['id_back_base64'], 'verification/id/'.$driver->id);
+                } elseif ($request->hasFile('id_back_file')) {
                     $idBackPath = $request->file('id_back_file')->store('verification/id/'.$driver->id, 'public');
                 }
             } else {
@@ -182,10 +186,10 @@ class DriverVerificationSubmissionController extends Controller
         ]);
 
         $ocrPath = null;
-        if ($request->hasFile('id_front_file')) {
-            $ocrPath = $request->file('id_front_file')->store('verification/tmp/'.$user->id, 'public');
-        } elseif (! empty($data['id_front_base64'])) {
+        if (! empty($data['id_front_base64'])) {
             $ocrPath = $this->storeBase64Image($data['id_front_base64'], 'verification/tmp/'.$user->id);
+        } elseif ($request->hasFile('id_front_file')) {
+            $ocrPath = $request->file('id_front_file')->store('verification/tmp/'.$user->id, 'public');
         }
 
         if (! $ocrPath) {

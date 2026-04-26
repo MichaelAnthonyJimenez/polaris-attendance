@@ -291,6 +291,7 @@
 
     const inputs = {
         front: document.getElementById('id_front_base64'),
+        back: document.getElementById('id_back_base64'),
         selfie: document.getElementById('face_selfie_base64'),
     };
 
@@ -312,9 +313,55 @@
         { key: 'front', label: 'ID card front', title: 'Step 1 of 2: Capture ID front', hint: 'Hold the front side of your ID inside the rectangle frame.', guide: 'id' },
         { key: 'selfie', label: 'Selfie with ID', title: 'Step 2 of 2: Capture selfie with ID', hint: 'Keep your face in the circle and ID visible in frame.', guide: 'face' },
     ];
+    const MOBILE_OCR_MAX_BYTES = 950 * 1024;
 
     function setHint(text) {
         if (hint) hint.textContent = text;
+    }
+
+    async function fileToDataUrl(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ''));
+            reader.onerror = () => reject(new Error('read_failed'));
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function compressImageForOcr(file, maxBytes = MOBILE_OCR_MAX_BYTES) {
+        const originalDataUrl = await fileToDataUrl(file);
+        if (file.size <= maxBytes) {
+            return originalDataUrl;
+        }
+
+        const image = new Image();
+        await new Promise((resolve, reject) => {
+            image.onload = () => resolve(true);
+            image.onerror = () => reject(new Error('image_load_failed'));
+            image.src = originalDataUrl;
+        });
+
+        const workCanvas = document.createElement('canvas');
+        const ctx = workCanvas.getContext('2d');
+        if (!ctx) {
+            return originalDataUrl;
+        }
+
+        const scales = [1, 0.9, 0.8, 0.7, 0.6];
+        for (const scale of scales) {
+            workCanvas.width = Math.max(1, Math.round(image.width * scale));
+            workCanvas.height = Math.max(1, Math.round(image.height * scale));
+            ctx.drawImage(image, 0, 0, workCanvas.width, workCanvas.height);
+            for (const quality of [0.85, 0.75, 0.65, 0.55, 0.45]) {
+                const dataUrl = workCanvas.toDataURL('image/jpeg', quality);
+                const estimatedBytes = Math.ceil((dataUrl.length - dataUrl.indexOf(',') - 1) * 3 / 4);
+                if (estimatedBytes <= maxBytes) {
+                    return dataUrl;
+                }
+            }
+        }
+
+        return workCanvas.toDataURL('image/jpeg', 0.4);
     }
 
     function setGuideState(isDetected, isGood, zoneEl) {
@@ -712,7 +759,9 @@
         const formData = new FormData();
         formData.append('proof_mode', proofMode || 'upload_file');
         if (proofMode === 'upload_file') {
-            if (uploadFrontInput?.files && uploadFrontInput.files.length > 0) {
+            if (inputs.front.value) {
+                formData.append('id_front_base64', inputs.front.value);
+            } else if (uploadFrontInput?.files && uploadFrontInput.files.length > 0) {
                 formData.append('id_front_file', uploadFrontInput.files[0]);
             }
         } else if (inputs.front.value) {
@@ -823,7 +872,31 @@
     gateUploadBtn?.addEventListener('click', () => {
         setProofMode('upload_file');
     });
-    uploadFrontInput?.addEventListener('change', refreshSubmit);
+    uploadFrontInput?.addEventListener('change', async () => {
+        if (uploadFrontInput?.files && uploadFrontInput.files.length > 0) {
+            try {
+                setHint('Optimizing ID image for OCR...');
+                inputs.front.value = await compressImageForOcr(uploadFrontInput.files[0]);
+            } catch (_err) {
+                inputs.front.value = '';
+            }
+        } else {
+            inputs.front.value = '';
+        }
+        refreshSubmit();
+    });
+    const uploadBackInput = document.getElementById('idv_upload_back');
+    uploadBackInput?.addEventListener('change', async () => {
+        if (uploadBackInput?.files && uploadBackInput.files.length > 0) {
+            try {
+                inputs.back.value = await compressImageForOcr(uploadBackInput.files[0]);
+            } catch (_err) {
+                inputs.back.value = '';
+            }
+        } else {
+            inputs.back.value = '';
+        }
+    });
     enableBtn?.addEventListener('click', () => {
         if (proofMode === 'upload_file') return;
         startCamera();

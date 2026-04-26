@@ -15,7 +15,9 @@
                         <a href="{{ route('register') }}" class="btn-primary">Get Started</a>
                     @else
                         <a href="{{ route('dashboard') }}" class="btn-primary">Go to dashboard</a>
-                        <a href="{{ route('users.index', ['sort' => 'role_driver']) }}" class="btn-secondary">Manage drivers</a>
+                        @if((auth()->user()->role ?? null) === 'admin')
+                            <a href="{{ route('users.index', ['sort' => 'role_driver']) }}" class="btn-secondary">Manage drivers</a>
+                        @endif
                     @endguest
                 </div>
             </div>

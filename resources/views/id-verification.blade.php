@@ -15,6 +15,7 @@
         <input type="hidden" name="id_front_base64" id="id_front_base64">
         <input type="hidden" name="id_back_base64" id="id_back_base64">
         <input type="hidden" name="face_selfie_base64" id="face_selfie_base64">
+        <input type="hidden" name="ocr_edited_json" id="idv_ocr_edited_json">
         <input type="hidden" name="latitude" id="idv_latitude">
         <input type="hidden" name="longitude" id="idv_longitude">
         <input type="hidden" name="geo_accuracy" id="idv_geo_accuracy">
@@ -227,6 +228,7 @@
                 <div class="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
                     <p class="text-xs font-medium text-white">OCR status</p>
                     <p id="idvConfirmOcrStatus" class="mt-1 text-xs text-slate-300">Checking OCR…</p>
+                    <div id="idvOcrEditForm" class="mt-3 grid grid-cols-1 gap-2 text-xs"></div>
                     <div id="idvConfirmOcrFields" class="mt-2 space-y-1 text-xs text-slate-200"></div>
                 </div>
                 <div class="mt-5 flex gap-3">
@@ -262,6 +264,8 @@
     const confirmSelfie = document.getElementById('idvConfirmSelfie');
     const confirmOcrStatus = document.getElementById('idvConfirmOcrStatus');
     const confirmOcrFields = document.getElementById('idvConfirmOcrFields');
+    const ocrEditForm = document.getElementById('idvOcrEditForm');
+    const ocrEditedJsonInput = document.getElementById('idv_ocr_edited_json');
     const modeGate = document.getElementById('idvModeGate');
     const proofModeInput = document.getElementById('idv_proof_mode');
     const idTypeSelect = document.getElementById('idv_id_type');
@@ -733,6 +737,7 @@
     function resetConfirmOcrView(text = 'Checking OCR…') {
         if (confirmOcrStatus) confirmOcrStatus.textContent = text;
         if (confirmOcrFields) confirmOcrFields.innerHTML = '';
+        if (ocrEditForm) ocrEditForm.innerHTML = '';
     }
 
     function formatFieldValue(value) {
@@ -763,10 +768,11 @@
             'id_type',
             'detected_language',
             'id_number',
-            'last_name_surname',
-            'given_name',
+            'last_name',
+            'first_name',
             'middle_name',
-            'date_of_birth',
+            'full_name',
+            'birthdate',
             'address',
             'date_of_issuance',
             'expiry_date',
@@ -787,6 +793,68 @@
         });
 
         // Keep UI concise: avoid dumping full noisy OCR text by default.
+    }
+
+    function confidenceColorClass(confidence) {
+        if (confidence >= 0.7) return 'border-green-500/70 bg-green-500/10';
+        if (confidence >= 0.4) return 'border-yellow-500/70 bg-yellow-500/10';
+        return 'border-red-500/70 bg-red-500/10';
+    }
+
+    function confidenceText(confidence) {
+        return Number(confidence || 0).toFixed(2);
+    }
+
+    function renderEditableOcrFields(fields) {
+        if (!ocrEditForm) return;
+        ocrEditForm.innerHTML = '';
+        const editableKeys = [
+            'id_type',
+            'id_number',
+            'first_name',
+            'middle_name',
+            'last_name',
+            'full_name',
+            'birthdate',
+            'address',
+            'date_of_issuance',
+            'expiry_date',
+        ];
+
+        editableKeys.forEach((key) => {
+            const raw = fields[key];
+            let value = '';
+            let confidence = 0;
+            if (raw && typeof raw === 'object' && Object.prototype.hasOwnProperty.call(raw, 'value')) {
+                value = String(raw.value || '');
+                confidence = Number(raw.confidence || 0);
+            } else if (typeof raw === 'string') {
+                value = raw;
+                confidence = 0.5;
+            }
+
+            const wrap = document.createElement('div');
+            wrap.className = 'rounded-md border p-2 ' + confidenceColorClass(confidence);
+            wrap.innerHTML = ''
+                + '<label class="block text-[11px] text-slate-200 mb-1">' + key.replace(/_/g, ' ') + ' '
+                + '<span class="text-slate-400">(conf: ' + confidenceText(confidence) + ')</span></label>'
+                + '<input type="text" data-ocr-edit="' + key + '" value="' + value.replace(/"/g, '&quot;') + '" '
+                + 'class="w-full rounded bg-black/30 border border-white/20 text-slate-100 px-2 py-1 text-xs">';
+            ocrEditForm.appendChild(wrap);
+        });
+    }
+
+    function captureEditedOcrData() {
+        if (!ocrEditedJsonInput) return;
+        const edits = {};
+        document.querySelectorAll('[data-ocr-edit]').forEach((el) => {
+            const key = el.getAttribute('data-ocr-edit');
+            const value = String(el.value || '').trim();
+            if (key && value) {
+                edits[key] = value;
+            }
+        });
+        ocrEditedJsonInput.value = JSON.stringify(edits);
     }
 
     function renderConfirmStaticDetails() {
@@ -859,6 +927,7 @@
                 return;
             }
             if (confirmOcrStatus) confirmOcrStatus.textContent = 'OCR worked. Please review important extracted fields:';
+            renderEditableOcrFields(fields);
             renderPriorityFields(fields, ocr.raw_text || '');
         } catch (_err) {
             if (confirmOcrStatus) confirmOcrStatus.textContent = 'OCR failed or unavailable.';
@@ -974,6 +1043,7 @@
         confirmModal?.classList.add('hidden');
         confirmModal?.classList.remove('flex');
         if (!form) return;
+        captureEditedOcrData();
         form.dataset.confirmed = 'true';
         form.requestSubmit();
     });

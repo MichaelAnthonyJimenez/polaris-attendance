@@ -47,6 +47,7 @@ class DriverVerificationSubmissionController extends Controller
             'face_selfie_base64' => ['nullable', 'string'],
             'id_front_file' => ['nullable', 'file', 'max:10240'],
             'id_back_file' => ['nullable', 'file', 'max:10240'],
+            'ocr_edited_json' => ['nullable', 'string'],
         ]);
 
         if ($role !== 'driver') {
@@ -158,6 +159,8 @@ class DriverVerificationSubmissionController extends Controller
             $meta['id_type'] = $selectedIdType;
             $ocrSourcePath = $idFrontPath ?: $selfieWithIdPath;
             $meta['ocr'] = $this->idOcrService->extractFromPublicPath($ocrSourcePath, $selectedIdType);
+            $meta['ocr']['edited'] = $this->sanitizeEditedOcrData((string) ($data['ocr_edited_json'] ?? ''));
+            $this->validateEditedOcrData($meta['ocr']['edited']);
         }
 
         if ($meta !== []) {
@@ -231,5 +234,44 @@ class DriverVerificationSubmissionController extends Controller
         Storage::disk('public')->put($path, base64_decode($content));
 
         return $path;
+    }
+
+    private function sanitizeEditedOcrData(string $json): array
+    {
+        if ($json === '') {
+            return [];
+        }
+        $payload = json_decode($json, true);
+        if (! is_array($payload)) {
+            return [];
+        }
+
+        $allowed = [
+            'id_type', 'first_name', 'middle_name', 'last_name', 'full_name',
+            'birthdate', 'address', 'id_number', 'date_of_issuance', 'expiry_date',
+        ];
+        $clean = [];
+        foreach ($allowed as $key) {
+            $value = trim((string) ($payload[$key] ?? ''));
+            if ($value !== '') {
+                $clean[$key] = preg_replace('/\s+/', ' ', strip_tags($value)) ?? $value;
+            }
+        }
+
+        return $clean;
+    }
+
+    private function validateEditedOcrData(array $data): void
+    {
+        if ($data === []) {
+            return;
+        }
+
+        $required = ['id_type', 'first_name', 'last_name', 'id_number'];
+        foreach ($required as $field) {
+            if (empty($data[$field])) {
+                abort(422, 'Please review OCR fields. Missing required field: '.$field);
+            }
+        }
     }
 }

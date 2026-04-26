@@ -73,7 +73,9 @@ class IdOcrService
         }
 
         $lang = (string) config('services.ocr_space.local_language', 'en');
-        $process = new Process([$python, $script, '--image', $absolutePath, '--engine', $engine, '--lang', $lang]);
+        $preprocessedPath = $this->preprocessImageForOcr($absolutePath);
+        $processPath = $preprocessedPath ?: $absolutePath;
+        $process = new Process([$python, $script, '--image', $processPath, '--engine', $engine, '--lang', $lang]);
         $process->setTimeout(60);
 
         try {
@@ -85,6 +87,9 @@ class IdOcrService
         }
 
         $output = trim((string) $process->getOutput());
+        if ($preprocessedPath) {
+            @unlink($preprocessedPath);
+        }
         $payload = json_decode($output, true);
         if (! is_array($payload)) {
             return ['status' => 'error', 'reason' => 'local_ocr_invalid_output'];
@@ -115,10 +120,13 @@ class IdOcrService
             $apiKey = 'helloworld';
         }
 
+        $preprocessedPath = $this->preprocessImageForOcr($absolutePath);
+        $ocrPath = $preprocessedPath ?: $absolutePath;
+
         try {
             $response = Http::asMultipart()
                 ->timeout(20)
-                ->attach('file', file_get_contents($absolutePath), basename($absolutePath))
+                ->attach('file', file_get_contents($ocrPath), basename($ocrPath))
                 ->post((string) config('services.ocr_space.endpoint', 'https://api.ocr.space/parse/image'), [
                     'apikey' => $apiKey,
                     'language' => (string) config('services.ocr_space.language', 'eng'),
@@ -127,8 +135,14 @@ class IdOcrService
                 ]);
         } catch (\Throwable $e) {
             report($e);
+            if ($preprocessedPath) {
+                @unlink($preprocessedPath);
+            }
 
             return ['status' => 'error', 'reason' => 'request_failed'];
+        }
+        if ($preprocessedPath) {
+            @unlink($preprocessedPath);
         }
 
         if (! $response->ok()) {
@@ -236,17 +250,27 @@ class IdOcrService
         )));
         $profile = $this->idTypeProfile($idType);
 
-        $result = [
-            'id_type' => (string) ($profile['label'] ?? ($idType ?: 'Unknown ID')),
-            'detected_language' => $this->detectLanguage($normalized),
-            'id_number' => null,
-            'last_name_surname' => null,
-            'given_name' => null,
-            'middle_name' => null,
-            'date_of_birth' => null,
-            'address' => null,
-            'date_of_issuance' => null,
-            'expiry_date' => null,
+        $detectedType = $this->detectIdType($normalized, $profile);
+        $language = $this->detectLanguage($normalized);
+
+        $firstName = null;
+        $middleName = null;
+        $lastName = null;
+        $birthdate = null;
+        $address = null;
+        $idNumber = null;
+        $issueDate = null;
+        $expiryDate = null;
+
+        $meta = [
+            'first_name' => ['label' => false, 'regex' => false, 'position' => false],
+            'middle_name' => ['label' => false, 'regex' => false, 'position' => false],
+            'last_name' => ['label' => false, 'regex' => false, 'position' => false],
+            'birthdate' => ['label' => false, 'regex' => false, 'position' => false],
+            'address' => ['label' => false, 'regex' => false, 'position' => false],
+            'id_number' => ['label' => false, 'regex' => false, 'position' => false],
+            'date_of_issuance' => ['label' => false, 'regex' => false, 'position' => false],
+            'expiry_date' => ['label' => false, 'regex' => false, 'position' => false],
         ];
 
         $idPatterns = [];
@@ -256,66 +280,124 @@ class IdOcrService
         $idPatterns[] = '/(?:id|license|lic|no|number|student\s*no|control\s*no)\s*[:#]?\s*([A-Z0-9-]{5,})/i';
         foreach ($idPatterns as $pattern) {
             if (preg_match($pattern, $normalized, $m)) {
-                $result['id_number'] = $this->normalizeIdValue((string) $m[1]);
+                $idNumber = $this->normalizeIdValue((string) $m[1]);
+                $meta['id_number']['label'] = true;
+                $meta['id_number']['regex'] = true;
                 break;
             }
         }
 
-        $result['last_name_surname'] = $this->extractLabeledValue($normalized, [
+        $lastName = $this->extractLabeledValue($normalized, [
             '/(?:apelido|last\s*name|surname)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
         ], 'name');
-        $result['given_name'] = $this->extractLabeledValue($normalized, [
+        if ($lastName) {
+            $meta['last_name']['label'] = true;
+            $meta['last_name']['regex'] = true;
+        }
+        $firstName = $this->extractLabeledValue($normalized, [
             '/(?:mga\s*pangalan|given\s*name(?:s)?)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
             '/(?:first\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
         ], 'name');
-        $result['middle_name'] = $this->extractLabeledValue($normalized, [
+        if ($firstName) {
+            $meta['first_name']['label'] = true;
+            $meta['first_name']['regex'] = true;
+        }
+        $middleName = $this->extractLabeledValue($normalized, [
             '/(?:gitnang\s*apelyido|middle\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
         ], 'name');
+        if ($middleName) {
+            $meta['middle_name']['label'] = true;
+            $meta['middle_name']['regex'] = true;
+        }
 
-        if (! $result['last_name_surname'] || ! $result['given_name']) {
+        if (! $lastName || ! $firstName) {
             foreach ($lines as $idx => $line) {
                 if (preg_match('/(?:apelido|last\s*name|surname)/i', $line)) {
-                    $result['last_name_surname'] = $result['last_name_surname'] ?: $this->normalizeNameValue($lines[$idx + 1] ?? '');
+                    $lastName = $lastName ?: $this->normalizeNameValue($lines[$idx + 1] ?? '');
+                    $meta['last_name']['position'] = true;
                 }
                 if (preg_match('/(?:mga\s*pangalan|given\s*name(?:s)?|first\s*name)/i', $line)) {
-                    $result['given_name'] = $result['given_name'] ?: $this->normalizeNameValue($lines[$idx + 1] ?? '');
+                    $firstName = $firstName ?: $this->normalizeNameValue($lines[$idx + 1] ?? '');
+                    $meta['first_name']['position'] = true;
                 }
                 if (preg_match('/(?:gitnang\s*apelyido|middle\s*name)/i', $line)) {
-                    $result['middle_name'] = $result['middle_name'] ?: $this->normalizeNameValue($lines[$idx + 1] ?? '');
+                    $middleName = $middleName ?: $this->normalizeNameValue($lines[$idx + 1] ?? '');
+                    $meta['middle_name']['position'] = true;
                 }
             }
         }
 
-        $result['date_of_birth'] = $this->extractLabeledValue($normalized, [
+        $birthdate = $this->extractLabeledValue($normalized, [
             '/(?:petsa\s*ng\s*kapanganakan|date\s*of\s*birth|birthdate)\s*[:#]?\s*([A-Z0-9,\-\/ ]{6,})/i',
         ], 'date');
-        $result['address'] = $this->extractLabeledValue($normalized, [
+        if ($birthdate) {
+            $meta['birthdate']['label'] = true;
+            $meta['birthdate']['regex'] = true;
+        }
+        $address = $this->extractLabeledValue($normalized, [
             '/(?:tirahan|address)\s*[:#]?\s*([A-Z0-9,\-\/ .]{6,})/i',
         ], 'address');
-        $result['date_of_issuance'] = $this->extractLabeledValue($normalized, [
+        if ($address) {
+            $meta['address']['label'] = true;
+            $meta['address']['regex'] = true;
+        }
+        $issueDate = $this->extractLabeledValue($normalized, [
             '/(?:araw\s*ng\s*pagkakaloob|date\s*of\s*issue|date\s*issued)\s*[:#]?\s*([A-Z0-9,\-\/ ]{5,})/i',
         ], 'date');
-        $result['expiry_date'] = $this->extractLabeledValue($normalized, [
+        if ($issueDate) {
+            $meta['date_of_issuance']['label'] = true;
+            $meta['date_of_issuance']['regex'] = true;
+        }
+        $expiryDate = $this->extractLabeledValue($normalized, [
             '/(?:expiry\s*date|date\s*of\s*expiry|expires\s*on|valid\s*until)\s*[:#]?\s*([A-Z0-9,\-\/ ]{5,})/i',
         ], 'date');
+        if ($expiryDate) {
+            $meta['expiry_date']['label'] = true;
+            $meta['expiry_date']['regex'] = true;
+        }
 
         // fallback date extraction: first likely DOB, second likely issuance/expiry.
-        if (! $result['date_of_birth'] || ! $result['date_of_issuance']) {
+        if (! $birthdate || ! $issueDate) {
             if (preg_match_all('/\b(?:\d{4}[-\/]\d{2}[-\/]\d{2}|\d{2}[-\/]\d{2}[-\/]\d{4}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})\b/', $normalized, $m) && ! empty($m[0])) {
                 $dates = array_values(array_unique(array_map(fn ($d) => $this->normalizeDateValue($d), $m[0])));
-                if (! $result['date_of_birth'] && isset($dates[0])) {
-                    $result['date_of_birth'] = $dates[0];
+                if (! $birthdate && isset($dates[0])) {
+                    $birthdate = $dates[0];
+                    $meta['birthdate']['regex'] = true;
                 }
-                if (! $result['date_of_issuance'] && isset($dates[1])) {
-                    $result['date_of_issuance'] = $dates[1];
+                if (! $issueDate && isset($dates[1])) {
+                    $issueDate = $dates[1];
+                    $meta['date_of_issuance']['regex'] = true;
                 }
-                if (! $result['expiry_date'] && isset($dates[2])) {
-                    $result['expiry_date'] = $dates[2];
+                if (! $expiryDate && isset($dates[2])) {
+                    $expiryDate = $dates[2];
+                    $meta['expiry_date']['regex'] = true;
                 }
             }
         }
 
-        return array_filter($result, static fn ($v) => $v !== null && $v !== '');
+        $fullName = trim(implode(' ', array_filter([$firstName, $middleName, $lastName])));
+        if ($fullName === '' && $firstName && $lastName) {
+            $fullName = trim($firstName.' '.$lastName);
+        }
+
+        return [
+            'id_type' => $detectedType,
+            'first_name' => $this->buildConfidenceField($firstName, $meta['first_name']),
+            'middle_name' => $this->buildConfidenceField($middleName, $meta['middle_name']),
+            'last_name' => $this->buildConfidenceField($lastName, $meta['last_name']),
+            'full_name' => $this->buildConfidenceField($fullName, [
+                'label' => false,
+                'regex' => $fullName !== '',
+                'position' => ($firstName !== null || $lastName !== null),
+            ]),
+            'birthdate' => $this->buildConfidenceField($birthdate, $meta['birthdate']),
+            'address' => $this->buildConfidenceField($address, $meta['address']),
+            'id_number' => $this->buildConfidenceField($idNumber, $meta['id_number']),
+            'date_of_issuance' => $this->buildConfidenceField($issueDate, $meta['date_of_issuance']),
+            'expiry_date' => $this->buildConfidenceField($expiryDate, $meta['expiry_date']),
+            'detected_language' => $language,
+            'cleaned_text' => implode("\n", $lines),
+        ];
     }
 
     private function detectLanguage(string $text): array
@@ -346,6 +428,87 @@ class IdOcrService
         }
 
         return ['code' => 'unknown', 'label' => 'Unknown'];
+    }
+
+    private function buildConfidenceField(?string $value, array $meta): array
+    {
+        $value = trim((string) ($value ?? ''));
+        if ($value === '') {
+            return ['value' => '', 'confidence' => 0.0];
+        }
+
+        $confidence = 0.0;
+        $confidence += ! empty($meta['label']) ? 0.4 : 0.0;
+        $confidence += ! empty($meta['regex']) ? 0.3 : 0.0;
+        $confidence += ! empty($meta['position']) ? 0.2 : 0.0;
+        $confidence += (strlen($value) >= 3) ? 0.1 : 0.0;
+
+        return [
+            'value' => $value,
+            'confidence' => min(1.0, round($confidence, 2)),
+        ];
+    }
+
+    private function detectIdType(string $text, ?array $profile): string
+    {
+        if (is_array($profile) && ! empty($profile['label'])) {
+            return (string) $profile['label'];
+        }
+        $u = strtoupper($text);
+        if (str_contains($u, 'PHILIPPINE IDENTIFICATION') || str_contains($u, 'PAMBANSANG PAGKAKAKILANLAN')) {
+            return 'PhilSys';
+        }
+        if (str_contains($u, "DRIVER'S LICENSE") || str_contains($u, 'DRIVER LICENSE')) {
+            return "Driver's License";
+        }
+        if (str_contains($u, 'PASSPORT')) {
+            return 'Passport';
+        }
+        if (str_contains($u, 'UMID')) {
+            return 'UMID';
+        }
+
+        return 'Unknown ID';
+    }
+
+    private function preprocessImageForOcr(string $absolutePath): ?string
+    {
+        if (! function_exists('imagecreatetruecolor')) {
+            return null;
+        }
+        $imageInfo = @getimagesize($absolutePath);
+        if (! is_array($imageInfo)) {
+            return null;
+        }
+        $mime = strtolower((string) ($imageInfo['mime'] ?? ''));
+        $src = match ($mime) {
+            'image/jpeg', 'image/jpg' => @imagecreatefromjpeg($absolutePath),
+            'image/png' => @imagecreatefrompng($absolutePath),
+            'image/webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($absolutePath) : false,
+            default => false,
+        };
+        if (! $src) {
+            return null;
+        }
+
+        imagefilter($src, IMG_FILTER_GRAYSCALE);
+        imagefilter($src, IMG_FILTER_CONTRAST, -30);
+        imagefilter($src, IMG_FILTER_SMOOTH, 1);
+        imagefilter($src, IMG_FILTER_BRIGHTNESS, 5);
+
+        $tmpPath = tempnam(sys_get_temp_dir(), 'ocr_pre_');
+        if ($tmpPath === false) {
+            imagedestroy($src);
+            return null;
+        }
+        $targetPath = $tmpPath . '.jpg';
+        @unlink($tmpPath);
+        @imagejpeg($src, $targetPath, 88);
+        imagedestroy($src);
+        if (! is_file($targetPath)) {
+            return null;
+        }
+        return $targetPath;
     }
 
     private function extractLabeledValue(string $text, array $patterns, string $type): ?string

@@ -89,6 +89,11 @@
         return 'border-red-500/70 bg-red-500/10';
     }
 
+    function labelForKey(key) {
+        if (key === 'gender') return 'sex';
+        return key.replace(/_/g, ' ');
+    }
+
     editableKeys.forEach((key) => {
         const raw = fields[key];
         let value = '';
@@ -106,7 +111,7 @@
         const div = document.createElement('div');
         div.className = 'rounded-lg border p-2 ' + confidenceClass(confidence);
         div.innerHTML = ''
-            + '<label class="block text-[11px] text-slate-200 mb-1">' + key.replace(/_/g, ' ')
+            + '<label class="block text-[11px] text-slate-200 mb-1">' + labelForKey(key)
             + ' <span class="text-slate-400">(conf: ' + confidence.toFixed(2) + ')</span></label>'
             + '<input type="text" data-edit-key="' + key + '" value="' + value.replace(/"/g, '&quot;') + '" '
             + 'class="w-full rounded bg-black/30 border border-white/20 text-slate-100 px-2 py-1 text-xs">';

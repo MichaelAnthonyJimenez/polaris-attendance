@@ -755,11 +755,16 @@
         return String(value);
     }
 
+    function labelForKey(key) {
+        if (key === 'gender') return 'sex';
+        return String(key).replace(/_/g, ' ');
+    }
+
     function appendOcrField(key, value) {
         if (!confirmOcrFields) return;
         const p = document.createElement('p');
         p.className = 'mt-1';
-        p.innerHTML = '<span class="text-slate-400">' + key.replace(/_/g, ' ') + ':</span><br><span class="text-slate-100">' + formatFieldValue(value) + '</span>';
+        p.innerHTML = '<span class="text-slate-400">' + labelForKey(key) + ':</span><br><span class="text-slate-100">' + formatFieldValue(value) + '</span>';
         confirmOcrFields.appendChild(p);
     }
 
@@ -838,7 +843,7 @@
             const wrap = document.createElement('div');
             wrap.className = 'rounded-md border p-2 ' + confidenceColorClass(confidence);
             wrap.innerHTML = ''
-                + '<label class="block text-[11px] text-slate-200 mb-1">' + key.replace(/_/g, ' ') + ' '
+                + '<label class="block text-[11px] text-slate-200 mb-1">' + labelForKey(key) + ' '
                 + '<span class="text-slate-400">(conf: ' + confidenceText(confidence) + ')</span></label>'
                 + '<input type="text" data-ocr-edit="' + key + '" value="' + value.replace(/"/g, '&quot;') + '" '
                 + 'class="w-full rounded bg-black/30 border border-white/20 text-slate-100 px-2 py-1 text-xs">';

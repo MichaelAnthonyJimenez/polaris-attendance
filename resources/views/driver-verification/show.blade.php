@@ -54,6 +54,14 @@
                         ?? $driverEditedOcr[$ocrKey]
                         ?? $extractOcrScalar($ocrFields[$ocrKey] ?? '');
                 }
+                $humanOcrLabel = function (?string $key): string {
+                    $normalized = (string) $key;
+                    if ($normalized === 'gender') {
+                        return 'Sex';
+                    }
+
+                    return ucwords(str_replace('_', ' ', $normalized));
+                };
 
                 /**
                  * Resolve a verification image path that might live either in:
@@ -243,7 +251,7 @@
                     <div class="text-sm text-slate-200 bg-white/5 p-3 rounded-lg space-y-1">
                         @foreach($adminEditedOcr as $fieldKey => $fieldValue)
                             <p>
-                                <span class="text-slate-400">{{ ucwords(str_replace('_', ' ', (string) $fieldKey)) }}:</span>
+                                <span class="text-slate-400">{{ $humanOcrLabel((string) $fieldKey) }}:</span>
                                 {{ (string) $fieldValue }}
                             </p>
                         @endforeach
@@ -278,7 +286,7 @@
                             <div class="text-sm text-slate-200 bg-white/5 p-3 rounded-lg space-y-2">
                                 @foreach($editableOcrKeys as $ocrKey)
                                     @php
-                                        $label = ucwords(str_replace('_', ' ', (string) $ocrKey));
+                                        $label = $humanOcrLabel((string) $ocrKey);
                                         $value = (string) ($effectiveOcr[$ocrKey] ?? '');
                                     @endphp
                                     <div>
@@ -315,7 +323,7 @@
                                             $displayValue = (string) $fieldValue;
                                         }
                                     @endphp
-                                    <p><span class="text-slate-400">{{ ucwords(str_replace('_', ' ', (string) $fieldKey)) }}:</span> {{ $displayValue !== '' ? $displayValue : '—' }}</p>
+                                    <p><span class="text-slate-400">{{ $humanOcrLabel((string) $fieldKey) }}:</span> {{ $displayValue !== '' ? $displayValue : '—' }}</p>
                                 @endforeach
                             </div>
                         </div>

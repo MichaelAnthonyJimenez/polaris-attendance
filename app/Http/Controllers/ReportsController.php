@@ -14,7 +14,7 @@ class ReportsController extends Controller
 {
     public function index(Request $request): View
     {
-        [$dateFrom, $dateTo, $driverIds, $period] = $this->resolveFilters($request);
+        [$dateFrom, $dateTo, $driverIds, $period, $driverScope] = $this->resolveFilters($request);
         $attendances = $this->attendanceQuery($dateFrom, $dateTo, $driverIds)
             ->orderBy('captured_at', 'desc')
             ->get();
@@ -61,13 +61,14 @@ class ReportsController extends Controller
                 'date_to' => $dateTo,
                 'driver_ids' => $driverIds,
                 'period' => $period,
+                'driver_scope' => $driverScope,
             ],
         ]);
     }
 
     public function export(Request $request): Response
     {
-        [$dateFrom, $dateTo, $driverIds] = $this->resolveFilters($request);
+        [$dateFrom, $dateTo, $driverIds, $period, $driverScope] = $this->resolveFilters($request);
         $format = strtolower((string) $request->input('export_as', 'csv'));
         $driverName = $this->resolveDriverName($driverIds);
         $generatedAt = now()->format('Y-m-d H:i:s');
@@ -104,7 +105,9 @@ class ReportsController extends Controller
             'Report Title' => 'Attendance Report',
             'Date From' => $dateFrom,
             'Date To' => $dateTo,
+            'Period' => ucfirst($period),
             'Driver Filter' => $driverName,
+            'Driver Mode' => $driverScope === 'multi' ? 'Multi-select' : 'All drivers',
             'Generated At' => $generatedAt,
         ];
 
@@ -133,14 +136,23 @@ class ReportsController extends Controller
         $period = (string) $request->input('period', 'monthly');
         $today = now();
         [$defaultFrom, $defaultTo] = match ($period) {
+            'hourly' => [$today->copy()->format('Y-m-d'), $today->copy()->format('Y-m-d')],
             'daily' => [$today->copy()->format('Y-m-d'), $today->copy()->format('Y-m-d')],
             'weekly' => [$today->copy()->startOfWeek()->format('Y-m-d'), $today->copy()->endOfWeek()->format('Y-m-d')],
             default => [$today->copy()->startOfMonth()->format('Y-m-d'), $today->copy()->format('Y-m-d')],
         };
 
+        $driverScope = (string) $request->input('driver_scope', 'all');
+        if (! in_array($driverScope, ['all', 'multi'], true)) {
+            $driverScope = 'all';
+        }
+
         $driverIds = array_values(array_filter(array_map('intval', (array) $request->input('driver_ids', []))));
         if ($driverIds === [] && $request->filled('driver_id')) {
             $driverIds = [(int) $request->input('driver_id')];
+        }
+        if ($driverScope === 'all') {
+            $driverIds = [];
         }
 
         return [
@@ -148,6 +160,7 @@ class ReportsController extends Controller
             (string) $request->input('date_to', $defaultTo),
             $driverIds,
             $period,
+            $driverScope,
         ];
     }
 

@@ -23,7 +23,7 @@
                 </select>
                 <div class="mt-3 rounded-lg border border-white/10 bg-white/5 p-3">
                     <p class="text-xs uppercase tracking-wide text-slate-400">Role permissions</p>
-                    <ul id="rolePermissionsList" class="mt-2 space-y-1 text-xs text-slate-200"></ul>
+                    <div id="rolePermissionsList" class="mt-2 space-y-2 text-xs text-slate-200"></div>
                 </div>
             </div>
             <div>
@@ -52,24 +52,29 @@
 
         const perms = {
             admin: [
-                'Manage users, reports, audit logs, and settings',
-                'Approve or reject driver verifications',
-                'View all attendance records and exports',
+                { key: 'users_manage', label: 'Manage users' },
+                { key: 'reports_view_export', label: 'View and export reports' },
+                { key: 'audit_logs_view', label: 'View audit logs' },
+                { key: 'settings_manage', label: 'Manage settings permissions' },
+                { key: 'verification_review', label: 'Approve or reject driver verifications' },
             ],
             driver: [
-                'Check in and check out using camera',
-                'View personal attendance history and map',
-                'Manage own profile and driver settings',
+                { key: 'attendance_camera', label: 'Check in and check out using camera' },
+                { key: 'attendance_history', label: 'View personal attendance history and map' },
+                { key: 'profile_manage', label: 'Manage own profile and driver settings' },
             ],
         };
 
         function render() {
             const role = select.value === 'admin' ? 'admin' : 'driver';
             list.innerHTML = '';
-            (perms[role] || []).forEach((text) => {
-                const li = document.createElement('li');
-                li.textContent = '- ' + text;
-                list.appendChild(li);
+            (perms[role] || []).forEach((perm) => {
+                const row = document.createElement('label');
+                row.className = 'flex items-center gap-2';
+                row.innerHTML = ''
+                    + '<input type="checkbox" name="permissions[]" value="' + perm.key + '" class="rounded border-white/20 bg-white/5 text-blue-500 focus:ring-blue-500/50" checked>'
+                    + '<span>' + perm.label + '</span>';
+                list.appendChild(row);
             });
         }
 

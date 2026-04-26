@@ -9,24 +9,24 @@
     <!-- Filters -->
     <div class="glass p-6">
         <h2 class="text-xl font-semibold text-white mb-4">Filters</h2>
-        <form method="GET" action="{{ route('reports.index') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <form method="GET" action="{{ route('reports.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
                 <label class="form-label">Period</label>
                 <select name="period" class="form-select">
+                    <option value="hourly" {{ ($filters['period'] ?? '') === 'hourly' ? 'selected' : '' }}>Hourly</option>
                     <option value="daily" {{ ($filters['period'] ?? '') === 'daily' ? 'selected' : '' }}>Daily</option>
                     <option value="weekly" {{ ($filters['period'] ?? '') === 'weekly' ? 'selected' : '' }}>Weekly</option>
                     <option value="monthly" {{ ($filters['period'] ?? '') === 'monthly' ? 'selected' : '' }}>Monthly</option>
                 </select>
             </div>
             <div>
-                <label class="form-label">Date From</label>
-                <input type="date" name="date_from" value="{{ $filters['date_from'] }}" class="form-input">
+                <label class="form-label">Drivers</label>
+                <select id="reportDriverScope" name="driver_scope" class="form-select">
+                    <option value="all" {{ ($filters['driver_scope'] ?? 'all') === 'all' ? 'selected' : '' }}>All drivers</option>
+                    <option value="multi" {{ ($filters['driver_scope'] ?? '') === 'multi' ? 'selected' : '' }}>Multi-select</option>
+                </select>
             </div>
-            <div>
-                <label class="form-label">Date To</label>
-                <input type="date" name="date_to" value="{{ $filters['date_to'] }}" class="form-input">
-            </div>
-            <div class="md:col-span-2">
+            <div id="reportDriverMultiWrap" class="md:col-span-2">
                 <label class="form-label">Drivers (multi-select)</label>
                 <div class="max-h-32 overflow-y-auto rounded-lg border border-white/10 bg-white/5 p-2 space-y-1">
                     @foreach($drivers as $driver)
@@ -204,6 +204,7 @@
             <input type="hidden" name="date_from" value="{{ $filters['date_from'] }}">
             <input type="hidden" name="date_to" value="{{ $filters['date_to'] }}">
             <input type="hidden" name="period" value="{{ $filters['period'] ?? 'monthly' }}">
+            <input type="hidden" name="driver_scope" value="{{ $filters['driver_scope'] ?? 'all' }}">
             @foreach(($filters['driver_ids'] ?? []) as $exportDriverId)
                 <input type="hidden" name="driver_ids[]" value="{{ $exportDriverId }}">
             @endforeach
@@ -221,4 +222,26 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    (function () {
+        const scope = document.getElementById('reportDriverScope');
+        const wrap = document.getElementById('reportDriverMultiWrap');
+        if (!scope || !wrap) return;
+
+        function syncDriverScopeUi() {
+            const isMulti = scope.value === 'multi';
+            wrap.style.display = isMulti ? '' : 'none';
+            wrap.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+                checkbox.disabled = !isMulti;
+                if (!isMulti) checkbox.checked = false;
+            });
+        }
+
+        scope.addEventListener('change', syncDriverScopeUi);
+        syncDriverScopeUi();
+    })();
+</script>
+@endpush
 

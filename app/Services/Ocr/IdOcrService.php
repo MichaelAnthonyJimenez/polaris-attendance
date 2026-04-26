@@ -261,6 +261,7 @@ class IdOcrService
         $idNumber = null;
         $issueDate = null;
         $expiryDate = null;
+        $gender = null;
 
         $meta = [
             'first_name' => ['label' => false, 'regex' => false, 'position' => false],
@@ -271,6 +272,7 @@ class IdOcrService
             'id_number' => ['label' => false, 'regex' => false, 'position' => false],
             'date_of_issuance' => ['label' => false, 'regex' => false, 'position' => false],
             'expiry_date' => ['label' => false, 'regex' => false, 'position' => false],
+            'gender' => ['label' => false, 'regex' => false, 'position' => false],
         ];
 
         $idPatterns = [];
@@ -355,6 +357,14 @@ class IdOcrService
             $meta['expiry_date']['label'] = true;
             $meta['expiry_date']['regex'] = true;
         }
+        $gender = $this->extractLabeledValue($normalized, [
+            '/(?:kasarian|sex|gender)\s*[:#]?\s*(MALE|FEMALE|M|F)\b/i',
+        ], 'name');
+        if ($gender) {
+            $gender = in_array(strtoupper($gender), ['M', 'MALE'], true) ? 'MALE' : (in_array(strtoupper($gender), ['F', 'FEMALE'], true) ? 'FEMALE' : strtoupper($gender));
+            $meta['gender']['label'] = true;
+            $meta['gender']['regex'] = true;
+        }
 
         // fallback date extraction: first likely DOB, second likely issuance/expiry.
         if (! $birthdate || ! $issueDate) {
@@ -375,22 +385,13 @@ class IdOcrService
             }
         }
 
-        $fullName = trim(implode(' ', array_filter([$firstName, $middleName, $lastName])));
-        if ($fullName === '' && $firstName && $lastName) {
-            $fullName = trim($firstName.' '.$lastName);
-        }
-
         return [
             'id_type' => $detectedType,
             'first_name' => $this->buildConfidenceField($firstName, $meta['first_name']),
             'middle_name' => $this->buildConfidenceField($middleName, $meta['middle_name']),
             'last_name' => $this->buildConfidenceField($lastName, $meta['last_name']),
-            'full_name' => $this->buildConfidenceField($fullName, [
-                'label' => false,
-                'regex' => $fullName !== '',
-                'position' => ($firstName !== null || $lastName !== null),
-            ]),
             'birthdate' => $this->buildConfidenceField($birthdate, $meta['birthdate']),
+            'gender' => $this->buildConfidenceField($gender, $meta['gender']),
             'address' => $this->buildConfidenceField($address, $meta['address']),
             'id_number' => $this->buildConfidenceField($idNumber, $meta['id_number']),
             'date_of_issuance' => $this->buildConfidenceField($issueDate, $meta['date_of_issuance']),

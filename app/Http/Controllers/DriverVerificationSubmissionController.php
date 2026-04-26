@@ -247,8 +247,8 @@ class DriverVerificationSubmissionController extends Controller
         }
 
         $allowed = [
-            'id_type', 'first_name', 'middle_name', 'last_name', 'full_name',
-            'birthdate', 'address', 'id_number', 'date_of_issuance', 'expiry_date',
+            'id_type', 'first_name', 'middle_name', 'last_name',
+            'birthdate', 'address', 'id_number', 'date_of_issuance', 'expiry_date', 'gender',
         ];
         $clean = [];
         foreach ($allowed as $key) {

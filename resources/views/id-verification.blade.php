@@ -311,6 +311,8 @@
     let alignCheckTimer = null;
     const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     const ocrPreviewEndpoint = @json(route('driver-verification.ocr-preview'));
+    const ocrReviewRoute = @json(route('verification.id-ocr-review'));
+    const ocrReviewStorageKey = 'idv_ocr_review_payload';
     const detector = ('FaceDetector' in window) ? new window.FaceDetector({ fastMode: true, maxDetectedFaces: 1 }) : null;
 
     const steps = [
@@ -771,8 +773,8 @@
             'last_name',
             'first_name',
             'middle_name',
-            'full_name',
             'birthdate',
+            'gender',
             'address',
             'date_of_issuance',
             'expiry_date',
@@ -814,8 +816,8 @@
             'first_name',
             'middle_name',
             'last_name',
-            'full_name',
             'birthdate',
+            'gender',
             'address',
             'date_of_issuance',
             'expiry_date',
@@ -904,7 +906,7 @@
             const payload = await res.json();
             if (!res.ok || payload.status !== 'ok') {
                 if (confirmOcrStatus) confirmOcrStatus.textContent = 'OCR failed or unavailable.';
-                return;
+                return null;
             }
             const ocr = payload.ocr || {};
             const status = String(ocr.status || 'unknown');
@@ -915,7 +917,7 @@
                 if (reason) statusText += ' (' + reason.replace(/_/g, ' ') + ')';
                 if (message) statusText += '. ' + message;
                 if (confirmOcrStatus) confirmOcrStatus.textContent = statusText;
-                return;
+                return null;
             }
             const fields = (ocr.fields && typeof ocr.fields === 'object') ? ocr.fields : {};
             const entries = Object.entries(fields);
@@ -924,13 +926,15 @@
                 if (ocr.raw_text) {
                     appendOcrField('raw_text', ocr.raw_text);
                 }
-                return;
+                return ocr;
             }
             if (confirmOcrStatus) confirmOcrStatus.textContent = 'OCR worked. Please review important extracted fields:';
             renderEditableOcrFields(fields);
             renderPriorityFields(fields, ocr.raw_text || '');
+            return ocr;
         } catch (_err) {
             if (confirmOcrStatus) confirmOcrStatus.textContent = 'OCR failed or unavailable.';
+            return null;
         }
     }
 
@@ -1022,16 +1026,29 @@
         startCamera();
     });
 
-    form?.addEventListener('submit', (e) => {
-        if (form.dataset.confirmed === 'true') {
-            form.dataset.confirmed = 'false';
+    form?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const hasFront = proofMode === 'upload_file'
+            ? !!inputs.front.value
+            : !!inputs.front.value;
+        if (!hasFront) {
+            setHint('Please provide ID front image first.');
             return;
         }
-        e.preventDefault();
-        renderConfirmStaticDetails();
-        confirmModal?.classList.remove('hidden');
-        confirmModal?.classList.add('flex');
-        loadOcrPreviewForConfirmation();
+        setHint('Preparing OCR review...');
+        const ocr = await loadOcrPreviewForConfirmation();
+        const reviewPayload = {
+            basePayload: {
+                proof_mode: proofMode || 'upload_file',
+                id_type: proofMode === 'selfie_with_id' ? 'ocr_auto_detect' : (idTypeSelect?.value || 'other'),
+                id_front_base64: inputs.front.value || '',
+                id_back_base64: inputs.back.value || '',
+                face_selfie_base64: inputs.selfie.value || '',
+            },
+            ocr: ocr || { status: 'error', fields: {} },
+        };
+        sessionStorage.setItem(ocrReviewStorageKey, JSON.stringify(reviewPayload));
+        window.location.href = ocrReviewRoute;
     });
 
     confirmCancelBtn?.addEventListener('click', () => {

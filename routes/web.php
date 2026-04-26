@@ -59,6 +59,7 @@ Route::middleware('auth')->group(function () {
     Route::view('/verification/required', 'verify-popup')->name('verification.required');
     Route::view('/verification/facial', 'facial-verification')->name('verification.facial');
     Route::view('/id-verification', 'id-verification')->name('verification.id');
+    Route::view('/verification/id-ocr-review', 'id-ocr-review')->name('verification.id-ocr-review');
     Route::post('/driver-verification', [DriverVerificationSubmissionController::class, 'store'])->name('driver-verification.store');
     Route::post('/driver-verification/ocr-preview', [DriverVerificationSubmissionController::class, 'previewOcr'])->name('driver-verification.ocr-preview');
 });

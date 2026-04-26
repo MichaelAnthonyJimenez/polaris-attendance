@@ -347,11 +347,22 @@ class AttendanceController extends Controller
         $capturedAt = now();
         if (! empty($data['captured_at'])) {
             try {
-                // Keep storage/query behavior consistent with app-local datetime usage.
-                $capturedAt = Carbon::parse((string) $data['captured_at'])->setTimezone((string) config('app.timezone'));
+                // Parse the captured_at time and convert to Asia/Manila timezone
+                $capturedAt = Carbon::parse((string) $data['captured_at']);
+
+                // If timezone offset is provided, adjust the time accordingly
+                if (isset($data['captured_tz_offset']) && is_numeric($data['captured_tz_offset'])) {
+                    $capturedAt->addMinutes(-$data['captured_tz_offset']);
+                }
+
+                // Convert to Asia/Manila timezone
+                $capturedAt->setTimezone('Asia/Manila');
             } catch (\Throwable) {
-                $capturedAt = now();
+                $capturedAt = now()->setTimezone('Asia/Manila');
             }
+        } else {
+            // Ensure we always use Asia/Manila timezone
+            $capturedAt = now()->setTimezone('Asia/Manila');
         }
 
         $totalHours = null;

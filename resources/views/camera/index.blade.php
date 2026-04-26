@@ -565,12 +565,17 @@
             if (capturedAtInput) capturedAtInput.value = capturedAt.toISOString();
             if (capturedTimezoneInput) {
                 try {
-                    capturedTimezoneInput.value = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+                    // Always set to Asia/Manila timezone
+                    capturedTimezoneInput.value = 'Asia/Manila';
                 } catch (_e) {
-                    capturedTimezoneInput.value = '';
+                    capturedTimezoneInput.value = 'Asia/Manila';
                 }
             }
-            if (capturedTzOffsetInput) capturedTzOffsetInput.value = String(capturedAt.getTimezoneOffset());
+            if (capturedTzOffsetInput) {
+                // Calculate offset for Manila timezone (UTC+8)
+                const manilaOffset = -8 * 60; // Manila is UTC+8, so offset is -480 minutes
+                capturedTzOffsetInput.value = String(manilaOffset);
+            }
             previewImg.src = dataUrl;
             setMode('preview');
             setHint(isAuto ? 'Photo captured automatically. Submit or retake.' : 'Review your photo, then submit.');
@@ -611,14 +616,13 @@
                 capturedAtInput.value = new Date().toISOString();
             }
             if (capturedTimezoneInput && !capturedTimezoneInput.value) {
-                try {
-                    capturedTimezoneInput.value = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-                } catch (_e) {
-                    capturedTimezoneInput.value = '';
-                }
+                // Always set to Asia/Manila timezone
+                capturedTimezoneInput.value = 'Asia/Manila';
             }
             if (capturedTzOffsetInput && !capturedTzOffsetInput.value) {
-                capturedTzOffsetInput.value = String(new Date().getTimezoneOffset());
+                // Calculate offset for Manila timezone (UTC+8)
+                const manilaOffset = -8 * 60; // Manila is UTC+8, so offset is -480 minutes
+                capturedTzOffsetInput.value = String(manilaOffset);
             }
             submitting = true;
             submitBtn.disabled = true;

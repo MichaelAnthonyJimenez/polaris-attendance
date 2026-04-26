@@ -735,6 +735,24 @@
         if (confirmOcrFields) confirmOcrFields.innerHTML = '';
     }
 
+    function formatFieldValue(value) {
+        if (value === null || value === undefined) return '';
+        if (Array.isArray(value)) {
+            return value.map((entry) => String(entry ?? '')).join(', ');
+        }
+        if (typeof value === 'object') {
+            return JSON.stringify(value);
+        }
+        return String(value);
+    }
+
+    function appendOcrField(key, value) {
+        if (!confirmOcrFields) return;
+        const p = document.createElement('p');
+        p.innerHTML = '<span class="text-slate-400">' + key.replace(/_/g, ' ') + ':</span> ' + formatFieldValue(value);
+        confirmOcrFields.appendChild(p);
+    }
+
     function renderConfirmStaticDetails() {
         const modeText = proofMode === 'upload_file' ? 'Upload ID files' : 'Selfie with ID';
         const idTypeText = proofMode === 'selfie_with_id'
@@ -798,16 +816,18 @@
             const entries = Object.entries(fields);
             if (entries.length === 0) {
                 if (confirmOcrStatus) confirmOcrStatus.textContent = 'OCR worked, but no clear fields were extracted.';
+                if (ocr.raw_text) {
+                    appendOcrField('raw_text', ocr.raw_text);
+                }
                 return;
             }
             if (confirmOcrStatus) confirmOcrStatus.textContent = 'OCR worked. Please review extracted fields:';
             if (confirmOcrFields) {
                 confirmOcrFields.innerHTML = '';
-                entries.forEach(([key, value]) => {
-                    const p = document.createElement('p');
-                    p.innerHTML = '<span class=\"text-slate-400\">' + key.replace(/_/g, ' ') + ':</span> ' + String(value ?? '');
-                    confirmOcrFields.appendChild(p);
-                });
+                entries.forEach(([key, value]) => appendOcrField(key, value));
+                if (!Object.prototype.hasOwnProperty.call(fields, 'raw_text') && ocr.raw_text) {
+                    appendOcrField('raw_text', ocr.raw_text);
+                }
             }
         } catch (_err) {
             if (confirmOcrStatus) confirmOcrStatus.textContent = 'OCR failed or unavailable.';

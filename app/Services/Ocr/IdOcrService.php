@@ -230,12 +230,64 @@ class IdOcrService
     private function extractFields(string $rawText): array
     {
         $fields = [];
-        if (preg_match('/(?:ID|LIC|NO|NUMBER)\s*[:#]?\s*([A-Z0-9-]{5,})/i', $rawText, $m)) {
-            $fields['id_number'] = trim($m[1]);
+        $normalized = preg_replace('/\r\n?/', "\n", trim($rawText)) ?? '';
+        $lines = array_values(array_filter(array_map(
+            static fn (string $line): string => trim(preg_replace('/\s+/', ' ', $line) ?? ''),
+            explode("\n", $normalized)
+        )));
+
+        if ($lines !== []) {
+            $fields['all_text_lines'] = $lines;
         }
-        if (preg_match('/(?:NAME)\s*[:#]?\s*([A-Z .,\']{4,})/i', $rawText, $m)) {
-            $fields['name_line'] = trim($m[1]);
+
+        $keyValues = [];
+        foreach ($lines as $line) {
+            if (preg_match('/^\s*([A-Z][A-Z0-9 .\/_-]{1,40})\s*[:#]\s*(.{1,120})\s*$/i', $line, $m)) {
+                $label = strtolower(trim((string) $m[1]));
+                $label = preg_replace('/[^a-z0-9]+/', '_', $label) ?? $label;
+                $label = trim($label, '_');
+                if ($label !== '' && ! isset($keyValues[$label])) {
+                    $keyValues[$label] = trim((string) $m[2]);
+                }
+            }
         }
+        if ($keyValues !== []) {
+            $fields['key_values'] = $keyValues;
+        }
+
+        if (preg_match('/(?:id|license|lic|no|number)\s*[:#]?\s*([A-Z0-9-]{5,})/i', $normalized, $m)) {
+            $fields['id_number'] = trim((string) $m[1]);
+        }
+
+        if (preg_match('/(?:name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i', $normalized, $m)) {
+            $fields['name_line'] = trim((string) $m[1]);
+        }
+
+        if (preg_match_all('/\b(?:\d{4}[-\/]\d{2}[-\/]\d{2}|\d{2}[-\/]\d{2}[-\/]\d{4}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})\b/', $normalized, $m) && ! empty($m[0])) {
+            $fields['date_values'] = array_values(array_unique(array_map('trim', $m[0])));
+        }
+
+        if (preg_match_all('/\b[A-Z0-9]{6,20}\b/', strtoupper($normalized), $m) && ! empty($m[0])) {
+            $tokens = array_values(array_unique($m[0]));
+            if ($tokens !== []) {
+                $fields['alphanumeric_tokens'] = array_slice($tokens, 0, 25);
+            }
+        }
+
+        $nameCandidates = [];
+        foreach ($lines as $line) {
+            if (
+                preg_match('/^[A-Z][A-Z .,\']{4,}$/', strtoupper($line))
+                && ! preg_match('/\b(?:republic|philippines|address|birth|sex|nationality|id|license|number)\b/i', $line)
+            ) {
+                $nameCandidates[] = trim($line);
+            }
+        }
+        if ($nameCandidates !== []) {
+            $fields['name_candidates'] = array_values(array_unique($nameCandidates));
+        }
+
+        $fields['raw_text'] = $rawText;
 
         return $fields;
     }

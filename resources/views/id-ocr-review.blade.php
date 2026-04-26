@@ -2,14 +2,23 @@
 
 @section('content')
 <div class="fixed inset-0 z-[2147483647] h-[100dvh] bg-slate-950 text-white overflow-y-auto">
-    <div class="min-h-[100dvh] px-4 pt-4 pb-0" style="padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: 0;">
+    <div class="min-h-[100dvh] px-4 pt-4 pb-4" style="padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: max(1rem, env(safe-area-inset-bottom));">
         <div class="mx-auto w-full max-w-md">
             <div class="glass rounded-2xl border border-white/10 p-4 sm:p-5">
-                <div class="flex items-center justify-between gap-3">
-                    <h2 class="text-base font-semibold">Review OCR Fields</h2>
-                    <a href="{{ route('verification.id') }}" class="text-xs text-slate-300 hover:text-white">Back</a>
+                <div class="flex items-center gap-2">
+                    <a
+                        href="{{ route('verification.id') }}"
+                        class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-white hover:bg-white/20 transition"
+                        aria-label="Back to verification mode selection"
+                    >
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </a>
+                    <h2 class="text-base font-semibold">Upload ID</h2>
                 </div>
-                <p class="mt-1 text-xs text-slate-400">Edit fields before final submission. Colors indicate confidence.</p>
+                <p class="mt-1 text-xs text-slate-400">Choose your ID type and images.</p>
+                <p class="mt-1 text-[11px] text-slate-500">&lt; to go back to the selection.</p>
 
                 <form id="idvOcrReviewForm" method="POST" action="{{ route('driver-verification.store') }}" class="mt-4 space-y-3">
                     @csrf

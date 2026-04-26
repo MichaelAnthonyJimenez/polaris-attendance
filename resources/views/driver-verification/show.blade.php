@@ -237,7 +237,24 @@
                             <label class="text-sm text-slate-400">OCR Extracted Fields</label>
                             <div class="text-sm text-slate-200 bg-white/5 p-3 rounded-lg space-y-1">
                                 @foreach($manualData['ocr']['fields'] as $fieldKey => $fieldValue)
-                                    <p><span class="text-slate-400">{{ ucwords(str_replace('_', ' ', (string) $fieldKey)) }}:</span> {{ $fieldValue }}</p>
+                                    @php
+                                        $displayValue = '';
+                                        if (is_array($fieldValue)) {
+                                            if (array_key_exists('value', $fieldValue)) {
+                                                $displayValue = (string) ($fieldValue['value'] ?? '');
+                                                if (array_key_exists('confidence', $fieldValue)) {
+                                                    $displayValue .= ' (conf: '.number_format((float) ($fieldValue['confidence'] ?? 0), 2).')';
+                                                }
+                                            } else {
+                                                $displayValue = collect($fieldValue)
+                                                    ->map(fn ($v, $k) => (string) $k.': '.(is_array($v) ? json_encode($v) : (string) $v))
+                                                    ->implode(', ');
+                                            }
+                                        } else {
+                                            $displayValue = (string) $fieldValue;
+                                        }
+                                    @endphp
+                                    <p><span class="text-slate-400">{{ ucwords(str_replace('_', ' ', (string) $fieldKey)) }}:</span> {{ $displayValue !== '' ? $displayValue : '—' }}</p>
                                 @endforeach
                             </div>
                         </div>

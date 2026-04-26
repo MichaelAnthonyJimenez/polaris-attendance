@@ -279,7 +279,7 @@ class IdOcrService
         if (is_array($profile) && isset($profile['name_patterns']) && is_array($profile['name_patterns'])) {
             $namePatterns = $profile['name_patterns'];
         }
-        $namePatterns[] = '/(?:name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i';
+        $namePatterns[] = '/(?:name|full\s*name|given\s*name|surname|last\s*name|first\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i';
         foreach ($namePatterns as $pattern) {
             if (preg_match($pattern, $normalized, $m)) {
                 $fields['name_line'] = trim((string) $m[1]);
@@ -299,30 +299,54 @@ class IdOcrService
         }
 
         $nameCandidates = [];
+        // Pattern 1: Look for "LASTNAME, FIRSTNAME MIDDLEINITIAL" pattern
         foreach ($lines as $line) {
             $upperLine = strtoupper($line);
             if (
                 preg_match('/^[A-Z][A-Z .,\']{4,}$/', $upperLine)
-                && ! preg_match('/\b(?:republic|philippines|address|birth|sex|nationality|id|license|number|college|university|center|school|campus|city|municipality|province|region)\b/i', $line)
-                && preg_match('/\b[A-Z]{2,}\s*,\s*[A-Z]{2,}/', $upperLine) // Look for "LASTNAME, FIRSTNAME" pattern
+                && ! preg_match('/\b(?:republic|philippines|address|birth|sex|nationality|id|license|number|college|university|center|school|campus|city|municipality|province|region|government|office|department)\b/i', $line)
+                && preg_match('/\b[A-Z]{2,}\s*,\s*[A-Z]{2,}(?:\s+[A-Z]\.?)?\b/', $upperLine) // Look for "LASTNAME, FIRSTNAME" or "LASTNAME, FIRSTNAME M."
             ) {
                 $nameCandidates[] = trim($line);
             }
         }
-
-        // Also try to extract names from lines that contain comma-separated names
+        // Pattern 2: Extract names from lines with comma-separated names
         foreach ($lines as $line) {
             if (
-                preg_match('/([A-Z][A-Z .,\']{2,})\s*,\s*([A-Z][A-Z .,\']{2,})/', $line, $matches)
-                && ! preg_match('/\b(?:college|university|center|school|campus|city|municipality|province|region)\b/i', $line)
+                preg_match('/([A-Z][A-Z .,\']{2,})\s*,\s*([A-Z][A-Z .,\']{2,})(?:\s+([A-Z]\.))?/', $line, $matches)
+                && ! preg_match('/\b(?:college|university|center|school|campus|city|municipality|province|region|government|office|department)\b/i', $line)
             ) {
-                $fullName = trim($matches[1] . ', ' . $matches[2]);
+                $fullName = trim($matches[1] . ', ' . $matches[2] . (isset($matches[3]) ? ' ' . $matches[3] : ''));
                 if (! in_array($fullName, $nameCandidates)) {
                     $nameCandidates[] = $fullName;
                 }
             }
         }
-
+        // Pattern 3: Look for lines that start with common name indicators
+        foreach ($lines as $line) {
+            if (
+                preg_match('/^(?:name|full\s*name|given\s*name|surname|last\s*name|first\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i', $line, $matches)
+                && ! preg_match('/\b(?:college|university|center|school|campus|city|municipality|province|region|government|office|department)\b/i', $matches[1])
+            ) {
+                $nameCandidates[] = trim($matches[1]);
+            }
+        }
+        // Pattern 4: Look for lines that contain name-like patterns (all caps with proper name structure)
+        foreach ($lines as $line) {
+            $upperLine = strtoupper($line);
+            if (
+                preg_match('/^[A-Z][A-Z ]{4,}$/', $upperLine) // All caps line
+                && ! preg_match('/\b(?:republic|philippines|address|birth|sex|nationality|id|license|number|college|university|center|school|campus|city|municipality|province|region|government|office|department|street|road|barangay|district)\b/i', $line)
+                && preg_match('/\b[A-Z]{2,}\s+[A-Z]{2,}\b/', $upperLine) // At least two words
+                && strlen($line) >= 8 // Minimum length for a name
+            ) {
+                // Check if it looks like a person's name (not too long, reasonable word count)
+                $words = array_filter(explode(' ', $line));
+                if (count($words) >= 2 && count($words) <= 4) {
+                    $nameCandidates[] = trim($line);
+                }
+            }
+        }
         if ($nameCandidates !== []) {
             $fields['name_candidates'] = array_values(array_unique($nameCandidates));
         }
@@ -360,24 +384,36 @@ class IdOcrService
                 'label' => 'PhilSys National ID',
                 'id_number_patterns' => [
                     '/(?:pcn|philippine\s*identification\s*number|philsys\s*number)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                    '/\b(\d{4}-\d{7}-\d{1})\b/', // PhilSys format: XXXX-XXXXXXX-X
+                ],
+                'name_patterns' => [
+                    '/(?:name|full\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
                 ],
             ],
             'drivers_license' => [
                 'label' => "Driver's License",
                 'id_number_patterns' => [
-                    '/(?:license\s*no\.?|lic\.?\s*no\.?)\s*[:#]?\s*([A-Z0-9-]{5,})/i',
+                    '/(?:license\s*no\.?|lic\.?\s*no\.?|driver\s*license\s*no)\s*[:#]?\s*([A-Z0-9-]{5,})/i',
+                    '/\b([A-Z]\d{2}-\d{2}-\d{6})\b/', // License format
+                ],
+                'name_patterns' => [
+                    '/(?:name|driver\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
                 ],
             ],
             'passport' => [
                 'label' => 'Passport',
                 'id_number_patterns' => [
-                    '/(?:passport\s*no\.?)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                    '/(?:passport\s*no\.?|passport\s*number)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                    '/\b([A-Z]{1,2}\d{7})\b/', // Passport format
+                ],
+                'name_patterns' => [
+                    '/(?:name|surname|given\s*names)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
                 ],
             ],
             'student_id' => [
                 'label' => 'Student ID',
                 'id_number_patterns' => [
-                    '/(?:student\s*id|id\s*no\.?|student\s*no\.?)\s*[:#]?\s*([A-Z0-9-]{5,})/i',
+                    '/(?:student\s*id|id\s*no\.?|student\s*no\.?|control\s*no)\s*[:#]?\s*([A-Z0-9-]{5,})/i',
                     '/\b(\d{6,12})\b/',
                 ],
                 'name_patterns' => [
@@ -387,43 +423,98 @@ class IdOcrService
             'umid' => [
                 'label' => 'UMID',
                 'id_number_patterns' => [
-                    '/(?:crn|umid|sss)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                    '/(?:crn|umid|sss|crn\s*no)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                    '/\b(\d{4}-\d{7}-\d{1})\b/', // UMID format
+                ],
+                'name_patterns' => [
+                    '/(?:name|member\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
                 ],
             ],
             'prc_id' => [
                 'label' => 'PRC ID',
                 'id_number_patterns' => [
-                    '/(?:registration\s*no\.?|prc\s*no\.?)\s*[:#]?\s*([A-Z0-9-]{5,})/i',
+                    '/(?:registration\s*no\.?|prc\s*no\.?|license\s*no\.?)\s*[:#]?\s*([A-Z0-9-]{5,})/i',
+                    '/\b(\d{3}-\d{7}-\d{1})\b/', // PRC format
+                ],
+                'name_patterns' => [
+                    '/(?:name|professional\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
                 ],
             ],
-            'postal_id' => ['label' => 'Postal ID'],
+            'postal_id' => [
+                'label' => 'Postal ID',
+                'id_number_patterns' => [
+                    '/(?:postal\s*id|id\s*no)\s*[:#]?\s*([A-Z0-9-]{5,})/i',
+                ],
+                'name_patterns' => [
+                    '/(?:name|postal\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
+                ],
+            ],
             'voters_id' => [
                 'label' => "Voter's ID",
                 'id_number_patterns' => [
-                    '/(?:voter|vin)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                    '/(?:voter|vin|voter\s*id|voter\s*no)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                ],
+                'name_patterns' => [
+                    '/(?:name|voter\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
                 ],
             ],
             'philhealth_id' => [
                 'label' => 'PhilHealth ID',
                 'id_number_patterns' => [
-                    '/(?:philhealth|pin)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                    '/(?:philhealth|pin|philhealth\s*id|philhealth\s*no)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                    '/\b(\d{2}-\d{9})\b/', // PhilHealth format
+                ],
+                'name_patterns' => [
+                    '/(?:name|member\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
                 ],
             ],
             'sss_id' => [
                 'label' => 'SSS ID',
                 'id_number_patterns' => [
-                    '/(?:sss\s*no\.?)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                    '/(?:sss\s*no\.?|sss\s*id|social\s*security)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                    '/\b(\d{2}-\d{7}-\d{1})\b/', // SSS format
+                ],
+                'name_patterns' => [
+                    '/(?:name|member\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
                 ],
             ],
             'pagibig_loyalty_card' => [
                 'label' => 'Pag-IBIG Loyalty Card',
                 'id_number_patterns' => [
-                    '/(?:pag-?ibig|hdlmf)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                    '/(?:pag-?ibig|hdlmf|pagibig\s*id|pagibig\s*no)\s*[:#]?\s*([A-Z0-9-]{6,})/i',
+                    '/\b(\d{4}-\d{6}-\d{1})\b/', // Pag-IBIG format
+                ],
+                'name_patterns' => [
+                    '/(?:name|member\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
                 ],
             ],
-            'senior_citizen_id' => ['label' => 'Senior Citizen ID'],
-            'ofw_id' => ['label' => 'OFW ID'],
-            'barangay_id' => ['label' => 'Barangay ID'],
+            'senior_citizen_id' => [
+                'label' => 'Senior Citizen ID',
+                'id_number_patterns' => [
+                    '/(?:senior\s*citizen|senior\s*id|osca\s*id)\s*[:#]?\s*([A-Z0-9-]{5,})/i',
+                ],
+                'name_patterns' => [
+                    '/(?:name|senior\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
+                ],
+            ],
+            'ofw_id' => [
+                'label' => 'OFW ID',
+                'id_number_patterns' => [
+                    '/(?:ofw|ofw\s*id|ofw\s*no)\s*[:#]?\s*([A-Z0-9-]{5,})/i',
+                ],
+                'name_patterns' => [
+                    '/(?:name|ofw\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
+                ],
+            ],
+            'barangay_id' => [
+                'label' => 'Barangay ID',
+                'id_number_patterns' => [
+                    '/(?:barangay|barangay\s*id|barangay\s*no)\s*[:#]?\s*([A-Z0-9-]{5,})/i',
+                ],
+                'name_patterns' => [
+                    '/(?:name|resident\s*name)\s*[:#]?\s*([A-Z][A-Z .,\']{2,})/i',
+                ],
+            ],
         ];
 
         if (! isset($profiles[$key])) {

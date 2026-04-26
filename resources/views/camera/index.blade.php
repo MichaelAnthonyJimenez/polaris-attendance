@@ -58,6 +58,16 @@
             </div>
         </header>
 
+        <div
+            class="shrink-0 mx-3 mb-2 rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-100"
+            style="margin-left: max(0.75rem, env(safe-area-inset-left)); margin-right: max(0.75rem, env(safe-area-inset-right));"
+        >
+            <p class="font-semibold text-amber-200">Safety and coverage guide</p>
+            <p class="mt-1">
+                Avoid check in/check out while driving or while in unoperational or limited-data areas (highways, streets, and roads with unstable signal). Stop in a safe location and wait for accurate GPS before submitting.
+            </p>
+        </div>
+
         {{-- Viewport: live camera or preview --}}
         <div class="flex-1 relative min-h-0 bg-black">
             <video
@@ -123,7 +133,7 @@
                 <div class="rounded-2xl border border-white/10 bg-white/5 p-6 max-w-sm">
                     <p class="text-base font-semibold text-white mb-2">Location access</p>
                     <p id="locationPermissionText" class="text-sm text-slate-300 mb-5">
-                        Allow <strong class="text-white">location</strong> so live tracking is automatically enabled for admin monitoring. You can turn this off anytime in Settings.
+                        Allow <strong class="text-white">location</strong> so live tracking is automatically enabled for admin monitoring. For safety and better location accuracy, capture attendance only when stationary and away from unstable-signal road segments.
                     </p>
                     <button
                         type="button"
@@ -390,7 +400,7 @@
                     beginLiveLocationWatch();
                 } else {
                     showLocationPermissionGate(
-                        '<strong class="text-white">Location is off</strong> until you tap Enable location below. You can check in or out with the camera either way.'
+                        '<strong class="text-white">Location is off</strong> until you tap Enable location below. In limited-data or unoperational road areas, wait until GPS becomes stable before check in/check out.'
                     );
                 }
 

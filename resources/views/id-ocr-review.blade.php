@@ -2,9 +2,10 @@
 
 @section('content')
 <div class="fixed inset-0 z-[2147483647] bg-slate-950 text-white overflow-y-auto">
-    <div class="min-h-screen px-4 py-4" style="padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: max(5rem, env(safe-area-inset-bottom));">
-        <div class="mx-auto w-full max-w-md">
-            <div class="glass rounded-2xl border border-white/10 p-4 sm:p-5">
+    <div class="h-screen px-4 py-4 flex flex-col" style="padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: max(6rem, env(safe-area-inset-bottom));">
+        <div class="flex-1 flex flex-col justify-center">
+            <div class="mx-auto w-full max-w-md">
+                <div class="glass rounded-2xl border border-white/10 p-4 sm:p-5">
                 <div class="flex items-center justify-between gap-3">
                     <h2 class="text-base font-semibold">Review OCR Fields</h2>
                     <a href="{{ route('verification.id') }}" class="text-xs text-slate-300 hover:text-white">Back</a>
@@ -28,6 +29,7 @@
                         <a href="{{ route('verification.id') }}" class="btn-secondary w-full py-2.5 text-sm text-center">Retake / Re-upload</a>
                     </div>
                 </form>
+                </div>
             </div>
         </div>
     </div>

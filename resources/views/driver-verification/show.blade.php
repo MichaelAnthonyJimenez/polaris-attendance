@@ -54,6 +54,11 @@
                         ?? $driverEditedOcr[$ocrKey]
                         ?? $extractOcrScalar($ocrFields[$ocrKey] ?? '');
                 }
+                $driverSubmittedOcr = [];
+                foreach ($editableOcrKeys as $ocrKey) {
+                    $driverSubmittedOcr[$ocrKey] = $driverEditedOcr[$ocrKey]
+                        ?? $extractOcrScalar($ocrFields[$ocrKey] ?? '');
+                }
                 $humanOcrLabel = function (?string $key): string {
                     $normalized = (string) $key;
                     if ($normalized === 'gender') {
@@ -310,7 +315,7 @@
                                         $displayValue = '';
                                         if (is_array($fieldValue)) {
                                             if (array_key_exists('value', $fieldValue)) {
-                                                $displayValue = (string) ($effectiveOcr[$fieldKey] ?? ($fieldValue['value'] ?? ''));
+                                                $displayValue = (string) ($driverSubmittedOcr[$fieldKey] ?? ($fieldValue['value'] ?? ''));
                                                 if (array_key_exists('confidence', $fieldValue)) {
                                                     $displayValue .= ' (conf: '.number_format((float) ($fieldValue['confidence'] ?? 0), 2).')';
                                                 }
@@ -320,7 +325,7 @@
                                                     ->implode(', ');
                                             }
                                         } else {
-                                            $displayValue = (string) $fieldValue;
+                                            $displayValue = (string) ($driverSubmittedOcr[$fieldKey] ?? $fieldValue);
                                         }
                                     @endphp
                                     <p><span class="text-slate-400">{{ $humanOcrLabel((string) $fieldKey) }}:</span> {{ $displayValue !== '' ? $displayValue : '—' }}</p>

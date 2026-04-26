@@ -59,6 +59,7 @@
         </header>
 
         <div
+            id="coverageGuide"
             class="shrink-0 mx-3 mb-2 rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-100"
             style="margin-left: max(0.75rem, env(safe-area-inset-left)); margin-right: max(0.75rem, env(safe-area-inset-right));"
         >
@@ -66,6 +67,13 @@
             <p class="mt-1">
                 Avoid check in/check out while driving or while in unoperational or limited-data areas (highways, streets, and roads with unstable signal). Stop in a safe location and wait for accurate GPS before submitting.
             </p>
+            <button
+                type="button"
+                id="coverageGuideOkBtn"
+                class="mt-2 w-full rounded-lg bg-amber-600/30 border border-amber-400/50 px-2 py-1.5 text-[10px] font-medium text-amber-100 hover:bg-amber-600/40 transition"
+            >
+                OK, I understand
+            </button>
         </div>
 
         {{-- Viewport: live camera or preview --}}
@@ -216,6 +224,8 @@
         const liveControls = document.getElementById('liveControls');
         const previewControls = document.getElementById('previewControls');
         const typeButtons = document.querySelectorAll('.cam-type-btn');
+        const coverageGuide = document.getElementById('coverageGuide');
+        const coverageGuideOkBtn = document.getElementById('coverageGuideOkBtn');
 
         const autoCapture = shell?.dataset.autoCapture === '1';
         const autoSubmit = shell?.dataset.autoSubmit === '1';
@@ -490,6 +500,9 @@
         retakeBtn?.addEventListener('click', () => retake());
         retryBtn?.addEventListener('click', () => startCamera());
         locationEnableBtn?.addEventListener('click', () => requestLocationPermissionAndEnable());
+        coverageGuideOkBtn?.addEventListener('click', () => {
+            coverageGuide.style.display = 'none';
+        });
 
         form?.addEventListener('submit', () => {
             if (capturedAtInput && !capturedAtInput.value) {

@@ -8,6 +8,7 @@
 <div
     id="dvvShell"
     class="fixed inset-0 z-[100] flex flex-col bg-black text-white"
+    style="height: 100dvh; width: 100vw;"
 >
     <form id="facialVerificationForm" method="POST" action="{{ route('driver-verification.store') }}" class="flex flex-1 flex-col min-h-0">
         @csrf

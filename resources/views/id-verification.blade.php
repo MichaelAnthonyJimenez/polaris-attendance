@@ -6,7 +6,7 @@
 <div
     id="idvShell"
     class="fixed inset-0 z-[2147483647] flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-white"
-    style="position: fixed; top: 0; right: 0; bottom: 0; left: 0; width: 100vw; height: 100vh;"
+    style="position: fixed; top: 0; right: 0; bottom: 0; left: 0; width: 100vw; height: 100dvh;"
 >
     <form method="POST" action="{{ route('driver-verification.store') }}" id="idVerificationForm" enctype="multipart/form-data" class="relative flex flex-1 flex-col min-h-0">
         @csrf

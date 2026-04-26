@@ -10,7 +10,7 @@
     @stack('head-scripts')
 </head>
 @php
-    $isFullscreenCameraPage = request()->routeIs('camera.*', 'verification.facial', 'verification.id');
+    $isFullscreenCameraPage = request()->routeIs('camera.*', 'verification.facial', 'verification.id', 'verification.id-ocr-review');
     $driverBodyClasses = [];
     if (auth()->check() && auth()->user()->role === 'driver') {
         $driverBodyClasses[match (\App\Models\Setting::get('driver_font_size', 'medium')) {

@@ -28,6 +28,32 @@
                     ? $manualDataRaw
                     : (is_string($manualDataRaw) ? (json_decode($manualDataRaw, true) ?? []) : []);
                 $faceSequence = $manualData['face_sequence'] ?? [];
+                $ocrData = (isset($manualData['ocr']) && is_array($manualData['ocr'])) ? $manualData['ocr'] : [];
+                $ocrFields = (isset($ocrData['fields']) && is_array($ocrData['fields'])) ? $ocrData['fields'] : [];
+                $driverEditedOcr = (isset($ocrData['edited']) && is_array($ocrData['edited'])) ? $ocrData['edited'] : [];
+                $adminEditedOcr = (isset($ocrData['admin_edited']) && is_array($ocrData['admin_edited'])) ? $ocrData['admin_edited'] : [];
+                $editableOcrKeys = [
+                    'id_type', 'first_name', 'middle_name', 'last_name',
+                    'birthdate', 'gender', 'address', 'id_number',
+                    'birthplace', 'civil_status', 'date_of_issuance', 'expiry_date',
+                ];
+                $extractOcrScalar = function ($raw): string {
+                    if (is_array($raw)) {
+                        if (array_key_exists('value', $raw)) {
+                            return trim((string) ($raw['value'] ?? ''));
+                        }
+
+                        return trim((string) json_encode($raw));
+                    }
+
+                    return trim((string) $raw);
+                };
+                $effectiveOcr = [];
+                foreach ($editableOcrKeys as $ocrKey) {
+                    $effectiveOcr[$ocrKey] = $adminEditedOcr[$ocrKey]
+                        ?? $driverEditedOcr[$ocrKey]
+                        ?? $extractOcrScalar($ocrFields[$ocrKey] ?? '');
+                }
 
                 /**
                  * Resolve a verification image path that might live either in:
@@ -211,6 +237,20 @@
                 </div>
             @endif
 
+            @if(!empty($adminEditedOcr))
+                <div>
+                    <label class="text-sm text-slate-400">Admin OCR Edits</label>
+                    <div class="text-sm text-slate-200 bg-white/5 p-3 rounded-lg space-y-1">
+                        @foreach($adminEditedOcr as $fieldKey => $fieldValue)
+                            <p>
+                                <span class="text-slate-400">{{ ucwords(str_replace('_', ' ', (string) $fieldKey)) }}:</span>
+                                {{ (string) $fieldValue }}
+                            </p>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             {{-- show manual form entries if they exist --}}
             @if(!empty($manualData))
                 @if(isset($manualData['id_type']))
@@ -234,6 +274,27 @@
                     </div>
                     @if(!empty($manualData['ocr']['fields']) && is_array($manualData['ocr']['fields']))
                         <div>
+                            <label class="text-sm text-slate-400">OCR Editable Fields (Admin)</label>
+                            <div class="text-sm text-slate-200 bg-white/5 p-3 rounded-lg space-y-2">
+                                @foreach($editableOcrKeys as $ocrKey)
+                                    @php
+                                        $label = ucwords(str_replace('_', ' ', (string) $ocrKey));
+                                        $value = (string) ($effectiveOcr[$ocrKey] ?? '');
+                                    @endphp
+                                    <div>
+                                        <label class="block text-xs text-slate-400 mb-1">{{ $label }}</label>
+                                        <input
+                                            type="text"
+                                            class="w-full rounded bg-black/30 border border-white/20 text-slate-100 px-2 py-1.5 text-xs"
+                                            data-admin-ocr-edit="{{ $ocrKey }}"
+                                            value="{{ $value }}"
+                                        >
+                                    </div>
+                                @endforeach
+                                <p class="text-[11px] text-slate-500">Displayed values prefer admin edits, then driver edits, then extracted OCR values.</p>
+                            </div>
+                        </div>
+                        <div>
                             <label class="text-sm text-slate-400">OCR Extracted Fields</label>
                             <div class="text-sm text-slate-200 bg-white/5 p-3 rounded-lg space-y-1">
                                 @foreach($manualData['ocr']['fields'] as $fieldKey => $fieldValue)
@@ -241,7 +302,7 @@
                                         $displayValue = '';
                                         if (is_array($fieldValue)) {
                                             if (array_key_exists('value', $fieldValue)) {
-                                                $displayValue = (string) ($fieldValue['value'] ?? '');
+                                                $displayValue = (string) ($effectiveOcr[$fieldKey] ?? ($fieldValue['value'] ?? ''));
                                                 if (array_key_exists('confidence', $fieldValue)) {
                                                     $displayValue .= ' (conf: '.number_format((float) ($fieldValue['confidence'] ?? 0), 2).')';
                                                 }
@@ -284,6 +345,7 @@
                         <form id="quickApproveForm" action="{{ route('driver-verification.approve', $verificationRequest) }}" method="POST" class="inline">
                             @csrf
                             <input type="hidden" name="admin_notes" id="quickApproveNotes" value="">
+                            <input type="hidden" name="ocr_admin_edited_json" id="quickApproveOcrEditedJson" value="">
                             <button type="button" class="btn-primary bg-emerald-600 hover:bg-emerald-700" onclick="openDecisionModal('approve')">Approve</button>
                         </form>
                         <form id="quickRejectForm" action="{{ route('driver-verification.reject', $verificationRequest) }}" method="POST" class="inline">
@@ -541,6 +603,16 @@ function submitDecision() {
         const notes = document.getElementById('decisionAdminNotes')?.value ?? '';
         const input = document.getElementById('quickApproveNotes');
         if (input) input.value = notes;
+        const ocrEdited = {};
+        document.querySelectorAll('[data-admin-ocr-edit]').forEach((el) => {
+            const key = el.getAttribute('data-admin-ocr-edit');
+            const value = String(el.value || '').trim();
+            if (key && value) {
+                ocrEdited[key] = value;
+            }
+        });
+        const ocrInput = document.getElementById('quickApproveOcrEditedJson');
+        if (ocrInput) ocrInput.value = JSON.stringify(ocrEdited);
         document.getElementById('quickApproveForm')?.submit();
         return;
     }

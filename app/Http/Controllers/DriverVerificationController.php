@@ -30,9 +30,19 @@ class DriverVerificationController extends Controller
 
     public function approve(Request $request, DriverVerification $verification): RedirectResponse
     {
+        $adminEditedOcr = $this->sanitizeEditedOcrData((string) $request->input('ocr_admin_edited_json', ''));
+        $manualData = is_array($verification->manual_form_data) ? $verification->manual_form_data : [];
+        if ($adminEditedOcr !== []) {
+            if (! isset($manualData['ocr']) || ! is_array($manualData['ocr'])) {
+                $manualData['ocr'] = [];
+            }
+            $manualData['ocr']['admin_edited'] = $adminEditedOcr;
+        }
+
         $verification->fill([
             'status' => 'approved',
             'admin_notes' => $request->input('admin_notes', $verification->admin_notes),
+            'manual_form_data' => $manualData,
             'reviewer_id' => Auth::id(),
             'reviewed_at' => now(),
         ])->save();
@@ -152,6 +162,42 @@ class DriverVerificationController extends Controller
                 report($e);
             }
         }
+    }
+
+    private function sanitizeEditedOcrData(string $json): array
+    {
+        if ($json === '') {
+            return [];
+        }
+        $payload = json_decode($json, true);
+        if (! is_array($payload)) {
+            return [];
+        }
+
+        $allowed = [
+            'id_type',
+            'first_name',
+            'middle_name',
+            'last_name',
+            'birthdate',
+            'gender',
+            'address',
+            'id_number',
+            'birthplace',
+            'civil_status',
+            'date_of_issuance',
+            'expiry_date',
+        ];
+
+        $clean = [];
+        foreach ($allowed as $key) {
+            $value = trim((string) ($payload[$key] ?? ''));
+            if ($value !== '') {
+                $clean[$key] = preg_replace('/\s+/', ' ', strip_tags($value)) ?? $value;
+            }
+        }
+
+        return $clean;
     }
 }
 

@@ -21,7 +21,7 @@
         <input type="hidden" name="geo_accuracy" id="idv_geo_accuracy">
 
         <header
-            class="idv-header-when-not-upload absolute inset-x-0 top-0 z-[30] flex items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 bg-gradient-to-b from-slate-900/90 to-transparent border-b border-white/5"
+            class="idv-header-when-not-upload absolute inset-x-0 top-0 z-[30] flex items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 bg-black border-b border-white/10"
             style="padding-left: max(0.75rem, env(safe-area-inset-left)); padding-right: max(0.75rem, env(safe-area-inset-right));"
         >
             <a
@@ -776,8 +776,8 @@
             'birthdate',
             'gender',
             'address',
-            'birthplace',
-            'civil_status',
+            'date_of_issuance',
+            'expiry_date',
         ];
         const shown = new Set();
         priority.forEach((key) => {
@@ -819,8 +819,8 @@
             'birthdate',
             'gender',
             'address',
-            'birthplace',
-            'civil_status',
+            'date_of_issuance',
+            'expiry_date',
         ];
 
         editableKeys.forEach((key) => {

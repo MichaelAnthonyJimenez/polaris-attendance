@@ -1,15 +1,15 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="fixed inset-0 z-[2147483647] bg-slate-950 text-white overflow-y-auto lg:relative lg:inset-auto lg:z-auto lg:bg-transparent lg:text-slate-900 lg:overflow-visible">
-    <div class="min-h-full px-4 py-4 lg:min-h-0 lg:px-0 lg:py-0" style="padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: max(1rem, env(safe-area-inset-bottom));">
+<div class="fixed inset-0 z-[2147483647] bg-slate-950 text-white overflow-y-auto">
+    <div class="min-h-full px-4 pt-4 pb-0" style="padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: env(safe-area-inset-bottom);">
         <div class="mx-auto w-full max-w-md">
-            <div class="glass lg:bg-white/95 lg:border-slate-200 lg:shadow-lg rounded-2xl border border-white/10 p-4 sm:p-5 lg:p-6">
+            <div class="glass rounded-2xl border border-white/10 p-4 sm:p-5">
                 <div class="flex items-center justify-between gap-3">
-                    <h2 class="text-base font-semibold lg:text-slate-900">Review OCR Fields</h2>
-                    <a href="{{ route('verification.id') }}" class="text-xs text-slate-300 hover:text-white lg:text-slate-600 lg:hover:text-slate-900">Back</a>
+                    <h2 class="text-base font-semibold">Review OCR Fields</h2>
+                    <a href="{{ route('verification.id') }}" class="text-xs text-slate-300 hover:text-white">Back</a>
                 </div>
-                <p class="mt-1 text-xs text-slate-400 lg:text-slate-500">Edit fields before final submission. Colors indicate confidence.</p>
+                <p class="mt-1 text-xs text-slate-400">Edit fields before final submission. Colors indicate confidence.</p>
 
                 <form id="idvOcrReviewForm" method="POST" action="{{ route('driver-verification.store') }}" class="mt-4 space-y-3">
                     @csrf
@@ -75,9 +75,9 @@
     ];
 
     function confidenceClass(score) {
-        if (score >= 0.7) return 'border-green-500/70 bg-green-500/10 lg:border-green-500 lg:bg-green-50';
-        if (score >= 0.4) return 'border-yellow-500/70 bg-yellow-500/10 lg:border-yellow-500 lg:bg-yellow-50';
-        return 'border-red-500/70 bg-red-500/10 lg:border-red-500 lg:bg-red-50';
+        if (score >= 0.7) return 'border-green-500/70 bg-green-500/10';
+        if (score >= 0.4) return 'border-yellow-500/70 bg-yellow-500/10';
+        return 'border-red-500/70 bg-red-500/10';
     }
 
     editableKeys.forEach((key) => {
@@ -97,10 +97,10 @@
         const div = document.createElement('div');
         div.className = 'rounded-lg border p-2 ' + confidenceClass(confidence);
         div.innerHTML = ''
-            + '<label class="block text-[11px] text-slate-200 mb-1 lg:text-slate-700 lg:text-sm">' + key.replace(/_/g, ' ')
-            + ' <span class="text-slate-400 lg:text-slate-500">(conf: ' + confidence.toFixed(2) + ')</span></label>'
+            + '<label class="block text-[11px] text-slate-200 mb-1">' + key.replace(/_/g, ' ')
+            + ' <span class="text-slate-400">(conf: ' + confidence.toFixed(2) + ')</span></label>'
             + '<input type="text" data-edit-key="' + key + '" value="' + value.replace(/"/g, '&quot;') + '" '
-            + 'class="w-full rounded bg-black/30 border border-white/20 text-slate-100 px-2 py-1 text-xs lg:bg-white lg:border-slate-300 lg:text-slate-900 lg:py-2">';
+            + 'class="w-full rounded bg-black/30 border border-white/20 text-slate-100 px-2 py-1 text-xs">';
         fieldsWrap.appendChild(div);
     });
 

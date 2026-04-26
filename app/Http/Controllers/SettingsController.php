@@ -190,7 +190,6 @@ class SettingsController extends Controller
         'driver_reminders',
         'driver_dashboard',
         'driver_data_usage',
-        'driver_profile',
         'driver_security',
     ];
 
@@ -234,13 +233,8 @@ class SettingsController extends Controller
             'driver_auto_load_images',
             'driver_sync_frequency',
         ],
-        'driver_profile' => [
-            'driver_allow_profile_updates',
-            'driver_show_email',
-        ],
         'driver_security' => [
             'driver_two_factor_enabled',
-            'driver_session_timeout',
         ],
     ];
 

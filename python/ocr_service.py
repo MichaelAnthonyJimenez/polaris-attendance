@@ -303,6 +303,8 @@ def extract_id_info(text):
         'id_number': '',
         'address': '',
         'birth_date': '',
+        'birthplace': '',
+        'civil_status': '',
         'other_info': []
     }
 
@@ -328,6 +330,18 @@ def extract_id_info(text):
             if '/' in date_part or '-' in date_part:
                 id_info['birth_date'] = date_part
 
+        # Birthplace detection
+        if any(keyword in line_lower for keyword in ['birthplace', 'place of birth', 'lugar ng kapanganakan', 'born in']):
+            birthplace_part = line.split(':')[-1].strip() if ':' in line else line
+            if len(birthplace_part) > 3:
+                id_info['birthplace'] = birthplace_part
+
+        # Civil status detection
+        if any(keyword in line_lower for keyword in ['civil status', 'marital status', 'kalagayang sibil']):
+            civil_part = line.split(':')[-1].strip() if ':' in line else line
+            if len(civil_part) > 3:
+                id_info['civil_status'] = civil_part
+
         # Address detection
         if any(keyword in line_lower for keyword in ['address', 'direccion', 'address']):
             addr_part = line.split(':')[-1].strip() if ':' in line else line
@@ -335,7 +349,7 @@ def extract_id_info(text):
                 id_info['address'] = addr_part
 
         # Store other potentially useful info
-        if len(line) > 5 and line not in [id_info['name'], id_info['id_number'], id_info['address'], id_info['birth_date']]:
+        if len(line) > 5 and line not in [id_info['name'], id_info['id_number'], id_info['address'], id_info['birth_date'], id_info['birthplace'], id_info['civil_status']]:
             id_info['other_info'].append(line)
 
     return id_info

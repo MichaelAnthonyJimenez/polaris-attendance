@@ -48,11 +48,11 @@ except Exception as e:
 def validate_image_format(image_data, is_base64=False):
     """
     Validate image format and file size
-    
+
     Args:
         image_data: Image data (bytes or file path)
         is_base64: Whether the input is base64 encoded
-        
+
     Returns:
         tuple: (is_valid, format_info, error_message)
     """
@@ -126,10 +126,10 @@ def validate_image_format(image_data, is_base64=False):
 def convert_to_rgb(image):
     """
     Convert image to RGB format for OCR processing
-    
+
     Args:
         image: PIL Image object
-        
+
     Returns:
         PIL Image in RGB format
     """
@@ -140,7 +140,7 @@ def convert_to_rgb(image):
 def get_supported_formats():
     """
     Get list of supported image formats
-    
+
     Returns:
         dict: Supported formats with MIME types and extensions
     """
@@ -149,10 +149,10 @@ def get_supported_formats():
 def extract_text_from_image(image_data):
     """
     Extract text from an image using OCR
-    
+
     Args:
         image_data: Base64 encoded image string or file path
-        
+
     Returns:
         dict: Extracted text and metadata
     """
@@ -195,16 +195,16 @@ def extract_text_from_image(image_data):
 
         # Process with OCR
         words = []
-        
+
         if ocr is not None:
             # Use EasyOCR if available
             try:
                 # Convert PIL image to numpy array
                 image_array = np.array(image)
-                
+
                 # Run OCR
                 results = ocr.readtext(image_array)
-                
+
                 for (bbox, text, confidence) in results:
                     if text.strip():  # Only include non-empty text
                         # Convert bbox format from EasyOCR (x1,y1,x2,y2) to our format
@@ -219,7 +219,7 @@ def extract_text_from_image(image_data):
                                 'height': int(y2 - y1)
                             }
                         })
-                        
+
             except Exception as e:
                 print(f"EasyOCR processing failed: {e}")
                 # Fall back to basic text extraction
@@ -260,10 +260,10 @@ def extract_text_from_image(image_data):
 def extract_id_info(text):
     """
     Extract specific ID information from OCR text
-    
+
     Args:
         text (str): OCR extracted text
-        
+
     Returns:
         dict: Parsed ID information
     """
@@ -274,6 +274,8 @@ def extract_id_info(text):
         'id_number': '',
         'address': '',
         'birth_date': '',
+        'birthplace': '',
+        'civil_status': '',
         'other_info': []
     }
 
@@ -299,6 +301,18 @@ def extract_id_info(text):
             if '/' in date_part or '-' in date_part:
                 id_info['birth_date'] = date_part
 
+        # Birthplace detection
+        if any(keyword in line_lower for keyword in ['birthplace', 'place of birth', 'lugar ng kapanganakan', 'born in']):
+            birthplace_part = line.split(':')[-1].strip() if ':' in line else line
+            if len(birthplace_part) > 3:
+                id_info['birthplace'] = birthplace_part
+
+        # Civil status detection
+        if any(keyword in line_lower for keyword in ['civil status', 'marital status', 'kalagayang sibil']):
+            civil_part = line.split(':')[-1].strip() if ':' in line else line
+            if len(civil_part) > 3:
+                id_info['civil_status'] = civil_part
+
         # Address detection
         if any(keyword in line_lower for keyword in ['address', 'direccion', 'address']):
             addr_part = line.split(':')[-1].strip() if ':' in line else line
@@ -306,7 +320,7 @@ def extract_id_info(text):
                 id_info['address'] = addr_part
 
         # Store other potentially useful info
-        if len(line) > 5 and line not in [id_info['name'], id_info['id_number'], id_info['address'], id_info['birth_date']]:
+        if len(line) > 5 and line not in [id_info['name'], id_info['id_number'], id_info['address'], id_info['birth_date'], id_info['birthplace'], id_info['civil_status']]:
             id_info['other_info'].append(line)
 
     return id_info

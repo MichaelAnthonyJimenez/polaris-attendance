@@ -64,6 +64,57 @@ class IdOcrService
         return $this->mergeIdContext($this->extractWithOcrSpace($absolute), $idType);
     }
 
+    public function extractFromFrontAndBack(?string $frontPublicPath, ?string $backPublicPath, ?string $idType = null): array
+    {
+        $frontResult = $this->extractFromPublicPath($frontPublicPath, $idType);
+        $backResult = $backPublicPath ? $this->extractFromPublicPath($backPublicPath, $idType) : null;
+
+        // If front failed, return that result
+        if (($frontResult['status'] ?? null) !== 'ok') {
+            return $frontResult;
+        }
+
+        // Merge front and back results
+        $mergedResult = $frontResult;
+
+        if ($backResult && ($backResult['status'] ?? null) === 'ok') {
+            $mergedFields = $this->mergeFrontAndBackFields($frontResult['fields'] ?? [], $backResult['fields'] ?? []);
+            $mergedResult['fields'] = $mergedFields;
+            $mergedResult['back_processed'] = true;
+            $mergedResult['back_text'] = $backResult['raw_text'] ?? '';
+        } else {
+            $mergedResult['back_processed'] = false;
+            $mergedResult['back_text'] = '';
+        }
+
+        return $mergedResult;
+    }
+
+    private function mergeFrontAndBackFields(array $frontFields, array $backFields): array
+    {
+        $merged = $frontFields;
+
+        // Fields that might be on the back of the ID
+        $backSideFields = ['birthplace', 'civil_status', 'address', 'other_info'];
+
+        foreach ($backSideFields as $field) {
+            if (isset($backFields[$field]) && !empty($backFields[$field]['value'])) {
+                // If front doesn't have this field or it's empty, use back value
+                if (!isset($merged[$field]) || empty($merged[$field]['value'])) {
+                    $merged[$field] = $backFields[$field];
+                }
+                // If both have values, prefer the one with higher confidence
+                elseif (isset($merged[$field]['confidence']) && isset($backFields[$field]['confidence'])) {
+                    if ($backFields[$field]['confidence'] > $merged[$field]['confidence']) {
+                        $merged[$field] = $backFields[$field];
+                    }
+                }
+            }
+        }
+
+        return $merged;
+    }
+
     private function extractWithLocalEngine(string $absolutePath, string $engine): array
     {
         $python = trim((string) config('services.ocr_space.python_bin', 'python'));
@@ -259,9 +310,9 @@ class IdOcrService
         $birthdate = null;
         $address = null;
         $idNumber = null;
-        $issueDate = null;
-        $expiryDate = null;
         $gender = null;
+        $birthplace = null;
+        $civilStatus = null;
 
         $meta = [
             'first_name' => ['label' => false, 'regex' => false, 'position' => false],
@@ -270,9 +321,9 @@ class IdOcrService
             'birthdate' => ['label' => false, 'regex' => false, 'position' => false],
             'address' => ['label' => false, 'regex' => false, 'position' => false],
             'id_number' => ['label' => false, 'regex' => false, 'position' => false],
-            'date_of_issuance' => ['label' => false, 'regex' => false, 'position' => false],
-            'expiry_date' => ['label' => false, 'regex' => false, 'position' => false],
             'gender' => ['label' => false, 'regex' => false, 'position' => false],
+            'birthplace' => ['label' => false, 'regex' => false, 'position' => false],
+            'civil_status' => ['label' => false, 'regex' => false, 'position' => false],
         ];
 
         $idPatterns = [];
@@ -343,20 +394,6 @@ class IdOcrService
             $meta['address']['label'] = true;
             $meta['address']['regex'] = true;
         }
-        $issueDate = $this->extractLabeledValue($normalized, [
-            '/(?:araw\s*ng\s*pagkakaloob|date\s*of\s*issue|date\s*issued)\s*[:#]?\s*([A-Z0-9,\-\/ ]{5,})/i',
-        ], 'date');
-        if ($issueDate) {
-            $meta['date_of_issuance']['label'] = true;
-            $meta['date_of_issuance']['regex'] = true;
-        }
-        $expiryDate = $this->extractLabeledValue($normalized, [
-            '/(?:expiry\s*date|date\s*of\s*expiry|expires\s*on|valid\s*until)\s*[:#]?\s*([A-Z0-9,\-\/ ]{5,})/i',
-        ], 'date');
-        if ($expiryDate) {
-            $meta['expiry_date']['label'] = true;
-            $meta['expiry_date']['regex'] = true;
-        }
         $gender = $this->extractLabeledValue($normalized, [
             '/(?:kasarian|sex|gender)\s*[:#]?\s*(MALE|FEMALE|M|F)\b/i',
         ], 'name');
@@ -366,21 +403,29 @@ class IdOcrService
             $meta['gender']['regex'] = true;
         }
 
-        // fallback date extraction: first likely DOB, second likely issuance/expiry.
-        if (! $birthdate || ! $issueDate) {
+        $birthplace = $this->extractLabeledValue($normalized, [
+            '/(?:lugar\s*ng\s*kapanganakan|place\s*of\s*birth|birthplace|born\s*in)\s*[:#]?\s*([A-Z][A-Z ,\-\.]{3,})/i',
+        ], 'address');
+        if ($birthplace) {
+            $meta['birthplace']['label'] = true;
+            $meta['birthplace']['regex'] = true;
+        }
+
+        $civilStatus = $this->extractLabeledValue($normalized, [
+            '/(?:kalagayang\s*sibil|civil\s*status|marital\s*status)\s*[:#]?\s*([A-Z][A-Z ]{3,})/i',
+        ], 'name');
+        if ($civilStatus) {
+            $meta['civil_status']['label'] = true;
+            $meta['civil_status']['regex'] = true;
+        }
+
+        // fallback date extraction: first likely DOB only
+        if (! $birthdate) {
             if (preg_match_all('/\b(?:\d{4}[-\/]\d{2}[-\/]\d{2}|\d{2}[-\/]\d{2}[-\/]\d{4}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})\b/', $normalized, $m) && ! empty($m[0])) {
                 $dates = array_values(array_unique(array_map(fn ($d) => $this->normalizeDateValue($d), $m[0])));
                 if (! $birthdate && isset($dates[0])) {
                     $birthdate = $dates[0];
                     $meta['birthdate']['regex'] = true;
-                }
-                if (! $issueDate && isset($dates[1])) {
-                    $issueDate = $dates[1];
-                    $meta['date_of_issuance']['regex'] = true;
-                }
-                if (! $expiryDate && isset($dates[2])) {
-                    $expiryDate = $dates[2];
-                    $meta['expiry_date']['regex'] = true;
                 }
             }
         }
@@ -394,8 +439,8 @@ class IdOcrService
             'gender' => $this->buildConfidenceField($gender, $meta['gender']),
             'address' => $this->buildConfidenceField($address, $meta['address']),
             'id_number' => $this->buildConfidenceField($idNumber, $meta['id_number']),
-            'date_of_issuance' => $this->buildConfidenceField($issueDate, $meta['date_of_issuance']),
-            'expiry_date' => $this->buildConfidenceField($expiryDate, $meta['expiry_date']),
+            'birthplace' => $this->buildConfidenceField($birthplace, $meta['birthplace']),
+            'civil_status' => $this->buildConfidenceField($civilStatus, $meta['civil_status']),
             'detected_language' => $language,
             'cleaned_text' => implode("\n", $lines),
         ];

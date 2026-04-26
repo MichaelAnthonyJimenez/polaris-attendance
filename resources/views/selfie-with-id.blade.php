@@ -70,143 +70,17 @@
 
             <div
                 id="idvPreviewNav"
-                class="hidden absolute inset-0 z-[6] flex items-center justify-between px-4 pointer-events-none"
-                aria-hidden="true"
-            >
-                <button
-                    type="button"
-                    id="idvPreviewPrev"
-                    class="pointer-events-auto flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/65 disabled:opacity-25 disabled:pointer-events-none"
-                    aria-label="Previous photo"
-                >
-                    <svg class="h-7 w-7 sm:h-8 sm:w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                    </svg>
-                </button>
-                <button
-                    type="button"
-                    id="idvPreviewNext"
-                    class="pointer-events-auto flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/65 disabled:opacity-25 disabled:pointer-events-none"
-                    aria-label="Next photo"
-                >
-                    <svg class="h-7 w-7 sm:h-8 sm:w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </button>
-            </div>
-
-            {{-- Guideline grid: changes based on step --}}
-            <div id="idvGuide" class="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center" style="z-index: 5;">
-                <div
-                    id="idvGuideFrame"
-                    class="relative border-4 overflow-hidden"
-                    style="width: 90%; max-width: 400px; height: 250px; border-color: rgba(255, 255, 255, 0.8); box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); background: rgba(0, 0, 0, 0.3);"
-                >
-                    <svg
-                        id="idvGridSvg"
-                        class="absolute inset-0 h-full w-full"
-                        viewBox="0 0 400 250"
-                        preserveAspectRatio="none"
-                        style="color: rgba(255,255,255,0.6);"
-                        aria-hidden="true"
-                    >
-                        <!-- Default grid lines -->
-                        <line x1="133" y1="0" x2="133" y2="250" stroke="currentColor" stroke-width="2" />
-                        <line x1="266" y1="0" x2="266" y2="250" stroke="currentColor" stroke-width="2" />
-                        <line x1="0" y1="83" x2="400" y2="83" stroke="currentColor" stroke-width="2" />
-                        <line x1="0" y1="166" x2="400" y2="166" stroke="currentColor" stroke-width="2" />
-                    </svg>
-                    <div id="idvGridTint" class="absolute inset-0 transition-opacity duration-200" style="opacity: 0; background: rgba(34, 197, 94, 0.3);"></div>
-                    <div class="absolute top-3 right-3 rounded-lg bg-black/60 px-3 py-2 text-xs font-medium text-white/90">
-                        <span class="inline-flex items-center gap-2 mr-3">
-                            <span class="inline-block h-3 w-3 rounded-full bg-green-500"></span> Proper
-                        </span>
-                        <span class="inline-flex items-center gap-2">
-                            <span class="inline-block h-3 w-3 rounded-full bg-red-500"></span> Improper
-                        </span>
-                    </div>
-                    <div class="absolute bottom-3 left-0 right-0 text-center px-3">
-                        <p id="idvGuideHint" class="text-xs text-white/80 font-medium">Position ID card in frame</p>
-                    </div>
-                </div>
-            </div>
-
-            <canvas id="idvCanvas" class="hidden" width="2" height="2"></canvas>
-
-            <div
-                id="idvPermissionGate"
-                class="hidden absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-black/90 px-6 text-center"
-            >
-                <div class="rounded-2xl border border-white/10 bg-white/5 p-6 max-w-sm">
-                    <p class="text-base font-semibold text-white mb-2">Camera access</p>
-                    <p id="idvPermissionText" class="text-sm text-slate-300 mb-5">
-                        We need your camera for facial verification. Tap below and allow camera access when prompted.
-                    </p>
-                    <button type="button" id="idvRetryBtn" class="btn-primary w-full justify-center text-sm py-2.5">
-                        Enable camera
-                    </button>
-                </div>
-            </div>
-            <div id="idvCountdown" class="hidden absolute inset-0 z-[11] items-center justify-center pointer-events-none">
-                <div id="idvCountdownNumber" class="h-20 w-20 rounded-full border-2 border-white/60 bg-black/45 text-3xl font-bold flex items-center justify-center">3</div>
-            </div>
         </div>
-
-        <footer
-            class="shrink-0 flex flex-col items-center gap-4 px-4 pt-6 pb-[max(8rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-black via-black/95 to-transparent"
-            style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right));"
-        >
-            <div class="w-full max-w-md text-center">
-                <p class="text-xs text-slate-400 mb-1">Selfie with ID verification process</p>
-                <p id="idvStepTitle" class="text-sm font-semibold text-white">Step 1 of 2: Capture ID card</p>
-            </div>
-
-            <div id="idvStepThumbsRow" class="hidden w-full max-w-md grid grid-cols-2 gap-2">
-                <button type="button" id="idvStepCellFront" class="dvv-step-thumb rounded-xl border border-white/15 bg-white/5 p-2 text-left transition ring-offset-2 ring-offset-black focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40" data-preview-index="0" tabindex="-1" aria-label="View ID card capture">
-                    <p class="text-[10px] text-slate-300 mb-1 text-center">Step 1</p>
-                    <img id="idvStepPreviewFront" src="" alt="ID card preview" class="hidden h-14 w-full rounded-md object-cover" width="1" height="1" />
-                    <div id="idvStepPlaceholderFront" class="h-14 w-full rounded-md border border-dashed border-white/20 text-[10px] text-slate-400 flex items-center justify-center">Pending</div>
-                </button>
-                <button type="button" id="idvStepCellSelfie" class="dvv-step-thumb rounded-xl border border-white/15 bg-white/5 p-2 text-left transition ring-offset-2 ring-offset-black focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40" data-preview-index="1" tabindex="-1" aria-label="View selfie capture">
-                    <p class="text-[10px] text-slate-300 mb-1 text-center">Step 2</p>
-                    <img id="idvStepPreviewSelfie" src="" alt="Selfie preview" class="hidden h-14 w-full rounded-md object-cover" width="1" height="1" />
-                    <div id="idvStepPlaceholderSelfie" class="h-14 w-full rounded-md border border-dashed border-white/20 text-[10px] text-slate-400 flex items-center justify-center">Pending</div>
-                </button>
-            </div>
-
-            <div id="idvLiveControls" class="flex flex-col items-center gap-3 w-full max-w-md">
-                <div class="flex items-center justify-center gap-8">
-                    <div class="h-12 w-12"></div>
-
-                    <button
-                        type="button"
-                        id="idvCaptureBtn"
-                        class="h-20 w-20 rounded-full border-4 border-white bg-white/20 shadow-lg ring-4 ring-white/30 disabled:opacity-40 disabled:pointer-events-none"
-                        aria-label="Capture photo"
-                    ></button>
-
-                    <button
-                        type="button"
-                        id="idvCameraToggleBtn"
-                        class="h-12 w-12 rounded-full border-2 border-white/30 bg-black/50 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/70 disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center"
-                        aria-label="Switch camera"
-                        aria-pressed="true"
-                    >
-                        <svg class="h-6 w-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                        </svg>
-                    </button>
-                </div>
-                <span class="text-xs text-slate-500">Tap to capture current step</span>
-            </div>
-
-            <div id="idvPreviewControls" class="hidden flex w-full max-w-md gap-3">
-                <button type="button" id="idvRetakeBtn" class="btn-secondary flex-1 text-sm py-3">Retake</button>
-                <button type="submit" id="idvSubmitBtn" class="btn-primary flex-1 text-sm py-3">Submit verification</button>
-            </div>
-        </footer>
-    </form>
+    </div>
 </div>
+
+<script>
+function startSelfieWithId() {
+    // Redirect to the actual selfie with ID camera page
+    window.location.href = '{{ route('verification.selfie-camera') }}';
+}
+</script>
+@endsection
 
 <script>
 (() => {

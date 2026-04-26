@@ -58,6 +58,11 @@ return [
         'api_key' => env('OCR_SPACE_API_KEY', env('OCR_API_KEY', 'helloworld')),
         'endpoint' => env('OCR_SPACE_ENDPOINT', 'https://api.ocr.space/parse/image'),
         'language' => env('OCR_SPACE_LANGUAGE', 'eng'),
+        // OCR provider: ocr_space, easyocr, paddleocr
+        'provider' => env('OCR_PROVIDER', 'ocr_space'),
+        'python_bin' => env('OCR_PYTHON_BIN', 'python'),
+        'script_path' => env('OCR_SCRIPT_PATH', base_path('scripts/ocr_local.py')),
+        'local_language' => env('OCR_LOCAL_LANGUAGE', 'en'),
     ],
 
 ];

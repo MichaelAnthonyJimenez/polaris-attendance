@@ -138,8 +138,8 @@ class FaceRecognitionService
                 'VGG-Face'
             );
 
-            if ($result['success'] && $result['verified']) {
-                return $result['confidence'];
+            if (($result['success'] ?? false) && isset($result['confidence']) && is_numeric($result['confidence'])) {
+                return max(0.0, min(100.0, (float) $result['confidence']));
             }
 
             Log::info('Face verification failed', [

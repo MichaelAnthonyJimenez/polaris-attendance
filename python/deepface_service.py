@@ -120,13 +120,17 @@ class DeepFaceService:
                 distance_metric=self.distance_metric
             )
             
+            # Always expose raw confidence derived from distance.
+            # The PHP layer applies project-specific acceptance thresholds.
+            confidence = max(0.0, min(100.0, (1 - float(result['distance'])) * 100))
+
             return {
                 'success': True,
-                'verified': result['verified'],
+                'verified': bool(result['verified']),
                 'distance': result['distance'],
                 'threshold': result['threshold'],
                 'model': model_name,
-                'confidence': max(0, (1 - result['distance']) * 100) if result['verified'] else 0
+                'confidence': confidence
             }
             
         except Exception as e:

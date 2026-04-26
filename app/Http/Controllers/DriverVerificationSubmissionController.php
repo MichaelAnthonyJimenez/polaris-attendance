@@ -158,7 +158,7 @@ class DriverVerificationSubmissionController extends Controller
                 : (string) ($data['id_type'] ?? 'other');
             $meta['id_type'] = $selectedIdType;
             $ocrSourcePath = $idFrontPath ?: $selfieWithIdPath;
-            $meta['ocr'] = $this->idOcrService->extractFromPublicPath($ocrSourcePath, $selectedIdType);
+            $meta['ocr'] = $this->idOcrService->extractFromFrontAndBack($idFrontPath, $idBackPath, $selectedIdType);
             $meta['ocr']['edited'] = $this->sanitizeEditedOcrData((string) ($data['ocr_edited_json'] ?? ''));
             $this->validateEditedOcrData($meta['ocr']['edited']);
         }
@@ -248,7 +248,7 @@ class DriverVerificationSubmissionController extends Controller
 
         $allowed = [
             'id_type', 'first_name', 'middle_name', 'last_name',
-            'birthdate', 'address', 'id_number', 'date_of_issuance', 'expiry_date', 'gender',
+            'birthdate', 'address', 'id_number', 'birthplace', 'civil_status', 'gender',
         ];
         $clean = [];
         foreach ($allowed as $key) {

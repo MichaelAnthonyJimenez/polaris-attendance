@@ -70,8 +70,8 @@
         'birthdate',
         'gender',
         'address',
-        'date_of_issuance',
-        'expiry_date',
+        'birthplace',
+        'civil_status',
     ];
 
     function confidenceClass(score) {

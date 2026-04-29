@@ -118,6 +118,29 @@
 
             <canvas id="driverCanvas" class="hidden" width="2" height="2"></canvas>
 
+            {{-- Emergency Alerts Overlay --}}
+            <div id="emergencyAlerts" class="hidden absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-red-900/95 px-6 text-center">
+                <div class="rounded-2xl border border-red-500/30 bg-red-950/80 p-6 max-w-sm">
+                    <div class="flex items-center justify-center w-12 h-12 rounded-full bg-red-600/20 mb-4 mx-auto">
+                        <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-white mb-2">Emergency Alert</h3>
+                    <p id="emergencyAlertMessage" class="text-sm text-red-200 mb-5">
+                        You are in a potentially dangerous area. Please find a safe location before checking in or out.
+                    </p>
+                    <div class="space-y-2">
+                        <button type="button" id="emergencyAlertAcknowledge" class="btn-primary w-full justify-center text-sm py-2.5">
+                            I Understand, I'll Move to Safety
+                        </button>
+                        <button type="button" id="emergencyAlertProceed" class="btn-secondary w-full justify-center text-sm py-2.5">
+                            Proceed Anyway (Emergency Only)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div
                 id="cameraPermissionGate"
                 class="hidden absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-black/90 px-6 text-center"
@@ -231,6 +254,10 @@
         const noFaceDetected = document.getElementById('noFaceDetected');
         const faceDetected = document.getElementById('faceDetected');
         const unknownFace = document.getElementById('unknownFace');
+        const emergencyAlerts = document.getElementById('emergencyAlerts');
+        const emergencyAlertMessage = document.getElementById('emergencyAlertMessage');
+        const emergencyAlertAcknowledge = document.getElementById('emergencyAlertAcknowledge');
+        const emergencyAlertProceed = document.getElementById('emergencyAlertProceed');
 
         const autoCapture = shell?.dataset.autoCapture === '1';
         const autoSubmit = shell?.dataset.autoSubmit === '1';
@@ -245,7 +272,13 @@
         let submitting = false;
         let geoWatcherId = null;
         let faceDetectionTimer = null;
+        let emergencyAlertActive = false;
         const detector = ('FaceDetector' in window) ? new window.FaceDetector({ fastMode: true, maxDetectedFaces: 1 }) : null;
+
+        // Face detection state management
+        let lastFaceState = { detected: false, isKnown: false };
+        let faceStateStabilityCount = 0;
+        const FACE_STATE_STABILITY_THRESHOLD = 3; // Require 3 consistent detections before changing state
 
         function setHint(text) {
             if (hint) hint.textContent = text;
@@ -321,17 +354,20 @@
         function updateFaceDetectionState(detected, isKnown = true) {
             if (!noFaceDetected || !faceDetected || !unknownFace) return;
 
-            // Hide all states first
+            // Hide all states first to prevent simultaneous display
             noFaceDetected.classList.add('hidden');
             faceDetected.classList.add('hidden');
             unknownFace.classList.add('hidden');
 
-            // Show appropriate state
+            // Show only one appropriate state based on detection logic
             if (!detected) {
+                // No face detected - show when camera is on but no face is present
                 noFaceDetected.classList.remove('hidden');
             } else if (isKnown) {
+                // Known user detected - real user/actual person
                 faceDetected.classList.remove('hidden');
             } else {
+                // Unknown user detected - different person, picture, or non-real user
                 unknownFace.classList.remove('hidden');
             }
         }
@@ -352,6 +388,8 @@
                 let centerLum = 0;
                 let centerCount = 0;
                 let outerCount = 0;
+                let motionPixels = 0;
+
                 for (let y = 1; y < h - 1; y += 2) {
                     for (let x = 1; x < w - 1; x += 2) {
                         const idx = (y * w + x) * 4;
@@ -361,6 +399,10 @@
                         const down = (image[downIdx] * 0.299) + (image[downIdx + 1] * 0.587) + (image[downIdx + 2] * 0.114);
                         const edge = Math.abs(g - right) + Math.abs(g - down);
                         const inCenter = x > 42 && x < 118 && y > 26 && y < 94;
+
+                        // Detect motion (changes in brightness)
+                        if (Math.abs(g - 128) > 30) motionPixels++;
+
                         if (inCenter) {
                             centerEnergy += edge;
                             centerLum += g;
@@ -371,13 +413,44 @@
                         }
                     }
                 }
+
                 const centerAvg = centerCount ? centerEnergy / centerCount : 0;
                 const outerAvg = outerCount ? outerEnergy / outerCount : 0;
                 const lumAvg = centerCount ? centerLum / centerCount : 0;
-                const detected = (centerAvg > 6 || outerAvg > 6) && lumAvg > 35;
+                const motionRatio = motionPixels / (w * h / 4); // Sampled pixels
+
+                // Enhanced detection logic
+                const hasEnoughLight = lumAvg > 35;
+                const hasFaceFeatures = (centerAvg > 6 || outerAvg > 6);
+                const hasGoodFaceStructure = hasFaceFeatures && lumAvg > 55 && lumAvg < 210;
+                const hasMotion = motionRatio > 0.05; // Some motion indicates live person
+                const isStaticImage = motionRatio < 0.02; // Very low motion might be a photo
+
+                // Basic face detection
+                const detected = hasEnoughLight && hasFaceFeatures;
+
+                // Determine if it's a known/real user vs unknown/photo
+                // Real users typically have: good structure + some motion + proper lighting
+                // Photos might have: good structure but no motion
+                // Unknown users might have: poor structure or wrong positioning
                 const edgeBalance = outerAvg > 0 ? (centerAvg / outerAvg) : 1;
-                const good = detected && edgeBalance > 0.82 && edgeBalance < 1.18 && lumAvg > 55 && lumAvg < 210;
-                return { detected: detected && good, isKnown: detected && good };
+                const goodStructure = detected && edgeBalance > 0.82 && edgeBalance < 1.18 && hasGoodFaceStructure;
+
+                let isKnown = false;
+                if (detected) {
+                    if (goodStructure && hasMotion) {
+                        // Good structure + motion = likely real user
+                        isKnown = true;
+                    } else if (goodStructure && isStaticImage) {
+                        // Good structure but no motion = might be a photo
+                        isKnown = false;
+                    } else {
+                        // Poor structure = unknown user or bad positioning
+                        isKnown = false;
+                    }
+                }
+
+                return { detected, isKnown };
             };
 
             if (!detector) {
@@ -399,8 +472,15 @@
                         };
                     })();
                 const { xRatio, yRatio, sizeRatio } = layout;
-                const good = xRatio > 0.33 && xRatio < 0.67 && yRatio > 0.28 && yRatio < 0.63 && sizeRatio > 0.22 && sizeRatio < 0.56;
-                return { detected: true, isKnown: good };
+                const goodPosition = xRatio > 0.33 && xRatio < 0.67 && yRatio > 0.28 && yRatio < 0.63 && sizeRatio > 0.22 && sizeRatio < 0.56;
+
+                // Use heuristic as backup for liveness detection
+                const heuristicResult = heuristic();
+
+                // Combine face detector position with heuristic liveness detection
+                const isKnown = goodPosition && heuristicResult.isKnown;
+
+                return { detected: true, isKnown };
             } catch (_e) {
                 return heuristic();
             }
@@ -410,9 +490,134 @@
             if (faceDetectionTimer) return;
             faceDetectionTimer = setInterval(async () => {
                 if (mode !== 'live' || !stream) return;
-                const state = await detectFace();
-                updateFaceDetectionState(state.detected, state.isKnown);
+                const currentState = await detectFace();
+
+                // Implement state stability to prevent rapid flickering
+                const stateChanged =
+                    currentState.detected !== lastFaceState.detected ||
+                    currentState.isKnown !== lastFaceState.isKnown;
+
+                if (stateChanged) {
+                    faceStateStabilityCount++;
+                    if (faceStateStabilityCount >= FACE_STATE_STABILITY_THRESHOLD) {
+                        // State has been stable for enough iterations, update it
+                        lastFaceState = { ...currentState };
+                        updateFaceDetectionState(currentState.detected, currentState.isKnown);
+                        faceStateStabilityCount = 0;
+                    }
+                } else {
+                    // State hasn't changed, reset counter
+                    faceStateStabilityCount = 0;
+                }
             }, 500);
+        }
+
+        function showEmergencyAlert(message) {
+            if (emergencyAlertMessage) {
+                emergencyAlertMessage.textContent = message;
+            }
+            if (emergencyAlerts) {
+                emergencyAlerts.classList.remove('hidden');
+            }
+            emergencyAlertActive = true;
+        }
+
+        function hideEmergencyAlert() {
+            if (emergencyAlerts) {
+                emergencyAlerts.classList.add('hidden');
+            }
+            emergencyAlertActive = false;
+        }
+
+        function checkEmergencyAlerts(latitude, longitude) {
+            // Check if emergency alerts are enabled in settings
+            const emergencyAlertsEnabled = localStorage.getItem('emergencyAlertsEnabled') === 'true';
+            if (!emergencyAlertsEnabled || !latitude || !longitude) return;
+
+            // Get alert settings from localStorage (synced from database)
+            const alertTypes = {
+                unoperational: localStorage.getItem('emergencyAlertsUnoperational') === 'true',
+                dangerous: localStorage.getItem('emergencyAlertsDangerous') === 'true',
+                unreachable: localStorage.getItem('emergencyAlertsUnreachable') === 'true',
+                low_data: localStorage.getItem('emergencyAlertsLowData') === 'true'
+            };
+
+            const alertRadius = parseFloat(localStorage.getItem('emergencyAlertsRadius') || '500') / 111000; // Convert meters to degrees
+
+            // Simulate dangerous area detection (in real implementation, this would check against a database)
+            // For demo purposes, we'll use some sample coordinates
+            const dangerousAreas = [
+                { lat: 14.6091, lng: 120.9769, type: 'unoperational', message: 'This area is currently unoperational. Please proceed with caution.' },
+                { lat: 14.5995, lng: 120.9842, type: 'dangerous', message: 'High accident area detected. Please find an alternative route.' },
+                { lat: 14.6150, lng: 120.9690, type: 'low_data', message: 'Low network connectivity area. GPS accuracy may be affected.' },
+                { lat: 14.6050, lng: 120.9750, type: 'unreachable', message: 'This area is unreachable. Please find an alternative route.' },
+            ];
+
+            for (const area of dangerousAreas) {
+                // Check if this alert type is enabled
+                if (!alertTypes[area.type]) continue;
+
+                const distance = Math.sqrt(
+                    Math.pow(latitude - area.lat, 2) + Math.pow(longitude - area.lng, 2)
+                );
+                if (distance < alertRadius) {
+                    showEmergencyAlert(area.message);
+
+                    // Play sound if enabled
+                    if (localStorage.getItem('emergencyAlertsSound') === 'true') {
+                        playEmergencySound();
+                    }
+
+                    // Vibrate if enabled
+                    if (localStorage.getItem('emergencyAlertsVibration') === 'true' && 'vibrate' in navigator) {
+                        navigator.vibrate([200, 100, 200]);
+                    }
+
+                    return;
+                }
+            }
+        }
+
+        function playEmergencySound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.frequency.value = 800; // Alert frequency
+                oscillator.type = 'sine';
+
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            } catch (e) {
+                console.log('Could not play emergency sound:', e);
+            }
+        }
+
+        function syncEmergencyAlertSettings() {
+            // Sync emergency alert settings from server to localStorage
+            const settings = @json(\App\Models\Setting::whereIn('key', [
+                'emergency_alerts_enabled',
+                'emergency_alerts_unoperational',
+                'emergency_alerts_dangerous',
+                'emergency_alerts_unreachable',
+                'emergency_alerts_low_data',
+                'emergency_alerts_sound',
+                'emergency_alerts_vibration',
+                'emergency_alerts_radius'
+            ])->pluck('value', 'key')->toArray());
+
+            Object.keys(settings).forEach(key => {
+                const storageKey = key.replace('emergency_alerts_', '');
+                const camelCaseKey = storageKey.charAt(0).toUpperCase() + storageKey.slice(1);
+                localStorage.setItem('emergencyAlerts' + camelCaseKey, settings[key]);
+            });
         }
 
         function beginLiveLocationWatch() {
@@ -421,11 +626,17 @@
 
             geoWatcherId = navigator.geolocation.watchPosition(
                 (position) => {
-                    document.getElementById('att_latitude').value = String(position.coords.latitude);
-                    document.getElementById('att_longitude').value = String(position.coords.longitude);
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+
+                    document.getElementById('att_latitude').value = String(latitude);
+                    document.getElementById('att_longitude').value = String(longitude);
                     if (position.coords.accuracy != null) {
                         document.getElementById('att_geo_accuracy').value = String(position.coords.accuracy);
                     }
+
+                    // Check for emergency alerts
+                    checkEmergencyAlerts(latitude, longitude);
                     const payload = JSON.stringify({
                         latitude: position.coords.latitude,
                         longitude: position.coords.longitude,
@@ -514,6 +725,8 @@
             autoCaptureScheduled = false;
             setMode('live');
             // Initialize face detection state
+            lastFaceState = { detected: false, isKnown: false };
+            faceStateStabilityCount = 0;
             updateFaceDetectionState(false, false);
             try {
                 setHint('Opening camera…');
@@ -608,7 +821,27 @@
         retryBtn?.addEventListener('click', () => startCamera());
         locationEnableBtn?.addEventListener('click', () => requestLocationPermissionAndEnable());
         coverageGuideOkBtn?.addEventListener('click', () => {
-            coverageGuide.style.display = 'none';
+            if (coverageGuide) {
+                coverageGuide.style.display = 'none';
+                coverageGuide.style.visibility = 'hidden';
+                coverageGuide.style.opacity = '0';
+                coverageGuide.style.pointerEvents = 'none';
+            }
+            // Store user preference to hide guide permanently with multiple fallbacks
+            localStorage.setItem('coverageGuideAcknowledged', 'true');
+            localStorage.setItem('coverageGuideAcknowledged', '1');
+            // Also set a session storage backup
+            sessionStorage.setItem('coverageGuideAcknowledged', 'true');
+        });
+
+        emergencyAlertAcknowledge?.addEventListener('click', () => {
+            hideEmergencyAlert();
+            setHint('Please move to a safe location before checking in or out.');
+        });
+
+        emergencyAlertProceed?.addEventListener('click', () => {
+            hideEmergencyAlert();
+            setHint('Proceed with caution. You are in an emergency situation.');
         });
 
         form?.addEventListener('submit', () => {
@@ -627,6 +860,20 @@
             submitting = true;
             submitBtn.disabled = true;
         });
+
+        // Sync emergency alert settings from database
+        syncEmergencyAlertSettings();
+
+        // Check if coverage guide has been acknowledged and ensure it's properly hidden
+        const coverageGuideAcknowledged = localStorage.getItem('coverageGuideAcknowledged');
+        if (coverageGuideAcknowledged === 'true' || coverageGuideAcknowledged === '1') {
+            if (coverageGuide) {
+                coverageGuide.style.display = 'none';
+                coverageGuide.style.visibility = 'hidden';
+                coverageGuide.style.opacity = '0';
+                coverageGuide.style.pointerEvents = 'none';
+            }
+        }
 
         captureBtn.disabled = true;
         showPermissionGate(

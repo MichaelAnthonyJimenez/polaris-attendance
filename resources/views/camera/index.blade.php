@@ -602,16 +602,19 @@
 
         function syncEmergencyAlertSettings() {
             // Sync emergency alert settings from server to localStorage
-            const settings = @json(\App\Models\Setting::whereIn('key', [
-                'emergency_alerts_enabled',
-                'emergency_alerts_unoperational',
-                'emergency_alerts_dangerous',
-                'emergency_alerts_unreachable',
-                'emergency_alerts_low_data',
-                'emergency_alerts_sound',
-                'emergency_alerts_vibration',
-                'emergency_alerts_radius'
-            ])->pluck('value', 'key')->toArray());
+            @php
+                $settings = \App\Models\Setting::whereIn('key', [
+                    'emergency_alerts_enabled',
+                    'emergency_alerts_unoperational',
+                    'emergency_alerts_dangerous',
+                    'emergency_alerts_unreachable',
+                    'emergency_alerts_low_data',
+                    'emergency_alerts_sound',
+                    'emergency_alerts_vibration',
+                    'emergency_alerts_radius'
+                ])->pluck('value', 'key')->toArray();
+            @endphp
+            const settings = @json($settings);
 
             Object.keys(settings).forEach(key => {
                 const storageKey = key.replace('emergency_alerts_', '');
